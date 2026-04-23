@@ -1,0 +1,690 @@
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import { createDataset, listDatasets, type Dataset, type DatasetInput } from '$lib/api/datasets';
+	import {
+		addProjectManager,
+		createProject,
+		listProjects,
+		removeProjectManager,
+		updateProject,
+		type Project,
+		type ProjectInput
+	} from '$lib/api/projects';
+	import { getCurrentUser, type CurrentUser } from '$lib/api/accounts';
+	import { createOrganization, listOrganizations, type Organization } from '$lib/api/organizations';
+
+	let loading = true;
+	let savingProject = false;
+	let addingDataset = false;
+	let projects: Project[] = [];
+	let organizations: Organization[] = [];
+	let datasets: Dataset[] = [];
+	let selectedProjectId: number | null = null;
+	let managerUsername = '';
+	let message = '';
+	let error = '';
+	let currentUser: CurrentUser | null = null;
+	let dataUploadChoice: 'upload_now' | 'upload_later' = 'upload_later';
+	let creatingOrganization = false;
+	let newOrganizationName = '';
+	let newOrganizationContactEmail = '';
+
+	let projectForm: ProjectInput = {
+		short_title: '',
+		full_title: '',
+		nybg_pi_name: '',
+		external_pi_name: '',
+		shared_publicly: false,
+		start_date: '',
+		end_date: '',
+		ongoing: false,
+		lead_institution: undefined,
+		contact_email: '',
+		external_url: '',
+		institutional_partners: [],
+		collection_frequency: '',
+		update_frequency: '',
+		last_updated_note: '',
+		organization: 0,
+		owner: 0
+	};
+
+	let datasetForm: DatasetInput = {
+		title: '',
+		description: '',
+		cadence: 'annual',
+		status: 'draft',
+		data_type: 'tabular',
+		project_id: '',
+		project: undefined,
+		expose_on_public_api: false,
+		organization: 0,
+		owner: 0,
+		additional_research_partners: [],
+		paper_links: [],
+		metadata_schema_version: 1,
+		metadata_fields: [],
+		publications: []
+	};
+
+	$: selectedProject = projects.find((project) => project.id === selectedProjectId) ?? null;
+	$: visibleDatasets = selectedProject
+		? datasets.filter((dataset: { project?: number }) => dataset.project === selectedProject.id)
+		: [];
+
+	async function loadData() {
+		loading = true;
+		error = '';
+		try {
+			const [userResult, projectsResult, orgResult, datasetResult] = await Promise.all([
+				getCurrentUser(),
+				listProjects(),
+				listOrganizations(),
+				listDatasets()
+			]);
+			currentUser = userResult;
+			projects = projectsResult;
+			organizations = orgResult;
+			datasets = datasetResult;
+			if (organizations.length > 0 && !projectForm.organization) {
+				projectForm.organization = organizations[0].id;
+				datasetForm.organization = organizations[0].id;
+			}
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Failed to load project dashboard data.';
+		} finally {
+			loading = false;
+		}
+	}
+
+	function selectProject(project: Project) {
+		selectedProjectId = project.id;
+		projectForm = {
+			...project,
+			institutional_partners: project.institutional_partners ?? [],
+			owner: project.owner
+		};
+		datasetForm = {
+			...datasetForm,
+			project: project.id,
+			project_id: project.short_title.toLowerCase().replace(/\s+/g, '-'),
+			organization: project.organization
+		};
+		message = '';
+		error = '';
+	}
+
+	function resetProjectForm() {
+		selectedProjectId = null;
+		dataUploadChoice = 'upload_later';
+		projectForm = {
+			short_title: '',
+			full_title: '',
+			nybg_pi_name: '',
+			external_pi_name: '',
+			shared_publicly: false,
+			start_date: '',
+			end_date: '',
+			ongoing: false,
+			lead_institution: undefined,
+			contact_email: '',
+			external_url: '',
+			institutional_partners: [],
+			collection_frequency: '',
+			update_frequency: '',
+			last_updated_note: '',
+			organization: organizations[0]?.id ?? 0,
+			owner: currentUser?.id ?? 0
+		};
+	}
+
+	async function saveProject() {
+		savingProject = true;
+		message = '';
+		error = '';
+		try {
+			const payload = {
+				...projectForm,
+				owner: currentUser?.id ?? projectForm.owner ?? 0,
+				institutional_partners: projectForm.institutional_partners ?? []
+			};
+			if (selectedProject) {
+				await updateProject(selectedProject.id, payload);
+				message = 'Project updated.';
+			} else {
+				const createdProject = await createProject(payload);
+				if (dataUploadChoice === 'upload_now' && datasetForm.title.trim()) {
+					await createDataset({
+						...datasetForm,
+						project: createdProject.id,
+						project_id: createdProject.short_title.toLowerCase().replace(/\s+/g, '-'),
+						organization: createdProject.organization,
+						owner: currentUser?.id ?? createdProject.owner
+					});
+					message = 'Project and initial dataset created.';
+				} else {
+					message = 'Project created.';
+				}
+				resetProjectForm();
+			}
+			await loadData();
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Unable to save project.';
+		} finally {
+			savingProject = false;
+		}
+	}
+
+	async function handleAddManager() {
+		if (!selectedProject || !managerUsername.trim()) return;
+		error = '';
+		message = '';
+		try {
+			await addProjectManager(selectedProject.id, managerUsername.trim());
+			managerUsername = '';
+			message = 'Project manager added.';
+			await loadData();
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Unable to add project manager.';
+		}
+	}
+
+	async function handleRemoveManager(userId: number) {
+		if (!selectedProject) return;
+		error = '';
+		message = '';
+		try {
+			await removeProjectManager(selectedProject.id, userId);
+			message = 'Project manager removed.';
+			await loadData();
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Unable to remove project manager.';
+		}
+	}
+
+	async function addDatasetToProject() {
+		if (!selectedProject) return;
+		addingDataset = true;
+		error = '';
+		message = '';
+		try {
+			await createDataset({
+				...datasetForm,
+				project: selectedProject.id,
+				project_id: selectedProject.short_title.toLowerCase().replace(/\s+/g, '-'),
+				organization: selectedProject.organization,
+				owner: currentUser?.id ?? selectedProject.owner
+			});
+			message = 'Dataset added to project.';
+			datasetForm = { ...datasetForm, title: '', description: '' };
+			await loadData();
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Unable to create dataset.';
+		} finally {
+			addingDataset = false;
+		}
+	}
+
+	async function addOrganizationOption() {
+		if (!newOrganizationName.trim()) return;
+		creatingOrganization = true;
+		error = '';
+		try {
+			const created = await createOrganization({
+				name: newOrganizationName.trim(),
+				contact_email: newOrganizationContactEmail.trim() || undefined
+			});
+			organizations = [...organizations, created].sort((a, b) => a.name.localeCompare(b.name));
+			projectForm.organization = created.id;
+			projectForm.lead_institution = created.id;
+			newOrganizationName = '';
+			newOrganizationContactEmail = '';
+			message = 'Organization added.';
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Unable to create organization.';
+		} finally {
+			creatingOrganization = false;
+		}
+	}
+
+	onMount(loadData);
+</script>
+
+<section class="projects-page">
+	<h1>Project Workflow Dashboard</h1>
+	<p class="subtitle">
+		Create and manage projects, assign delegated project managers, and attach datasets under each project.
+	</p>
+
+	{#if loading}
+		<p>Loading project workspace...</p>
+	{:else}
+		{#if error}<p class="error">{error}</p>{/if}
+		{#if message}<p class="message">{message}</p>{/if}
+
+		<div class="grid">
+			<div class="panel">
+				<div class="panel-header">
+					<h2>Projects</h2>
+					<button type="button" on:click={resetProjectForm}>New project</button>
+				</div>
+				<ul class="project-list">
+					{#each projects as project}
+						<li>
+							<button
+								type="button"
+								class:selected={selectedProjectId === project.id}
+								on:click={() => selectProject(project)}
+							>
+								<strong>{project.short_title}</strong>
+								<span>{project.owner_username}</span>
+							</button>
+						</li>
+					{/each}
+				</ul>
+			</div>
+
+			<div class="panel">
+				<h2>{selectedProject ? 'Edit Project' : 'Create Project'}</h2>
+				<div class="form-grid">
+					<label>Short title<input bind:value={projectForm.short_title} /></label>
+					<label>Full title<input bind:value={projectForm.full_title} /></label>
+					<label>NYBG PI name<input bind:value={projectForm.nybg_pi_name} /></label>
+					<label>External PI name<input bind:value={projectForm.external_pi_name} /></label>
+					<label>Contact email<input type="email" bind:value={projectForm.contact_email} required /></label>
+					<label>Start date<input type="date" bind:value={projectForm.start_date} /></label>
+					<label>End date<input type="date" bind:value={projectForm.end_date} /></label>
+					<label>
+						Lead institution
+						<select bind:value={projectForm.lead_institution}>
+							<option value={undefined}>Select institution</option>
+							{#each organizations as org}
+								<option value={org.id}>{org.name}</option>
+							{/each}
+						</select>
+					</label>
+					<label>External URL<input type="url" bind:value={projectForm.external_url} /></label>
+					<label>Collection frequency<input bind:value={projectForm.collection_frequency} /></label>
+					<label>Update frequency<input bind:value={projectForm.update_frequency} /></label>
+					<label>
+						Organization
+						<select bind:value={projectForm.organization}>
+							{#each organizations as org}
+								<option value={org.id}>{org.name}</option>
+							{/each}
+						</select>
+					</label>
+					<label class="checkbox">
+						<input type="checkbox" bind:checked={projectForm.shared_publicly} />
+						Shared publicly
+					</label>
+					<p class="field-note">
+						If enabled, this project can be shown on the public Thain Family Forest website.
+					</p>
+					<label class="checkbox">
+						<input type="checkbox" bind:checked={projectForm.ongoing} />
+						Ongoing
+					</label>
+				</div>
+				<div class="organization-creator">
+					<label>
+						Add new organization/institution
+						<input placeholder="Organization name" bind:value={newOrganizationName} />
+					</label>
+					<label>
+						Organization contact email (optional)
+						<input type="email" placeholder="contact@example.org" bind:value={newOrganizationContactEmail} />
+					</label>
+					<button
+						type="button"
+						on:click={addOrganizationOption}
+						disabled={creatingOrganization || !newOrganizationName.trim()}
+					>
+						{creatingOrganization ? 'Adding...' : 'Add organization'}
+					</button>
+				</div>
+				<label class="full-width">
+					Institutional partners (comma separated)
+					<input
+						value={projectForm.institutional_partners?.join(', ') ?? ''}
+						on:input={(event) =>
+							(projectForm.institutional_partners = event.currentTarget.value
+								.split(',')
+								.map((item) => item.trim())
+								.filter(Boolean))}
+					/>
+				</label>
+				<label class="full-width">
+					Last updated note
+					<textarea rows="2" bind:value={projectForm.last_updated_note}></textarea>
+				</label>
+				{#if !selectedProject}
+					<div class="initial-dataset">
+						<div class="upload-choice">
+							<label>
+								<input
+									type="radio"
+									name="data-upload-choice"
+									value="upload_now"
+									checked={dataUploadChoice === 'upload_now'}
+									on:change={() => (dataUploadChoice = 'upload_now')}
+								/>
+								I'd like to upload associated data
+							</label>
+							<label>
+								<input
+									type="radio"
+									name="data-upload-choice"
+									value="upload_later"
+									checked={dataUploadChoice === 'upload_later'}
+									on:change={() => (dataUploadChoice = 'upload_later')}
+								/>
+								I'll upload data later
+							</label>
+						</div>
+						{#if dataUploadChoice === 'upload_now'}
+							<div class="dataset-form">
+								<input placeholder="Initial dataset title" bind:value={datasetForm.title} />
+								<textarea
+									rows="2"
+									placeholder="Initial dataset description"
+									bind:value={datasetForm.description}
+								></textarea>
+								<div class="inline">
+									<select bind:value={datasetForm.cadence}>
+										<option value="annual">Annual</option>
+										<option value="one_off">One-off</option>
+										<option value="continuous">Continuous</option>
+									</select>
+									<select bind:value={datasetForm.status}>
+										<option value="draft">Draft</option>
+										<option value="active">Active</option>
+										<option value="archived">Archived</option>
+									</select>
+								</div>
+								<label class="checkbox">
+									<input type="checkbox" bind:checked={datasetForm.expose_on_public_api} />
+									Expose this dataset via website API
+								</label>
+							</div>
+						{/if}
+					</div>
+				{/if}
+				<div class="actions">
+					<button
+						type="button"
+						on:click={saveProject}
+						disabled={savingProject || !projectForm.short_title || !projectForm.contact_email}
+					>
+						{savingProject ? 'Saving...' : selectedProject ? 'Save changes' : 'Create project'}
+					</button>
+				</div>
+			</div>
+		</div>
+
+		{#if selectedProject}
+			<div class="grid lower">
+				<div class="panel">
+					<h2>Project Managers</h2>
+					<p class="hint">
+						Project owner and NYBG internal admins can add delegated managers who can edit this project.
+					</p>
+					<div class="manager-input">
+						<input placeholder="username" bind:value={managerUsername} />
+						<button type="button" on:click={handleAddManager}>Add</button>
+					</div>
+					<ul class="manager-list">
+						{#each selectedProject.managers ?? [] as manager}
+							<li>
+								<span>{manager.username}</span>
+								<button type="button" on:click={() => handleRemoveManager(manager.user)}>Remove</button>
+							</li>
+						{/each}
+					</ul>
+				</div>
+
+				<div class="panel">
+					<h2>Datasets for {selectedProject.short_title}</h2>
+					<p class="upload-governance">
+						<strong>Upload governance:</strong> Upload files up to 100 MB. For 100 MB-1 GB, links are
+						preferred. Files above 1 GB must be provided as an external link. Publications may be uploaded
+						or linked via DOI/URL.
+					</p>
+					<div class="dataset-form">
+						<input placeholder="Dataset title" bind:value={datasetForm.title} />
+						<textarea rows="2" placeholder="Dataset description" bind:value={datasetForm.description}></textarea>
+						<div class="inline">
+							<select bind:value={datasetForm.cadence}>
+								<option value="annual">Annual</option>
+								<option value="one_off">One-off</option>
+								<option value="continuous">Continuous</option>
+							</select>
+							<select bind:value={datasetForm.status}>
+								<option value="draft">Draft</option>
+								<option value="active">Active</option>
+								<option value="archived">Archived</option>
+							</select>
+						</div>
+						<label class="checkbox">
+							<input type="checkbox" bind:checked={datasetForm.expose_on_public_api} />
+							Expose this dataset via website API
+						</label>
+						<button
+							type="button"
+							on:click={addDatasetToProject}
+							disabled={addingDataset || !datasetForm.title}
+						>
+							{addingDataset ? 'Adding...' : 'Add dataset'}
+						</button>
+					</div>
+					<ul class="dataset-list">
+						{#if visibleDatasets.length === 0}
+							<li>No datasets linked yet.</li>
+						{:else}
+							{#each visibleDatasets as dataset}
+								<li>{dataset.title}</li>
+							{/each}
+						{/if}
+					</ul>
+				</div>
+			</div>
+		{/if}
+	{/if}
+</section>
+
+<style>
+	.projects-page {
+		max-width: 1300px;
+		margin: 2rem auto;
+		padding: 0 1rem 2rem;
+		font-family: 'GT Super Regular', serif;
+	}
+
+	h1 {
+		font-family: 'NY Botanical Gothic', serif;
+		font-size: clamp(1.5rem, 2.5vw, 2.2rem);
+		margin: 0 0 0.4rem;
+	}
+
+	.subtitle {
+		margin-top: 0;
+		color: #333;
+	}
+
+	.grid {
+		display: grid;
+		grid-template-columns: 1fr 2fr;
+		gap: 1rem;
+	}
+
+	.lower {
+		margin-top: 1rem;
+		grid-template-columns: 1fr 1fr;
+	}
+
+	.panel {
+		background: #fff;
+		border: 1px solid rgba(0, 0, 0, 0.15);
+		padding: 1rem;
+	}
+
+	.panel-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.project-list,
+	.manager-list,
+	.dataset-list {
+		list-style: none;
+		padding: 0;
+		margin: 0.7rem 0 0;
+	}
+
+	.project-list button {
+		width: 100%;
+		text-align: left;
+		padding: 0.6rem;
+		border: 1px solid rgba(0, 0, 0, 0.15);
+		background: #fff;
+		margin-bottom: 0.5rem;
+		display: flex;
+		justify-content: space-between;
+	}
+
+	.project-list button.selected {
+		background: rgba(200, 181, 0, 0.15);
+	}
+
+	.form-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.6rem;
+	}
+
+	label {
+		display: grid;
+		gap: 0.2rem;
+		font-size: 0.92rem;
+	}
+
+	.full-width {
+		margin-top: 0.6rem;
+	}
+
+	input,
+	textarea,
+	select {
+		padding: 0.45rem;
+		font: inherit;
+		border: 1px solid rgba(0, 0, 0, 0.2);
+	}
+
+	.checkbox {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+	}
+
+	.actions,
+	.manager-input {
+		margin-top: 0.75rem;
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.initial-dataset {
+		margin-top: 0.9rem;
+		padding-top: 0.8rem;
+		border-top: 1px solid rgba(0, 0, 0, 0.08);
+	}
+
+	.upload-choice {
+		display: grid;
+		gap: 0.4rem;
+	}
+
+	.upload-choice label {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+	}
+
+	.organization-creator {
+		margin-top: 0.8rem;
+		padding: 0.7rem;
+		border: 1px dashed rgba(0, 0, 0, 0.2);
+		display: grid;
+		gap: 0.45rem;
+	}
+
+	.field-note {
+		margin: 0;
+		font-size: 0.85rem;
+		color: #444;
+	}
+
+	.dataset-form {
+		margin-top: 0.45rem;
+		display: grid;
+		gap: 0.45rem;
+	}
+
+	.inline {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.45rem;
+	}
+
+	button {
+		padding: 0.45rem 0.7rem;
+		border: 1px solid rgba(0, 0, 0, 0.2);
+		background: #fff;
+		cursor: pointer;
+	}
+
+	.manager-list li,
+	.dataset-list li {
+		padding: 0.45rem 0;
+		border-top: 1px solid rgba(0, 0, 0, 0.08);
+		display: flex;
+		justify-content: space-between;
+	}
+
+	.upload-governance {
+		font-size: 0.92rem;
+		line-height: 1.5;
+		padding: 0.6rem;
+		background: rgba(34, 80, 34, 0.08);
+		border-left: 3px solid #1f4d1f;
+	}
+
+	.hint {
+		font-size: 0.9rem;
+		color: #444;
+	}
+
+	.error {
+		background: #ffe7e7;
+		border: 1px solid #ffb7b7;
+		padding: 0.6rem;
+	}
+
+	.message {
+		background: #e8f8e8;
+		border: 1px solid #b7dcb7;
+		padding: 0.6rem;
+	}
+
+	@media (max-width: 980px) {
+		.grid,
+		.lower {
+			grid-template-columns: 1fr;
+		}
+
+		.form-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

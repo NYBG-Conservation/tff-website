@@ -5,5 +5,5 @@ from .models import Organization
 
 @admin.register(Organization)
 class OrganizationAdmin(admin.ModelAdmin):
-    list_display = ("name", "website_url")
-    search_fields = ("name",)
+    list_display = ("name", "contact_email", "website_url")
+    search_fields = ("name", "contact_email")

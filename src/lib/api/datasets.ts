@@ -30,6 +30,7 @@ export type Dataset = {
 		| 'biodiversity_observation'
 		| 'document_archive';
 	project_id?: string;
+	project?: number;
 	organization: number;
 	owner: number;
 	owner_username?: string;
@@ -39,6 +40,9 @@ export type Dataset = {
 	data_collection_start?: string;
 	data_collection_end?: string;
 	projected_project_end_date?: string;
+	expose_on_public_api?: boolean;
+	created_at?: string;
+	updated_at?: string;
 	metadata_fields: MetadataField[];
 	resolved_metadata_values?: Array<{
 		field_key: string;
@@ -53,6 +57,17 @@ export type Dataset = {
 		publication_year?: number;
 		notes?: string;
 		attachment?: string;
+		expose_on_public_api?: boolean;
+	}>;
+	files?: Array<{
+		id?: number;
+		file?: string;
+		file_name: string;
+		file_kind?: 'primary_data' | 'documentation' | 'code' | 'derived_output' | 'image_media' | 'other';
+		content_type?: string;
+		version?: number;
+		notes?: string;
+		expose_on_public_api?: boolean;
 	}>;
 };
 

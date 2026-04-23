@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.accounts.models import UserProfile
-from apps.datasets.models import Dataset
+from apps.datasets.models import Dataset, Project, ProjectManager
 from apps.organizations.models import Organization
 
 
@@ -92,3 +92,94 @@ class DatasetMetadataValidationTests(APITestCase):
         response = self.client.post(reverse("dataset-list-create"), payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("metadata_values", response.data)
+
+
+class ProjectApiPermissionTests(APITestCase):
+    def setUp(self):
+        self.nybg_org = Organization.objects.create(name="New York Botanical Garden")
+        self.other_org = Organization.objects.create(name="Other Org")
+        self.internal_user = User.objects.create_user(username="internal_project", password="pass12345")
+        self.owner_user = User.objects.create_user(username="owner_user", password="pass12345")
+        self.manager_user = User.objects.create_user(username="manager_user", password="pass12345")
+        self.unrelated_user = User.objects.create_user(username="unrelated_user", password="pass12345")
+
+        self.internal_user.profile.role = UserProfile.Role.INTERNAL_ADMIN
+        self.internal_user.profile.save()
+
+        self.project_nybg = Project.objects.create(
+            short_title="NYBG Project",
+            nybg_pi_name="John",
+            contact_email="john@nybg.org",
+            organization=self.nybg_org,
+            owner=self.owner_user,
+        )
+        self.project_other_org = Project.objects.create(
+            short_title="Other Project",
+            nybg_pi_name="Brad",
+            contact_email="brad@example.org",
+            organization=self.other_org,
+            owner=self.owner_user,
+        )
+        ProjectManager.objects.create(project=self.project_nybg, user=self.manager_user, added_by=self.owner_user)
+
+    def test_internal_admin_only_sees_nybg_projects(self):
+        self.client.force_authenticate(self.internal_user)
+        response = self.client.get(reverse("project-list-create"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ids = [item["id"] for item in response.data]
+        self.assertIn(self.project_nybg.id, ids)
+        self.assertNotIn(self.project_other_org.id, ids)
+
+    def test_owner_and_manager_visibility(self):
+        self.client.force_authenticate(self.owner_user)
+        owner_response = self.client.get(reverse("project-list-create"))
+        self.assertEqual(owner_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(owner_response.data), 2)
+
+        self.client.force_authenticate(self.manager_user)
+        manager_response = self.client.get(reverse("project-list-create"))
+        self.assertEqual(manager_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(manager_response.data), 1)
+        self.assertEqual(manager_response.data[0]["id"], self.project_nybg.id)
+
+    def test_unrelated_user_cannot_edit_project(self):
+        self.client.force_authenticate(self.unrelated_user)
+        response = self.client.patch(
+            reverse("project-retrieve-update", kwargs={"pk": self.project_nybg.id}),
+            {"short_title": "Nope"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_owner_can_add_and_remove_project_manager(self):
+        self.client.force_authenticate(self.owner_user)
+        add_response = self.client.post(
+            reverse("project-manager-add", kwargs={"pk": self.project_other_org.id}),
+            {"username": self.unrelated_user.username},
+            format="json",
+        )
+        self.assertEqual(add_response.status_code, status.HTTP_201_CREATED)
+
+        remove_response = self.client.delete(
+            reverse(
+                "project-manager-remove",
+                kwargs={"pk": self.project_other_org.id, "user_id": self.unrelated_user.id},
+            )
+        )
+        self.assertEqual(remove_response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_project_create_defaults_owner(self):
+        self.client.force_authenticate(self.owner_user)
+        payload = {
+            "short_title": "Created Project",
+            "nybg_pi_name": "Eve",
+            "contact_email": "eve@example.org",
+            "organization": self.other_org.id,
+            "shared_publicly": True,
+            "collection_frequency": "annual",
+            "update_frequency": "annual",
+        }
+        response = self.client.post(reverse("project-list-create"), payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        project = Project.objects.get(id=response.data["id"])
+        self.assertEqual(project.owner_id, self.owner_user.id)

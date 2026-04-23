@@ -1,7 +1,16 @@
+from django.contrib.auth.models import User
 from django.db import transaction
 from rest_framework import serializers
 
-from .models import Dataset, DatasetFile, DatasetMetadataValue, DatasetPublication, MetadataFieldDefinition
+from .models import (
+    Dataset,
+    DatasetFile,
+    DatasetMetadataValue,
+    DatasetPublication,
+    MetadataFieldDefinition,
+    Project,
+    ProjectManager,
+)
 
 
 FIELD_TYPE_CHOICES = [choice for choice, _ in MetadataFieldDefinition.FieldType.choices]
@@ -63,6 +72,7 @@ class DatasetFileSerializer(serializers.ModelSerializer):
             "uploaded_by_username",
             "uploaded_at",
             "notes",
+            "expose_on_public_api",
         )
         read_only_fields = ("uploaded_by", "version", "uploaded_at")
 
@@ -79,6 +89,7 @@ class DatasetPublicationSerializer(serializers.ModelSerializer):
             "publication_year",
             "notes",
             "attachment",
+            "expose_on_public_api",
             "created_at",
             "updated_at",
         )
@@ -92,6 +103,7 @@ class DatasetSerializer(serializers.ModelSerializer):
     files = DatasetFileSerializer(many=True, read_only=True)
     publications = DatasetPublicationSerializer(many=True, required=False)
     owner_username = serializers.CharField(source="owner.username", read_only=True)
+    project_id = serializers.SlugField(source="project_slug", required=False, allow_blank=True)
 
     class Meta:
         model = Dataset
@@ -103,6 +115,7 @@ class DatasetSerializer(serializers.ModelSerializer):
             "status",
             "data_type",
             "project_id",
+            "project",
             "owner",
             "owner_username",
             "organization",
@@ -111,6 +124,7 @@ class DatasetSerializer(serializers.ModelSerializer):
             "data_collection_start",
             "data_collection_end",
             "projected_project_end_date",
+            "expose_on_public_api",
             "metadata_schema_version",
             "metadata_fields",
             "metadata_values",
@@ -214,3 +228,78 @@ class DatasetSerializer(serializers.ModelSerializer):
 class FieldTypeSerializer(serializers.Serializer):
     value = serializers.ChoiceField(choices=FIELD_TYPE_CHOICES)
     label = serializers.CharField()
+
+
+class ProjectManagerSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source="user.username", read_only=True)
+    added_by_username = serializers.CharField(source="added_by.username", read_only=True)
+
+    class Meta:
+        model = ProjectManager
+        fields = ("id", "user", "username", "added_by", "added_by_username", "created_at")
+        read_only_fields = ("added_by", "created_at")
+
+
+class ProjectSerializer(serializers.ModelSerializer):
+    owner_username = serializers.CharField(source="owner.username", read_only=True)
+    managers = ProjectManagerSerializer(source="project_managers", many=True, read_only=True)
+    lead_institution_name = serializers.CharField(source="lead_institution.name", read_only=True)
+
+    class Meta:
+        model = Project
+        fields = (
+            "id",
+            "short_title",
+            "full_title",
+            "nybg_pi_name",
+            "external_pi_name",
+            "shared_publicly",
+            "start_date",
+            "end_date",
+            "ongoing",
+            "lead_institution",
+            "lead_institution_name",
+            "contact_email",
+            "external_url",
+            "institutional_partners",
+            "collection_frequency",
+            "update_frequency",
+            "last_updated_note",
+            "organization",
+            "owner",
+            "owner_username",
+            "managers",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = ("created_at", "updated_at", "owner_username", "lead_institution_name")
+        extra_kwargs = {"owner": {"required": False}}
+
+    def validate(self, attrs):
+        start = attrs.get("start_date", getattr(self.instance, "start_date", None))
+        end = attrs.get("end_date", getattr(self.instance, "end_date", None))
+        ongoing = attrs.get("ongoing", getattr(self.instance, "ongoing", False))
+        if start and end and end < start:
+            raise serializers.ValidationError("end_date cannot be earlier than start_date")
+        if ongoing and end:
+            raise serializers.ValidationError("end_date should be empty when ongoing is true")
+        contact_email = attrs.get("contact_email", getattr(self.instance, "contact_email", ""))
+        if not contact_email:
+            raise serializers.ValidationError("contact_email is required")
+        return attrs
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        if request and not validated_data.get("owner"):
+            validated_data["owner"] = request.user
+        return Project.objects.create(**validated_data)
+
+
+class ProjectManagerAddSerializer(serializers.Serializer):
+    username = serializers.CharField()
+
+    def validate_username(self, value):
+        user = User.objects.filter(username=value).first()
+        if not user:
+            raise serializers.ValidationError("User not found.")
+        return value

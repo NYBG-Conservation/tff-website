@@ -51,6 +51,11 @@
 		including students, are welcome to conduct research in the Forest; please visit the Visiting
 		Research page for more information.
 	</p>
+	<p class="intro-paragraph">
+		<a class="admin-login-link" href="http://localhost:8000/admin/login/?next=/admin/">
+			Researcher / Admin Login
+		</a>
+	</p>
 
 	<h2 class="section-heading">Ongoing Research Projects</h2>
 
@@ -193,6 +198,30 @@
 		color: #222;
 		max-width: 1100px;
 
+	}
+
+	.admin-login-link {
+		color: #111;
+		text-decoration: none;
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+	}
+
+	.admin-login-link::after {
+		content: '';
+		position: absolute;
+		bottom: -1px;
+		left: 0;
+		width: 0;
+		height: 1.5px;
+		background-color: #111;
+		transition: width 0.22s ease;
+	}
+
+	.admin-login-link:hover::after,
+	.admin-login-link:focus-visible::after {
+		width: 100%;
 	}
 
 	.section-heading {

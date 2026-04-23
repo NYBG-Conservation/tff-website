@@ -22,6 +22,34 @@ Returns current user and role.
 ### `GET /api/organizations/`
 List organizations for dataset assignment.
 
+### `GET /api/projects/`
+List projects in caller scope.
+
+Query params:
+- `mine=true` limit to projects owned by current user
+- `organization=<id>` limit by organization
+- `shared_publicly=true|false`
+
+### `POST /api/projects/`
+Create project.
+
+### `GET /api/projects/{id}/`
+Retrieve project if in scope.
+
+### `PATCH /api/projects/{id}/`
+Update project if in scope.
+
+### `POST /api/projects/{id}/managers/`
+Add delegated project manager by username.
+
+Payload:
+```json
+{ "username": "manager_username" }
+```
+
+### `DELETE /api/projects/{id}/managers/{user_id}/`
+Remove delegated project manager.
+
 ### `GET /api/datasets/`
 List datasets in caller scope.
 
@@ -75,6 +103,7 @@ Notes:
 - `metadata_values[].field_key` must match a key from `metadata_fields`.
 - Value type must match `field_type`.
 - `project_id` is optional and links a dataset to frontend research project cards.
+- `project` is optional and links dataset to a first-class Project record.
 - `data_type` supports: `tabular`, `geospatial`, `image`, `sensor_time_series`, `biodiversity_observation`, `document_archive`.
 
 ### `GET /api/datasets/{id}/`
@@ -91,6 +120,13 @@ Upload one file version.
 - `file_kind` (optional, default `primary_data`)
 - `content_type` (optional)
 - `notes` (optional)
+
+## Upload Governance Policy
+
+- `<= 100 MB`: uploads allowed.
+- `100 MB to 1 GB`: uploads allowed, but external links are preferred.
+- `> 1 GB`: external link required for dataset assets.
+- Publications can be provided as uploaded attachment or external URL/DOI.
 
 ### `GET /api/metadata/field-types/`
 Returns available metadata field types.

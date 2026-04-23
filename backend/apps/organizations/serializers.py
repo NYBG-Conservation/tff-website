@@ -6,4 +6,4 @@ from .models import Organization
 class OrganizationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Organization
-        fields = ("id", "name", "website_url", "description")
+        fields = ("id", "name", "contact_email", "website_url", "description")

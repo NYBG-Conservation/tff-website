@@ -1,8 +1,17 @@
 from django.contrib import admin
+from django.db import models
 
 from apps.accounts.models import UserProfile
 
-from .models import Dataset, DatasetFile, DatasetMetadataValue, DatasetPublication, MetadataFieldDefinition
+from .models import (
+    Dataset,
+    DatasetFile,
+    DatasetMetadataValue,
+    DatasetPublication,
+    MetadataFieldDefinition,
+    Project,
+    ProjectManager,
+)
 
 
 class DatasetFileInline(admin.TabularInline):
@@ -26,11 +35,42 @@ class DatasetPublicationInline(admin.TabularInline):
     extra = 0
 
 
+class ProjectManagerInline(admin.TabularInline):
+    model = ProjectManager
+    extra = 0
+
+
+@admin.register(Project)
+class ProjectAdmin(admin.ModelAdmin):
+    list_display = ("short_title", "organization", "lead_institution", "owner", "shared_publicly", "ongoing", "updated_at")
+    list_filter = ("organization", "shared_publicly", "ongoing")
+    search_fields = ("short_title", "full_title", "nybg_pi_name", "external_pi_name", "owner__username")
+    inlines = [ProjectManagerInline]
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        profile = getattr(request.user, "profile", None)
+        if profile and profile.role == UserProfile.Role.INTERNAL_ADMIN:
+            return qs.filter(organization__name="New York Botanical Garden")
+        return qs.filter(models.Q(owner=request.user) | models.Q(managers=request.user)).distinct()
+
+
 @admin.register(Dataset)
 class DatasetAdmin(admin.ModelAdmin):
-    list_display = ("title", "project_id", "data_type", "organization", "owner", "cadence", "status", "updated_at")
+    list_display = (
+        "title",
+        "project",
+        "project_slug",
+        "data_type",
+        "expose_on_public_api",
+        "organization",
+        "owner",
+        "cadence",
+        "status",
+        "updated_at",
+    )
     list_filter = ("data_type", "cadence", "status", "organization")
-    search_fields = ("title", "project_id", "description", "owner__username")
+    search_fields = ("title", "project_slug", "description", "owner__username")
     inlines = [MetadataFieldDefinitionInline, DatasetMetadataValueInline, DatasetFileInline, DatasetPublicationInline]
 
     def get_queryset(self, request):
@@ -52,26 +92,3 @@ class DatasetAdmin(admin.ModelAdmin):
             obj.owner = request.user
         super().save_model(request, obj, form, change)
 
-
-@admin.register(DatasetFile)
-class DatasetFileAdmin(admin.ModelAdmin):
-    list_display = ("dataset", "file_name", "file_kind", "version", "uploaded_by", "uploaded_at")
-    search_fields = ("dataset__title", "file_name", "uploaded_by__username")
-
-
-@admin.register(MetadataFieldDefinition)
-class MetadataFieldDefinitionAdmin(admin.ModelAdmin):
-    list_display = ("dataset", "key", "field_type", "required", "unit")
-    search_fields = ("dataset__title", "key", "label")
-
-
-@admin.register(DatasetMetadataValue)
-class DatasetMetadataValueAdmin(admin.ModelAdmin):
-    list_display = ("dataset", "field_definition", "value")
-    search_fields = ("dataset__title", "field_definition__key")
-
-
-@admin.register(DatasetPublication)
-class DatasetPublicationAdmin(admin.ModelAdmin):
-    list_display = ("title", "dataset", "publication_year", "doi", "updated_at")
-    search_fields = ("title", "citation", "doi", "dataset__title")
