@@ -8,16 +8,24 @@
 		label: string;
 	};
 
+	const infoForLinks: NavLink[] = [
+		{ href: '/education', label: 'Teachers' },
+		{ href: '/research', label: 'Researchers' },
+		{ href: '/visit', label: 'Visitors' }
+	];
+
 	const links: NavLink[] = [
 		{ href: '/', label: 'Home' },
 		{ href: '/about', label: 'About' },
 		{ href: '/research', label: 'Research' },
 		{ href: '/education', label: 'Education' },
-		{ href: '/contact', label: 'Visit' }
+		{ href: '/visit', label: 'Visit' }
 	];
 
 	let isMenuOpen = false;
 	let isMobile = false;
+	let isInfoMenuOpen = false;
+	let infoMenuWrap: HTMLDivElement | null = null;
 
 	function isActive(href: string): boolean {
 		const currentPath = $page.url.pathname;
@@ -35,6 +43,15 @@
 		isMenuOpen = false;
 	}
 
+	function toggleInfoMenu(event: MouseEvent) {
+		event.stopPropagation();
+		isInfoMenuOpen = !isInfoMenuOpen;
+	}
+
+	function closeInfoMenu() {
+		isInfoMenuOpen = false;
+	}
+
 	function checkMobile() {
 		if (typeof window !== 'undefined') {
 			isMobile = window.innerWidth < 768;
@@ -45,11 +62,20 @@
 	}
 
 	onMount(() => {
+		const handleOutsideClick = (event: MouseEvent) => {
+			const target = event.target as Node;
+			if (infoMenuWrap && !infoMenuWrap.contains(target)) {
+				closeInfoMenu();
+			}
+		};
+
 		checkMobile();
 		if (typeof window !== 'undefined') {
 			window.addEventListener('resize', checkMobile);
+			window.addEventListener('click', handleOutsideClick);
 			return () => {
 				window.removeEventListener('resize', checkMobile);
+				window.removeEventListener('click', handleOutsideClick);
 			};
 		}
 	});
@@ -57,7 +83,24 @@
 
 <nav>
 	<div class="utility-bar">
-		<a href="/about" class="utility-link">INFO FOR ▾</a>
+		<div class="utility-dropdown" bind:this={infoMenuWrap}>
+			<button
+				type="button"
+				class="utility-link utility-dropdown-button"
+				on:click={toggleInfoMenu}
+				aria-expanded={isInfoMenuOpen}
+				aria-haspopup="true"
+			>
+				INFO FOR ▾
+			</button>
+			{#if isInfoMenuOpen}
+				<div class="utility-dropdown-menu">
+					{#each infoForLinks as link}
+						<a href={link.href} on:click={closeInfoMenu}>{link.label}</a>
+					{/each}
+				</div>
+			{/if}
+		</div>
 		<a href="/" class="logo-link" on:click={closeMenu}>
 			<span class="logo">NYBG</span>
 			<span class="tagline">THAIN FAMILY FOREST</span>
@@ -107,11 +150,46 @@
 	}
 
 	.utility-link {
-		text-decoration: none;
 		color: #111;
 		font-size: 0.85rem;
 		letter-spacing: 0.02em;
 		justify-self: start;
+		font-family: inherit;
+	}
+
+	.utility-dropdown {
+		position: relative;
+		justify-self: start;
+	}
+
+	.utility-dropdown-button {
+		background: transparent;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+	}
+
+	.utility-dropdown-menu {
+		position: absolute;
+		top: calc(100% + 0.35rem);
+		left: 0;
+		min-width: 9.5rem;
+		background: #fff;
+		border: 1px solid rgba(0, 0, 0, 0.18);
+		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+		z-index: 1100;
+		display: grid;
+	}
+
+	.utility-dropdown-menu a {
+		text-decoration: none;
+		color: #111;
+		padding: 0.55rem 0.75rem;
+		font-size: 0.9rem;
+	}
+
+	.utility-dropdown-menu a:hover {
+		background: rgba(200, 181, 0, 0.12);
 	}
 
 	.logo-link {

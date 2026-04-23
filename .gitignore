@@ -24,3 +24,9 @@ vite.config.ts.timestamp-*
 
 .vercel
 .env*.local
+backend/.env
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.sqlite3
+backend/staticfiles/
+backend/media/
