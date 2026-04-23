@@ -1,0 +1,4 @@
+static/data/blue-zones/**/*.json filter=lfs diff=lfs merge=lfs -text
+static/data/blue-zones/**/*.geojson filter=lfs diff=lfs merge=lfs -text
+static/data/blue-zones/**/*.pbf filter=lfs diff=lfs merge=lfs -text
+static/data/blue-zones/** filter=lfs diff=lfs merge=lfs -text
