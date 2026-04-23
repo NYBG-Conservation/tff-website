@@ -17,7 +17,7 @@ from .serializers import (
 
 def scoped_datasets_for_user(user):
     qs = Dataset.objects.select_related("owner", "organization").prefetch_related(
-        "metadata_fields", "metadata_values", "files"
+        "metadata_fields", "metadata_values", "files", "publications"
     )
     if is_internal_admin(user):
         return qs

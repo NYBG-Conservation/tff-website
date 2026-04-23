@@ -1,94 +1,31 @@
 <script lang="ts">
-	import Profiles from '$lib/components/Profile.svelte';
-
 	// Load all partner logos from assets (png, jpg, jpeg, svg, gif, webp)
 	const logoModules = import.meta.glob<string>(
 		'$lib/assets/partner-logos/*.{png,jpg,jpeg,svg,gif,webp}',
 		{ eager: true, query: '?url', import: 'default' }
 	);
 
-	const partnerLogos = $derived(
-		Object.entries(logoModules).map(([path, mod]) => {
-			const name = path.split('/').pop()?.replace(/\.[^.]+$/, '') ?? 'Partner';
-			const url = typeof mod === 'string' ? mod : (mod as { default: string })?.default;
-			return { name, url };
-		}).filter((p): p is { name: string; url: string } => Boolean(p.url))
-	);
-
-	// Partner website URLs (logo name -> link). Add or update as needed.
-	const partnerLinks: Record<string, string> = {
-		BxRAlliance: 'https://bronxriver.org/',
-		CALL: 'https://www.cityaslivinglab.org/',
-		DEP: 'https://www.nyc.gov/dep',
-		StemTeachersNYC: 'https://stemteachersnyc.org'
-	};
-
-	interface Section {
-		title: string;
-		content: string[];
-	}
-
-	interface AboutContent {
-		intro: string[];
-		sections: Section[];
-	}
-
-	const aboutContent: AboutContent = {
-		intro: [
-			'We leverage scientific and public platforms to propose solutions to pressing environmental challenges, creating digital resources for communities, educators, and researchers along the way. Our work is guided by the <a href="https://www.nybg.org/plant-research-and-conservation/science-strategy/">NYBG Science Strategy</a>.',
-			'By partnering with local communities, government agencies, and other organizations, we develop and convey the understanding necessary to adapt cities to a changing climate. Through education and exhibitions, we express the complex and affirming ways that fostering nature improves cities and the planet, while collaborating to build and sustain communities that create and affirm ecologies in cities and elsewhere.',
-		
-		],
-		sections: [
-			{
-				title: 'Our Vision',
-				content: [
-					'A future where cities are shaped by nature, fostering resilience and adaptation to climate change and urbanization. Historical ecology becomes a core lens for planning and policy, embraced by communities and integrated into everyday thinking. People and nature thrive together in mutual interdependence, creating livable cities that center nature and connect people to their urban environment.'
-				]
-			},
-			{
-				title: 'Our Mission',
-				content: [
-					'Our mission is to reconnect urban communities with nature by integrating historical ecology into planning, policy, and public awareness. We work to create resilient, livable cities where people and nature thrive together, fostering adaptation to climate change and urbanization through education, tools, and collaborative action.'
-				]
-			}
-		]
-	};
 
 </script>
 
-<div class="our-approach">
-	<h2>Our Approach</h2>
-	{#each aboutContent.intro as paragraph}
-		<p>{@html paragraph}</p>
-	{/each}
-</div>
+<!-- <h2>About the Forest</h2> -->
+<p>
+	For thousands of years, this old-growth Forest has changed, adapted and survived. When you visit the
+	Forest, you will walk along Native American hunting trails, see marks left by glaciers, and pass under
+	trees dating back to the American Revolution. The unique beauty and ecological importance of the forest
+	are one of the reasons why the founders selected this site for The New York Botanical Garden in 1895.
+</p>
+<p>
+	Today this is the largest uncut expanse of New York's original wooded landscape. The Forest remains a
+	magnificent reminder of the beauty and resilience of nature in the face of complex human-caused
+	disturbances. To preserve the Forest for future generations the Garden manages invasive species, plants
+	native plants, and performs research.
+</p>
+<p>
+	Download the Thain Family Forest Program 2008-2025 to learn more about ongoing forest restoration,
+	education, and research.
+</p>
 
-{#each aboutContent.sections as section}
-	<h2>{section.title}</h2>
-	{#each section.content as paragraph}
-		<p>{paragraph}</p>
-	{/each}
-{/each}
-
-<h2>The team</h2>
-<Profiles />
-
-
-<h2>Our Partners</h2>
-<div class="partners-grid">
-	{#each partnerLogos as { name, url }}
-		<div class="partner-logo">
-			{#if partnerLinks[name]}
-				<a href={partnerLinks[name]} target="_blank" rel="noopener noreferrer" title={name}>
-					<img src={url} alt={name} />
-				</a>
-			{:else}
-				<img src={url} alt={name} />
-			{/if}
-		</div>
-	{/each}
-</div>
 
 <style>
 	p {

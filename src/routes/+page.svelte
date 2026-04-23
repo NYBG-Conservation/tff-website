@@ -25,7 +25,7 @@
 
 <CustomHero heroImage={data.announcements?.[0]?.image} />
 <div class="homepage-content">
-	<h2 class="feature-heading">What's new in the forest?</h2>
+	<h2 class="feature-heading">Forest highlights</h2>
 	<section class="feature-grid">
 		{#if featureCards.length > 0}
 			{#each featureCards as card}

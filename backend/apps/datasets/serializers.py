@@ -1,7 +1,7 @@
 from django.db import transaction
 from rest_framework import serializers
 
-from .models import Dataset, DatasetFile, DatasetMetadataValue, MetadataFieldDefinition
+from .models import Dataset, DatasetFile, DatasetMetadataValue, DatasetPublication, MetadataFieldDefinition
 
 
 FIELD_TYPE_CHOICES = [choice for choice, _ in MetadataFieldDefinition.FieldType.choices]
@@ -57,6 +57,7 @@ class DatasetFileSerializer(serializers.ModelSerializer):
             "file",
             "file_name",
             "content_type",
+            "file_kind",
             "version",
             "uploaded_by",
             "uploaded_by_username",
@@ -66,11 +67,30 @@ class DatasetFileSerializer(serializers.ModelSerializer):
         read_only_fields = ("uploaded_by", "version", "uploaded_at")
 
 
+class DatasetPublicationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DatasetPublication
+        fields = (
+            "id",
+            "title",
+            "citation",
+            "doi",
+            "url",
+            "publication_year",
+            "notes",
+            "attachment",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = ("created_at", "updated_at")
+
+
 class DatasetSerializer(serializers.ModelSerializer):
     metadata_fields = MetadataFieldDefinitionSerializer(many=True, required=False)
     metadata_values = DatasetMetadataValueInputSerializer(many=True, required=False, write_only=True)
     resolved_metadata_values = DatasetMetadataValueSerializer(source="metadata_values", many=True, read_only=True)
     files = DatasetFileSerializer(many=True, read_only=True)
+    publications = DatasetPublicationSerializer(many=True, required=False)
     owner_username = serializers.CharField(source="owner.username", read_only=True)
 
     class Meta:
@@ -81,6 +101,8 @@ class DatasetSerializer(serializers.ModelSerializer):
             "description",
             "cadence",
             "status",
+            "data_type",
+            "project_id",
             "owner",
             "owner_username",
             "organization",
@@ -94,6 +116,7 @@ class DatasetSerializer(serializers.ModelSerializer):
             "metadata_values",
             "resolved_metadata_values",
             "files",
+            "publications",
             "created_at",
             "updated_at",
         )
@@ -111,6 +134,7 @@ class DatasetSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         metadata_fields = validated_data.pop("metadata_fields", [])
         metadata_values = validated_data.pop("metadata_values", [])
+        publications = validated_data.pop("publications", [])
 
         request = self.context.get("request")
         if request and not validated_data.get("owner"):
@@ -133,12 +157,16 @@ class DatasetSerializer(serializers.ModelSerializer):
             DatasetMetadataValue.objects.create(
                 dataset=dataset, field_definition=field_definition, value=value_payload["value"]
             )
+
+        for publication_payload in publications:
+            DatasetPublication.objects.create(dataset=dataset, **publication_payload)
         return dataset
 
     @transaction.atomic
     def update(self, instance, validated_data):
         metadata_fields = validated_data.pop("metadata_fields", None)
         metadata_values = validated_data.pop("metadata_values", None)
+        publications = validated_data.pop("publications", None)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -175,6 +203,11 @@ class DatasetSerializer(serializers.ModelSerializer):
                 DatasetMetadataValue.objects.create(
                     dataset=instance, field_definition=field_obj, value=value_payload["value"]
                 )
+
+        if publications is not None:
+            instance.publications.all().delete()
+            for publication_payload in publications:
+                DatasetPublication.objects.create(dataset=instance, **publication_payload)
         return instance
 
 

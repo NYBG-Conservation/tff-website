@@ -31,3 +31,26 @@
 - `/api/metadata/field-types/`
 - `/api/accounts/me/`
 - `/api/organizations/`
+
+## Docker Compose (Django + Postgres)
+
+From repo root:
+
+1. Build and start services:
+   - `docker compose up --build -d`
+2. Run migrations inside the backend container:
+   - `docker compose exec backend python backend/manage.py migrate`
+3. Create a superuser:
+   - `docker compose exec backend python backend/manage.py createsuperuser`
+4. View logs:
+   - `docker compose logs -f backend`
+
+Service URLs:
+- Backend API: `http://localhost:8000`
+- Postgres: `localhost:5432` (`postgres/postgres`, db `tff_db`)
+
+Stop services:
+- `docker compose down`
+
+Stop and remove DB volume (fresh database reset):
+- `docker compose down -v`

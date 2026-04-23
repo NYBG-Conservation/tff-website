@@ -22,6 +22,14 @@ export type Dataset = {
 	description: string;
 	cadence: 'annual' | 'one_off' | 'continuous';
 	status: 'draft' | 'active' | 'archived';
+	data_type?:
+		| 'tabular'
+		| 'geospatial'
+		| 'image'
+		| 'sensor_time_series'
+		| 'biodiversity_observation'
+		| 'document_archive';
+	project_id?: string;
 	organization: number;
 	owner: number;
 	owner_username?: string;
@@ -35,6 +43,16 @@ export type Dataset = {
 	resolved_metadata_values?: Array<{
 		field_key: string;
 		value: unknown;
+	}>;
+	publications?: Array<{
+		id?: number;
+		title: string;
+		citation?: string;
+		doi?: string;
+		url?: string;
+		publication_year?: number;
+		notes?: string;
+		attachment?: string;
 	}>;
 };
 

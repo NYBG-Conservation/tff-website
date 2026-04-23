@@ -6,6 +6,14 @@ from apps.organizations.models import Organization
 
 
 class Dataset(models.Model):
+    class DataType(models.TextChoices):
+        TABULAR = "tabular", "Tabular"
+        GEOSPATIAL = "geospatial", "Geospatial"
+        IMAGE = "image", "Image"
+        SENSOR_TIME_SERIES = "sensor_time_series", "Sensor Time Series"
+        BIODIVERSITY_OBSERVATION = "biodiversity_observation", "Biodiversity Observation"
+        DOCUMENT_ARCHIVE = "document_archive", "Document Archive"
+
     class Cadence(models.TextChoices):
         ANNUAL = "annual", "Annual"
         ONE_OFF = "one_off", "One Off"
@@ -20,6 +28,12 @@ class Dataset(models.Model):
     description = models.TextField(blank=True)
     cadence = models.CharField(max_length=20, choices=Cadence.choices)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    data_type = models.CharField(max_length=40, choices=DataType.choices, default=DataType.TABULAR)
+    project_id = models.SlugField(
+        max_length=120,
+        blank=True,
+        help_text="Optional frontend/backoffice project identifier for linking research cards and datasets.",
+    )
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="owned_datasets")
     organization = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="datasets")
     additional_research_partners = models.JSONField(default=list, blank=True)
@@ -87,9 +101,18 @@ class DatasetMetadataValue(models.Model):
 
 
 class DatasetFile(models.Model):
+    class FileKind(models.TextChoices):
+        PRIMARY_DATA = "primary_data", "Primary Data"
+        DOCUMENTATION = "documentation", "Documentation"
+        CODE = "code", "Code"
+        DERIVED_OUTPUT = "derived_output", "Derived Output"
+        IMAGE_MEDIA = "image_media", "Image / Media"
+        OTHER = "other", "Other"
+
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name="files")
     file = models.FileField(upload_to="datasets/%Y/%m/")
     file_name = models.CharField(max_length=255)
+    file_kind = models.CharField(max_length=30, choices=FileKind.choices, default=FileKind.PRIMARY_DATA)
     content_type = models.CharField(max_length=120, blank=True)
     version = models.PositiveIntegerField(default=1)
     uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="uploaded_files")
@@ -106,4 +129,23 @@ class DatasetFile(models.Model):
             latest = DatasetFile.objects.filter(dataset=self.dataset).order_by("-version").first()
             self.version = 1 if not latest else latest.version + 1
         super().save(*args, **kwargs)
+
+
+class DatasetPublication(models.Model):
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name="publications")
+    title = models.CharField(max_length=255)
+    citation = models.TextField(blank=True)
+    doi = models.CharField(max_length=120, blank=True)
+    url = models.URLField(blank=True)
+    publication_year = models.PositiveIntegerField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+    attachment = models.FileField(upload_to="publications/%Y/%m/", blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-publication_year", "-created_at")
+
+    def __str__(self) -> str:
+        return self.title
 

@@ -18,6 +18,7 @@
 		{ href: '/', label: 'Home' },
 		{ href: '/about', label: 'About' },
 		{ href: '/research', label: 'Research' },
+		{ href: '/data', label: 'Data and Archives' },
 		{ href: '/education', label: 'Education' },
 		{ href: '/visit', label: 'Visit' }
 	];
