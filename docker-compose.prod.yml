@@ -1,0 +1,19 @@
+# EC2 production: Django container → Amazon RDS (no local Postgres container).
+# Copy backend/.env.production.example to backend/.env and fill in RDS + domain values.
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: tff-backend
+    restart: unless-stopped
+    env_file:
+      - backend/.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - media_data:/app/backend/media
+
+volumes:
+  media_data:

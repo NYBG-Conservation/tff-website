@@ -1,10 +1,14 @@
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.accounts.models import UserProfile
-from apps.datasets.models import Dataset, Project, ProjectManager
+from apps.datasets.models import Dataset, DatasetFile, Project, ProjectAlert, ProjectManager
+from apps.datasets.slug_utils import generate_unique_project_slug, slugify_project_title
 from apps.organizations.models import Organization
 
 
@@ -108,15 +112,15 @@ class ProjectApiPermissionTests(APITestCase):
 
         self.project_nybg = Project.objects.create(
             short_title="NYBG Project",
-            nybg_pi_name="John",
-            contact_email="john@nybg.org",
+            lead_name="John",
+            lead_email="john@nybg.org",
             organization=self.nybg_org,
             owner=self.owner_user,
         )
         self.project_other_org = Project.objects.create(
             short_title="Other Project",
-            nybg_pi_name="Brad",
-            contact_email="brad@example.org",
+            lead_name="Brad",
+            lead_email="brad@example.org",
             organization=self.other_org,
             owner=self.owner_user,
         )
@@ -172,8 +176,8 @@ class ProjectApiPermissionTests(APITestCase):
         self.client.force_authenticate(self.owner_user)
         payload = {
             "short_title": "Created Project",
-            "nybg_pi_name": "Eve",
-            "contact_email": "eve@example.org",
+            "lead_name": "Eve",
+            "lead_email": "eve@example.org",
             "organization": self.other_org.id,
             "shared_publicly": True,
             "collection_frequency": "annual",
@@ -183,3 +187,180 @@ class ProjectApiPermissionTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         project = Project.objects.get(id=response.data["id"])
         self.assertEqual(project.owner_id, self.owner_user.id)
+        self.assertEqual(project.slug, "created-project")
+
+
+class ProjectModelTests(TestCase):
+    def setUp(self):
+        self.organization = Organization.objects.create(name="NYBG")
+        self.owner = User.objects.create_user(username="owner", password="pass12345")
+
+    def test_project_auto_generates_slug_from_title(self):
+        project = Project.objects.create(
+            short_title="Forest Soil Cores",
+            lead_name="Brad",
+            lead_email="brad@nybg.org",
+            organization=self.organization,
+            owner=self.owner,
+        )
+        self.assertEqual(project.slug, "forest-soil-cores")
+
+    def test_slugify_strips_punctuation(self):
+        self.assertEqual(
+            slugify_project_title("2026 Continuous Forest Index!"),
+            "2026-continuous-forest-index",
+        )
+
+    def test_slug_collision_uses_numeric_suffix(self):
+        Project.objects.create(
+            short_title="Forest Soil Cores",
+            lead_name="Brad",
+            lead_email="brad@nybg.org",
+            organization=self.organization,
+            owner=self.owner,
+        )
+        second = Project.objects.create(
+            short_title="Forest Soil Cores",
+            lead_name="Eve",
+            lead_email="eve@nybg.org",
+            organization=self.organization,
+            owner=self.owner,
+        )
+        self.assertEqual(second.slug, "forest-soil-cores-1")
+
+    def test_generate_unique_slug_truncates_long_titles(self):
+        long_title = "A" * 200 + " Study"
+        slug = generate_unique_project_slug(long_title)
+        self.assertLessEqual(len(slug), 100)
+        self.assertTrue(slug.startswith("a-study") or slug.startswith("a"))
+
+    def test_only_one_active_alert_per_project_and_type(self):
+        project = Project.objects.create(
+            short_title="Overdue Study",
+            lead_name="Eve",
+            lead_email="eve@nybg.org",
+            organization=self.organization,
+            owner=self.owner,
+        )
+        now = timezone.now()
+        ProjectAlert.objects.create(
+            project=project,
+            alert_type=ProjectAlert.AlertType.MISSING_DATA_OVERDUE,
+            status=ProjectAlert.Status.ACTIVE,
+            first_triggered_at=now,
+            last_evaluated_at=now,
+        )
+        duplicate = ProjectAlert(
+            project=project,
+            alert_type=ProjectAlert.AlertType.MISSING_DATA_OVERDUE,
+            status=ProjectAlert.Status.ACTIVE,
+            first_triggered_at=now,
+            last_evaluated_at=now,
+        )
+        with self.assertRaises(ValidationError):
+            duplicate.save()
+
+        ProjectAlert.objects.create(
+            project=project,
+            alert_type=ProjectAlert.AlertType.MISSING_DATA_OVERDUE,
+            status=ProjectAlert.Status.RESOLVED,
+            first_triggered_at=now,
+            last_evaluated_at=now,
+            resolved_at=now,
+        )
+
+
+class DatasetFileModelTests(TestCase):
+    def setUp(self):
+        self.organization = Organization.objects.create(name="NYBG")
+        self.owner = User.objects.create_user(username="owner", password="pass12345")
+        self.dataset = Dataset.objects.create(
+            title="Lidar",
+            cadence=Dataset.Cadence.ONE_OFF,
+            owner=self.owner,
+            organization=self.organization,
+        )
+
+    def test_requires_file_or_external_url(self):
+        record = DatasetFile(
+            dataset=self.dataset,
+            file_name="missing",
+            uploaded_by=self.owner,
+        )
+        with self.assertRaises(ValidationError):
+            record.full_clean()
+
+
+class PublicApiTests(APITestCase):
+    def setUp(self):
+        self.organization = Organization.objects.create(name="NYBG")
+        self.owner = User.objects.create_user(username="public_owner", password="pass12345")
+        self.public_project = Project.objects.create(
+            slug="public-forest-study",
+            short_title="Public Forest Study",
+            summary="A public-facing study.",
+            description="First paragraph.\n\nSecond paragraph.",
+            hero_image="/images/home/forest-trail.png",
+            lead_name="Jane",
+            lead_email="jane@nybg.org",
+            shared_publicly=True,
+            organization=self.organization,
+            owner=self.owner,
+        )
+        self.private_project = Project.objects.create(
+            slug="private-study",
+            short_title="Private Study",
+            lead_name="John",
+            lead_email="john@nybg.org",
+            shared_publicly=False,
+            organization=self.organization,
+            owner=self.owner,
+        )
+        self.public_dataset = Dataset.objects.create(
+            title="Public Dataset",
+            cadence=Dataset.Cadence.ANNUAL,
+            status=Dataset.Status.ACTIVE,
+            owner=self.owner,
+            organization=self.organization,
+            project=self.public_project,
+            project_slug=self.public_project.slug,
+            expose_on_public_api=True,
+        )
+        Dataset.objects.create(
+            title="Draft Public Flag",
+            cadence=Dataset.Cadence.ANNUAL,
+            status=Dataset.Status.DRAFT,
+            owner=self.owner,
+            organization=self.organization,
+            project=self.public_project,
+            expose_on_public_api=True,
+        )
+        Dataset.objects.create(
+            title="Private Project Dataset",
+            cadence=Dataset.Cadence.ANNUAL,
+            status=Dataset.Status.ACTIVE,
+            owner=self.owner,
+            organization=self.organization,
+            project=self.private_project,
+            expose_on_public_api=True,
+        )
+
+    def test_public_projects_requires_no_auth(self):
+        response = self.client.get(reverse("public-project-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["slug"], "public-forest-study")
+        self.assertEqual(response.data[0]["description_paragraphs"], ["First paragraph.", "Second paragraph."])
+        self.assertEqual(response.data[0]["dataset_ids"], [str(self.public_dataset.id)])
+
+    def test_public_datasets_filters_visibility(self):
+        response = self.client.get(reverse("public-dataset-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        titles = [item["title"] for item in response.data]
+        self.assertEqual(titles, ["Public Dataset"])
+
+    def test_public_datasets_filter_by_project_slug(self):
+        response = self.client.get(reverse("public-dataset-list"), {"project": "public-forest-study"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["project_slug"], "public-forest-study")

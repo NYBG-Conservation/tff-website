@@ -31,22 +31,22 @@
 
 	let projectForm: ProjectInput = {
 		short_title: '',
+		summary: '',
+		description: '',
+		hero_image: '',
 		full_title: '',
-		nybg_pi_name: '',
-		external_pi_name: '',
+		lead_name: '',
+		lead_email: '',
 		shared_publicly: false,
 		start_date: '',
 		end_date: '',
 		ongoing: false,
-		lead_institution: undefined,
-		contact_email: '',
 		external_url: '',
 		institutional_partners: [],
 		collection_frequency: '',
 		update_frequency: '',
 		last_updated_note: '',
-		organization: 0,
-		owner: 0
+		organization: 0
 	};
 
 	let datasetForm: DatasetInput = {
@@ -101,13 +101,12 @@
 		selectedProjectId = project.id;
 		projectForm = {
 			...project,
-			institutional_partners: project.institutional_partners ?? [],
-			owner: project.owner
+			institutional_partners: project.institutional_partners ?? []
 		};
 		datasetForm = {
 			...datasetForm,
 			project: project.id,
-			project_id: project.short_title.toLowerCase().replace(/\s+/g, '-'),
+			project_id: project.slug,
 			organization: project.organization
 		};
 		message = '';
@@ -119,22 +118,22 @@
 		dataUploadChoice = 'upload_later';
 		projectForm = {
 			short_title: '',
+			summary: '',
+			description: '',
+			hero_image: '',
 			full_title: '',
-			nybg_pi_name: '',
-			external_pi_name: '',
+			lead_name: '',
+			lead_email: '',
 			shared_publicly: false,
 			start_date: '',
 			end_date: '',
 			ongoing: false,
-			lead_institution: undefined,
-			contact_email: '',
 			external_url: '',
 			institutional_partners: [],
 			collection_frequency: '',
 			update_frequency: '',
 			last_updated_note: '',
-			organization: organizations[0]?.id ?? 0,
-			owner: currentUser?.id ?? 0
+			organization: organizations[0]?.id ?? 0
 		};
 	}
 
@@ -143,9 +142,8 @@
 		message = '';
 		error = '';
 		try {
-			const payload = {
+			const payload: ProjectInput = {
 				...projectForm,
-				owner: currentUser?.id ?? projectForm.owner ?? 0,
 				institutional_partners: projectForm.institutional_partners ?? []
 			};
 			if (selectedProject) {
@@ -157,9 +155,9 @@
 					await createDataset({
 						...datasetForm,
 						project: createdProject.id,
-						project_id: createdProject.short_title.toLowerCase().replace(/\s+/g, '-'),
+						project_id: createdProject.slug,
 						organization: createdProject.organization,
-						owner: currentUser?.id ?? createdProject.owner
+						owner: currentUser?.id ?? 0
 					});
 					message = 'Project and initial dataset created.';
 				} else {
@@ -211,7 +209,7 @@
 			await createDataset({
 				...datasetForm,
 				project: selectedProject.id,
-				project_id: selectedProject.short_title.toLowerCase().replace(/\s+/g, '-'),
+				project_id: selectedProject.slug,
 				organization: selectedProject.organization,
 				owner: currentUser?.id ?? selectedProject.owner
 			});
@@ -236,7 +234,6 @@
 			});
 			organizations = [...organizations, created].sort((a, b) => a.name.localeCompare(b.name));
 			projectForm.organization = created.id;
-			projectForm.lead_institution = created.id;
 			newOrganizationName = '';
 			newOrganizationContactEmail = '';
 			message = 'Organization added.';
@@ -277,7 +274,9 @@
 								on:click={() => selectProject(project)}
 							>
 								<strong>{project.short_title}</strong>
-								<span>{project.owner_username}</span>
+								<span class="project-meta">
+									{project.lead_name}{#if project.organization_name} · {project.organization_name}{/if}
+								</span>
 							</button>
 						</li>
 					{/each}
@@ -288,32 +287,34 @@
 				<h2>{selectedProject ? 'Edit Project' : 'Create Project'}</h2>
 				<div class="form-grid">
 					<label>Short title<input bind:value={projectForm.short_title} /></label>
+					{#if selectedProject?.slug}
+						<p class="slug-note">Public URL slug: <code>{selectedProject.slug}</code> (set from title when created)</p>
+					{:else}
+						<p class="slug-note">Slug is generated automatically from the short title when you save.</p>
+					{/if}
+					<label>Summary<textarea rows="2" bind:value={projectForm.summary} /></label>
+					<label>Description<textarea rows="4" bind:value={projectForm.description} placeholder="Separate paragraphs with a blank line" /></label>
+					<label>Hero image path<input bind:value={projectForm.hero_image} placeholder="/images/home/forest-canopy.png" /></label>
 					<label>Full title<input bind:value={projectForm.full_title} /></label>
-					<label>NYBG PI name<input bind:value={projectForm.nybg_pi_name} /></label>
-					<label>External PI name<input bind:value={projectForm.external_pi_name} /></label>
-					<label>Contact email<input type="email" bind:value={projectForm.contact_email} required /></label>
-					<label>Start date<input type="date" bind:value={projectForm.start_date} /></label>
-					<label>End date<input type="date" bind:value={projectForm.end_date} /></label>
+
+					<h3 class="form-section-heading">Project lead</h3>
+					<label>Lead name<input bind:value={projectForm.lead_name} required /></label>
+					<label>Lead email<input type="email" bind:value={projectForm.lead_email} required /></label>
 					<label>
-						Lead institution
-						<select bind:value={projectForm.lead_institution}>
-							<option value={undefined}>Select institution</option>
+						Organization
+						<select bind:value={projectForm.organization} required>
+							<option value={0} disabled>Select organization</option>
 							{#each organizations as org}
 								<option value={org.id}>{org.name}</option>
 							{/each}
 						</select>
 					</label>
+
+					<label>Start date<input type="date" bind:value={projectForm.start_date} /></label>
+					<label>End date<input type="date" bind:value={projectForm.end_date} /></label>
 					<label>External URL<input type="url" bind:value={projectForm.external_url} /></label>
 					<label>Collection frequency<input bind:value={projectForm.collection_frequency} /></label>
 					<label>Update frequency<input bind:value={projectForm.update_frequency} /></label>
-					<label>
-						Organization
-						<select bind:value={projectForm.organization}>
-							{#each organizations as org}
-								<option value={org.id}>{org.name}</option>
-							{/each}
-						</select>
-					</label>
 					<label class="checkbox">
 						<input type="checkbox" bind:checked={projectForm.shared_publicly} />
 						Shared publicly
@@ -328,7 +329,7 @@
 				</div>
 				<div class="organization-creator">
 					<label>
-						Add new organization/institution
+						Add new organization
 						<input placeholder="Organization name" bind:value={newOrganizationName} />
 					</label>
 					<label>
@@ -414,7 +415,7 @@
 					<button
 						type="button"
 						on:click={saveProject}
-						disabled={savingProject || !projectForm.short_title || !projectForm.contact_email}
+						disabled={savingProject || !projectForm.short_title || !projectForm.lead_name?.trim() || !projectForm.lead_email?.trim() || !projectForm.organization}
 					>
 						{savingProject ? 'Saving...' : selectedProject ? 'Save changes' : 'Create project'}
 					</button>
@@ -555,6 +556,31 @@
 
 	.project-list button.selected {
 		background: rgba(200, 181, 0, 0.15);
+	}
+
+	.project-meta {
+		display: block;
+		font-size: 0.8rem;
+		color: #5a5a5a;
+	}
+
+	.slug-note {
+		grid-column: 1 / -1;
+		margin: 0;
+		font-size: 0.9rem;
+		color: #555;
+	}
+
+	.slug-note code {
+		font-size: 0.85rem;
+	}
+
+	.form-section-heading {
+		grid-column: 1 / -1;
+		margin: 1.25rem 0 0.25rem;
+		font-family: 'GT Super Bold', serif;
+		font-size: 1rem;
+		color: #1e2f1e;
 	}
 
 	.form-grid {

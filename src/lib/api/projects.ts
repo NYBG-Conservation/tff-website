@@ -11,23 +11,25 @@ export type ProjectManager = {
 
 export type Project = {
 	id: number;
+	slug: string;
 	short_title: string;
 	full_title?: string;
-	nybg_pi_name: string;
-	external_pi_name?: string;
+	summary?: string;
+	description?: string;
+	hero_image?: string;
+	lead_name: string;
+	lead_email: string;
 	shared_publicly: boolean;
 	start_date?: string;
 	end_date?: string;
 	ongoing: boolean;
-	lead_institution?: number;
-	lead_institution_name?: string;
-	contact_email: string;
 	external_url?: string;
 	institutional_partners?: string[];
 	collection_frequency?: string;
 	update_frequency?: string;
 	last_updated_note?: string;
 	organization: number;
+	organization_name?: string;
 	owner: number;
 	owner_username?: string;
 	managers?: ProjectManager[];
@@ -35,9 +37,10 @@ export type Project = {
 	updated_at: string;
 };
 
-export type ProjectInput = Omit<Project, 'id' | 'owner_username' | 'created_at' | 'updated_at' | 'managers'> & {
-	owner?: number;
-};
+export type ProjectInput = Omit<
+	Project,
+	'id' | 'slug' | 'owner_username' | 'organization_name' | 'created_at' | 'updated_at' | 'managers' | 'owner'
+>;
 
 export async function listProjects(query = '', fetchImpl?: typeof fetch): Promise<Project[]> {
 	const suffix = query ? `?${query}` : '';
@@ -48,10 +51,7 @@ export async function createProject(payload: ProjectInput, fetchImpl?: typeof fe
 	await ensureCsrfCookie(fetchImpl);
 	return apiRequest<Project>(
 		'/api/projects/',
-		{
-			method: 'POST',
-			body: JSON.stringify(payload)
-		},
+		{ method: 'POST', body: JSON.stringify(payload) },
 		fetchImpl
 	);
 }
@@ -64,10 +64,7 @@ export async function updateProject(
 	await ensureCsrfCookie(fetchImpl);
 	return apiRequest<Project>(
 		`/api/projects/${projectId}/`,
-		{
-			method: 'PATCH',
-			body: JSON.stringify(payload)
-		},
+		{ method: 'PATCH', body: JSON.stringify(payload) },
 		fetchImpl
 	);
 }
@@ -80,10 +77,7 @@ export async function addProjectManager(
 	await ensureCsrfCookie(fetchImpl);
 	return apiRequest<{ id: number; username: string }>(
 		`/api/projects/${projectId}/managers/`,
-		{
-			method: 'POST',
-			body: JSON.stringify({ username })
-		},
+		{ method: 'POST', body: JSON.stringify({ username }) },
 		fetchImpl
 	);
 }

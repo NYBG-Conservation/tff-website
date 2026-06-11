@@ -1,3 +1,4 @@
+/** @deprecated Public pages load from `/api/public/projects/` via `+page.server.ts`. */
 export type ResearchProject = {
 	id: string;
 	image: string;

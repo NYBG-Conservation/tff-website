@@ -25,6 +25,20 @@
 - `apps.organizations`: organizations and partners
 - `apps.datasets`: dataset records, metadata definitions, metadata values, and file versions
 
+## Apply database migrations
+
+After pulling model changes:
+
+```bash
+python backend/manage.py migrate
+```
+
+Latest migration (`0005`) adds:
+
+- `Project.slug` — stable public identifier (backfilled from existing titles)
+- `ProjectAlert` — tracks overdue missing-data alerts (see `OVERDUE_DATA_ALERT_SPEC.md`)
+- `DatasetFile.external_url` — optional external asset link when files are hosted elsewhere
+
 ## Core API roots
 
 - `/api/datasets/`

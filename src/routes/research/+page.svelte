@@ -1,21 +1,26 @@
 <script lang="ts">
-	import { datasetRecords } from '$lib/data/datasetRecords';
-	import { researchProjects, type ResearchProject } from '$lib/data/researchProjects';
+	import type { PublicDatasetRecord, PublicResearchProject } from '$lib/api/public';
 
-	let activeProjectId: string | null = null;
-	$: activeProject = researchProjects.find((project) => project.id === activeProjectId) ?? null;
+	export let data;
+
+	$: researchProjects = data.researchProjects as PublicResearchProject[];
+	$: publicDatasets = data.publicDatasets as PublicDatasetRecord[];
+	$: apiError = data.apiError as string | null;
+
+	let activeProjectSlug: string | null = null;
+	$: activeProject = researchProjects.find((project) => project.slug === activeProjectSlug) ?? null;
 	$: relatedDatasets = activeProject ? getRelatedDatasets(activeProject) : [];
 
-	function openProject(projectId: string) {
-		activeProjectId = projectId;
+	function openProject(projectSlug: string) {
+		activeProjectSlug = projectSlug;
 	}
 
 	function closeProjectModal() {
-		activeProjectId = null;
+		activeProjectSlug = null;
 	}
 
 	function handleEscapeKey(event: KeyboardEvent) {
-		if (event.key === 'Escape' && activeProjectId) {
+		if (event.key === 'Escape' && activeProjectSlug) {
 			closeProjectModal();
 		}
 	}
@@ -26,14 +31,11 @@
 		}
 	}
 
-	function getRelatedDatasets(project: ResearchProject) {
-		if (!project.datasetIds?.length) {
-			return [];
-		}
-
-		return project.datasetIds
-			.map((datasetId) => datasetRecords.find((record) => record.id === datasetId))
-			.filter((record): record is (typeof datasetRecords)[number] => Boolean(record));
+	function getRelatedDatasets(project: PublicResearchProject) {
+		const linkedIds = new Set(project.datasetIds ?? []);
+		return publicDatasets.filter(
+			(record) => linkedIds.has(String(record.id)) || record.project_slug === project.slug
+		);
 	}
 </script>
 
@@ -57,15 +59,20 @@
 		</a>
 	</p>
 
+	<div class="research-main-column">
 	<h2 class="section-heading">Ongoing Research Projects</h2>
+
+	{#if apiError}
+		<p class="api-error">Research project data is temporarily unavailable. ({apiError})</p>
+	{/if}
 
 	<div class="project-grid">
 		{#each researchProjects as project}
-			<button type="button" class="project-card" on:click={() => openProject(project.id)}>
+			<button type="button" class="project-card" on:click={() => openProject(project.slug)}>
 				<img src={project.image} alt={project.title} loading="lazy" />
 				<div class="project-card-body">
 					<h2 class="project-title">{project.title}</h2>
-					<p class="project-summary">{project.summary}</p>
+					<p class="project-summary">{project.summary || project.full_title || ''}</p>
 					<span class="read-more-link">
 						Read more
 						<span class="read-more-arrow" aria-hidden="true">→</span>
@@ -85,7 +92,7 @@
 			on:keydown={(event) => (event.key === 'Enter' || event.key === ' ') && closeOnOverlayInteraction(event)}
 		>
 			<div
-				id={`project-details-${activeProject.id}`}
+				id={`project-details-${activeProject.slug}`}
 				class="detail-modal"
 				role="dialog"
 				aria-modal="true"
@@ -98,16 +105,20 @@
 					</button>
 				</div>
 				<div class="modal-body">
-					{#each activeProject.descriptionParagraphs as paragraph}
-						<p>{paragraph}</p>
-					{/each}
+					{#if activeProject.descriptionParagraphs.length === 0}
+						<p class="empty-related">Project details will be published soon.</p>
+					{:else}
+						{#each activeProject.descriptionParagraphs as paragraph}
+							<p>{paragraph}</p>
+						{/each}
+					{/if}
 					<div class="related-datasets">
 						<h4>Related datasets</h4>
 						{#if relatedDatasets.length > 0}
 							<ul>
 								{#each relatedDatasets as dataset}
 									<li>
-										<a href={`/data?project=${activeProject.id}`}>{dataset.title}</a>
+										<a href={`/data?project=${activeProject.slug}`}>{dataset.title}</a>
 									</li>
 								{/each}
 							</ul>
@@ -181,6 +192,7 @@
 			</li>
 		</ul>
 	</section>
+	</div>
 </section>
 
 <style>
@@ -190,14 +202,27 @@
 		padding: 0 1rem 3rem;
 	}
 
+	.api-error {
+		font-family: 'GT Super Regular', serif;
+		color: #7a1e1e;
+		margin: 0 0 1rem;
+	}
+
+	.research-main-column {
+		max-width: 1100px;
+		margin-left: auto;
+		margin-right: auto;
+		width: 100%;
+	}
+
 	.intro-paragraph {
 		font-family: 'GT Super Regular', serif;
 		font-size: 1.05rem;
 		line-height: 1.55;
-		margin: auto;
+		margin-left: auto;
+		margin-right: auto;
 		color: #222;
 		max-width: 1100px;
-
 	}
 
 	.admin-login-link {
@@ -429,10 +454,6 @@
 		color: #555;
 	}
 
-	.publications {
-		max-width: 1100px;
-	}
-
 	.publications ul {
 		margin: 0;
 		padding-left: 1.25rem;
@@ -449,11 +470,6 @@
 	@media (max-width: 900px) {
 		.project-grid {
 			grid-template-columns: 1fr;
-			max-width: 700px;
-		}
-
-		.publications {
-			max-width: 700px;
 		}
 	}
 </style>

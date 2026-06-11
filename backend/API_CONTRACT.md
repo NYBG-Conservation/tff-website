@@ -6,6 +6,21 @@ Authentication:
 - Session cookie auth (`credentials: include`) with CSRF.
 - Frontend should call `GET /api/accounts/csrf/` before first mutating request.
 
+## Public read API (no authentication)
+
+These endpoints power the public `/research` and `/data` pages.
+
+### `GET /api/public/projects/`
+Returns projects where `shared_publicly=true`.
+
+Response fields include: `slug`, `title`, `summary`, `image`, `description_paragraphs`, `dataset_ids`, and PI metadata.
+
+### `GET /api/public/datasets/`
+Returns datasets where `expose_on_public_api=true`, status is `active` or `archived`, and the linked project is public (or no project is linked).
+
+Query params:
+- `project=<slug>` filter by linked project slug
+
 ## Roles
 
 - `internal_admin`: read/write all datasets
@@ -38,6 +53,8 @@ Retrieve project if in scope.
 
 ### `PATCH /api/projects/{id}/`
 Update project if in scope.
+
+Project `slug` is read-only in the API: auto-generated from `short_title` (punctuation removed, spaces as hyphens, max 100 chars before suffix). Collisions get `-1`, `-2`, `-3`, etc.
 
 ### `POST /api/projects/{id}/managers/`
 Add delegated project manager by username.
@@ -113,9 +130,10 @@ Retrieve single dataset if in scope.
 Update dataset if in scope.
 
 ### `POST /api/datasets/{id}/files/`
-Upload one file version.
+Upload one file version or register an external asset link.
 `multipart/form-data` fields:
-- `file` (required)
+- `file` (required unless `external_url` is provided)
+- `external_url` (required unless `file` is provided; preferred for assets >1 GB)
 - `file_name` (optional)
 - `file_kind` (optional, default `primary_data`)
 - `content_type` (optional)

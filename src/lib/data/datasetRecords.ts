@@ -1,3 +1,4 @@
+/** @deprecated Public pages load from `/api/public/datasets/` via `+page.server.ts`. */
 export type DatasetRecord = {
 	id: string;
 	title: string;

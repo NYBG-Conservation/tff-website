@@ -40,7 +40,12 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app/backend
-    command: python backend/manage.py runserver 0.0.0.0:8000
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+    entrypoint: []
+    command: >
+      sh -c "python backend/manage.py migrate --noinput &&
+      python backend/manage.py runserver 0.0.0.0:8000"
 
 volumes:
   postgres_data:

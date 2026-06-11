@@ -10,6 +10,7 @@ from .models import (
     DatasetPublication,
     MetadataFieldDefinition,
     Project,
+    ProjectAlert,
     ProjectManager,
 )
 
@@ -40,12 +41,39 @@ class ProjectManagerInline(admin.TabularInline):
     extra = 0
 
 
+class ProjectAlertInline(admin.TabularInline):
+    model = ProjectAlert
+    extra = 0
+    readonly_fields = ("first_triggered_at", "last_evaluated_at", "last_emailed_at", "resolved_at", "created_at", "updated_at")
+
+
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ("short_title", "organization", "lead_institution", "owner", "shared_publicly", "ongoing", "updated_at")
+    list_display = (
+        "short_title",
+        "slug",
+        "shared_publicly",
+        "organization",
+        "lead_name",
+        "lead_email",
+        "owner",
+        "ongoing",
+        "updated_at",
+    )
+    fieldsets = (
+        (None, {"fields": ("short_title", "slug", "full_title", "summary", "description", "hero_image", "shared_publicly")}),
+        (
+            "Project lead",
+            {"fields": ("lead_name", "lead_email", "organization")},
+        ),
+        ("Permissions", {"fields": ("owner",)}),
+        ("Schedule", {"fields": ("start_date", "end_date", "ongoing", "collection_frequency", "update_frequency", "last_updated_note")}),
+        ("Links", {"fields": ("external_url", "institutional_partners")}),
+    )
     list_filter = ("organization", "shared_publicly", "ongoing")
-    search_fields = ("short_title", "full_title", "nybg_pi_name", "external_pi_name", "owner__username")
-    inlines = [ProjectManagerInline]
+    search_fields = ("short_title", "slug", "full_title", "lead_name", "lead_email", "organization__name", "owner__username")
+    readonly_fields = ("slug",)
+    inlines = [ProjectManagerInline, ProjectAlertInline]
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -53,6 +81,14 @@ class ProjectAdmin(admin.ModelAdmin):
         if profile and profile.role == UserProfile.Role.INTERNAL_ADMIN:
             return qs.filter(organization__name="New York Botanical Garden")
         return qs.filter(models.Q(owner=request.user) | models.Q(managers=request.user)).distinct()
+
+
+@admin.register(ProjectAlert)
+class ProjectAlertAdmin(admin.ModelAdmin):
+    list_display = ("project", "alert_type", "status", "first_triggered_at", "last_emailed_at", "resolved_at")
+    list_filter = ("alert_type", "status")
+    search_fields = ("project__short_title", "project__slug", "resolution_note")
+    readonly_fields = ("created_at", "updated_at")
 
 
 @admin.register(Dataset)

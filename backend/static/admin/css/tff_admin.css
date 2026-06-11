@@ -1,0 +1,149 @@
+/*
+ * Thain Family Forest — Django admin theme
+ * Black & white base with forest green accents (matches public site palette).
+ */
+
+html[data-theme="light"],
+:root {
+	--tff-green: #0c5446;
+	--tff-green-hover: #094539;
+	--tff-green-muted: #1e6b5c;
+	--tff-green-tint: #e8f2ef;
+	--tff-black: #0a0a0a;
+	--tff-gray-900: #1a1a1a;
+	--tff-gray-700: #444444;
+	--tff-gray-500: #666666;
+	--tff-gray-200: #e5e5e5;
+	--tff-gray-100: #f5f5f5;
+	--tff-white: #ffffff;
+
+	--primary: var(--tff-green);
+	--secondary: var(--tff-black);
+	--accent: #c8b500;
+	--primary-fg: var(--tff-white);
+
+	--body-fg: var(--tff-gray-900);
+	--body-bg: var(--tff-white);
+	--body-quiet-color: var(--tff-gray-500);
+	--body-medium-color: var(--tff-gray-700);
+	--body-loud-color: var(--tff-black);
+
+	--header-color: var(--tff-white);
+	--header-branding-color: var(--tff-white);
+	--header-bg: var(--tff-black);
+	--header-link-color: var(--tff-white);
+
+	--breadcrumbs-fg: #cccccc;
+	--breadcrumbs-link-fg: var(--tff-white);
+	--breadcrumbs-bg: var(--tff-gray-900);
+
+	--link-fg: var(--tff-green);
+	--link-hover-color: var(--tff-green-hover);
+	--link-selected-fg: var(--tff-green-muted);
+
+	--hairline-color: var(--tff-gray-200);
+	--border-color: #cccccc;
+
+	--darkened-bg: var(--tff-gray-100);
+	--selected-bg: var(--tff-green-tint);
+	--selected-row: #dceee9;
+
+	--button-fg: var(--tff-white);
+	--button-bg: var(--tff-green);
+	--button-hover-bg: var(--tff-green-hover);
+	--default-button-bg: var(--tff-green);
+	--default-button-hover-bg: var(--tff-green-hover);
+	--close-button-bg: var(--tff-gray-700);
+	--close-button-hover-bg: var(--tff-black);
+
+	--object-tools-fg: var(--tff-white);
+	--object-tools-bg: var(--tff-gray-900);
+	--object-tools-hover-bg: var(--tff-black);
+
+	--message-success-bg: var(--tff-green-tint);
+	--message-warning-bg: #fff8e1;
+	--message-error-bg: #ffefef;
+}
+
+/* Keep admin readable if OS prefers dark mode */
+html[data-theme="dark"] {
+	--primary: #3d9b88;
+	--secondary: #0a0a0a;
+	--accent: #c8b500;
+	--primary-fg: #ffffff;
+
+	--body-fg: #f0f0f0;
+	--body-bg: #121212;
+	--body-quiet-color: #aaaaaa;
+	--body-medium-color: #cccccc;
+	--body-loud-color: #ffffff;
+
+	--header-color: #ffffff;
+	--header-branding-color: #ffffff;
+	--header-bg: #000000;
+	--header-link-color: #ffffff;
+
+	--breadcrumbs-fg: #bbbbbb;
+	--breadcrumbs-link-fg: #ffffff;
+	--breadcrumbs-bg: #1a1a1a;
+
+	--link-fg: #5cb8a4;
+	--link-hover-color: #7dcec0;
+	--link-selected-fg: #3d9b88;
+
+	--hairline-color: #333333;
+	--border-color: #444444;
+
+	--darkened-bg: #1a1a1a;
+	--selected-bg: #1e3330;
+	--selected-row: #1e3330;
+
+	--button-bg: #0c5446;
+	--button-hover-bg: #3d9b88;
+	--default-button-bg: #0c5446;
+	--default-button-hover-bg: #3d9b88;
+}
+
+#site-name a {
+	font-weight: 600;
+	letter-spacing: 0.02em;
+}
+
+#site-name a:hover {
+	color: var(--accent);
+}
+
+.module h2,
+.inline-group h2 {
+	background: var(--tff-black);
+	color: var(--tff-white);
+}
+
+.button,
+input[type="submit"].default,
+.submit-row input.default {
+	font-weight: 600;
+}
+
+a.button:focus,
+button:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline-color: var(--tff-green);
+}
+
+#changelist-filter h2 {
+	background: var(--tff-gray-900);
+	color: var(--tff-white);
+}
+
+#changelist-filter li.selected a {
+	color: var(--tff-green);
+	font-weight: 600;
+}
+
+div.breadcrumbs a:focus,
+div.breadcrumbs a:hover {
+	color: var(--accent);
+}

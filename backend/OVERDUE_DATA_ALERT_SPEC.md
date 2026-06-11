@@ -91,7 +91,7 @@ v1 notification cadence:
 
 Recipient priority:
 
-1. `Project.contact_email` (if present)
+1. `Project.lead_email`
 2. fallback to `Project.owner.email` (if present)
 
 Optional CC (feature flag):

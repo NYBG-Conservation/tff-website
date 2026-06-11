@@ -30,3 +30,4 @@ backend/**/__pycache__/
 backend/*.sqlite3
 backend/staticfiles/
 backend/media/
+.venv-local/

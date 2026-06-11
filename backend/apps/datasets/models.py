@@ -4,12 +4,33 @@ from django.db import models
 
 from apps.organizations.models import Organization
 
+from .slug_utils import generate_unique_project_slug
+
 
 class Project(models.Model):
+    slug = models.SlugField(
+        max_length=120,
+        unique=True,
+        blank=True,
+        help_text="Auto-generated from short title (punctuation removed, spaces as hyphens). Collision suffix -1, -2, …",
+    )
     short_title = models.CharField(max_length=255)
     full_title = models.CharField(max_length=500, blank=True)
-    nybg_pi_name = models.CharField(max_length=255, verbose_name="NYBG PI name")
-    external_pi_name = models.CharField(max_length=255, blank=True, verbose_name="External PI name")
+    summary = models.TextField(
+        blank=True,
+        help_text="Short teaser shown on the public research project card.",
+    )
+    description = models.TextField(
+        blank=True,
+        help_text="Longer project description for the public modal. Separate paragraphs with a blank line.",
+    )
+    hero_image = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text="Public site image path or URL (e.g. /images/home/forest-canopy.png).",
+    )
+    lead_name = models.CharField(max_length=255, help_text="Primary project lead (display name).")
+    lead_email = models.EmailField(help_text="Project lead contact email.")
     shared_publicly = models.BooleanField(
         default=False,
         help_text="When enabled, this project can appear on the public Thain Family Forest website.",
@@ -17,10 +38,6 @@ class Project(models.Model):
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     ongoing = models.BooleanField(default=False)
-    lead_institution = models.ForeignKey(
-        Organization, on_delete=models.PROTECT, null=True, blank=True, related_name="lead_projects"
-    )
-    contact_email = models.EmailField()
     external_url = models.URLField(blank=True)
     institutional_partners = models.JSONField(default=list, blank=True)
     collection_frequency = models.CharField(max_length=120, blank=True)
@@ -41,8 +58,57 @@ class Project(models.Model):
     class Meta:
         ordering = ("short_title",)
 
+    def save(self, *args, **kwargs):
+        if self.short_title and (not self.slug or not self.pk):
+            self.slug = generate_unique_project_slug(
+                self.short_title,
+                exclude_pk=self.pk,
+            )
+        super().save(*args, **kwargs)
+
     def __str__(self) -> str:
         return self.short_title
+
+
+class ProjectAlert(models.Model):
+    class AlertType(models.TextChoices):
+        MISSING_DATA_OVERDUE = "missing_data_overdue", "Missing Data Overdue"
+
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Active"
+        RESOLVED = "resolved", "Resolved"
+        SNOOZED = "snoozed", "Snoozed"
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="alerts")
+    alert_type = models.CharField(max_length=40, choices=AlertType.choices)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
+    first_triggered_at = models.DateTimeField()
+    last_evaluated_at = models.DateTimeField()
+    last_emailed_at = models.DateTimeField(null=True, blank=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    resolution_note = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-last_evaluated_at", "-id")
+
+    def clean(self) -> None:
+        if self.status == self.Status.ACTIVE:
+            duplicate = ProjectAlert.objects.filter(
+                project=self.project,
+                alert_type=self.alert_type,
+                status=self.Status.ACTIVE,
+            ).exclude(pk=self.pk)
+            if duplicate.exists():
+                raise ValidationError("An active alert of this type already exists for this project.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.project.short_title} :: {self.alert_type} ({self.status})"
 
 
 class ProjectManager(models.Model):
@@ -183,7 +249,11 @@ class DatasetFile(models.Model):
         OTHER = "other", "Other"
 
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name="files")
-    file = models.FileField(upload_to="datasets/%Y/%m/")
+    file = models.FileField(upload_to="datasets/%Y/%m/", blank=True, null=True)
+    external_url = models.URLField(
+        blank=True,
+        help_text="Use for large assets hosted outside this system (>1 GB governance policy).",
+    )
     file_name = models.CharField(max_length=255)
     file_kind = models.CharField(max_length=30, choices=FileKind.choices, default=FileKind.PRIMARY_DATA)
     content_type = models.CharField(max_length=120, blank=True)
@@ -199,9 +269,18 @@ class DatasetFile(models.Model):
     class Meta:
         ordering = ("-uploaded_at",)
 
+    def clean(self) -> None:
+        if not self.file and not self.external_url:
+            raise ValidationError("Provide either an uploaded file or an external_url.")
+        if self.file and self.external_url:
+            raise ValidationError("Provide only one of file upload or external_url.")
+
     def save(self, *args, **kwargs):
-        if not self.file_name and self.file:
-            self.file_name = self.file.name
+        if not self.file_name:
+            if self.file:
+                self.file_name = self.file.name
+            elif self.external_url:
+                self.file_name = self.external_url.rstrip("/").rsplit("/", 1)[-1] or "external-link"
         if not self.pk and not self.version:
             latest = DatasetFile.objects.filter(dataset=self.dataset).order_by("-version").first()
             self.version = 1 if not latest else latest.version + 1

@@ -1,5 +1,6 @@
 from django.urls import path
 
+from .public_views import PublicDatasetListView, PublicProjectListView
 from .views import (
     DatasetFileUploadView,
     DatasetListCreateView,
@@ -13,6 +14,8 @@ from .views import (
 )
 
 urlpatterns = [
+    path("public/projects/", PublicProjectListView.as_view(), name="public-project-list"),
+    path("public/datasets/", PublicDatasetListView.as_view(), name="public-dataset-list"),
     path("projects/", ProjectListCreateView.as_view(), name="project-list-create"),
     path("projects/<int:pk>/", ProjectRetrieveUpdateView.as_view(), name="project-retrieve-update"),
     path("projects/<int:pk>/managers/", ProjectManagerAddView.as_view(), name="project-manager-add"),

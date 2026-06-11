@@ -59,11 +59,24 @@ class DatasetMetadataValueInputSerializer(serializers.Serializer):
 class DatasetFileSerializer(serializers.ModelSerializer):
     uploaded_by_username = serializers.CharField(source="uploaded_by.username", read_only=True)
 
+    def validate(self, attrs):
+        file_obj = attrs.get("file")
+        external_url = attrs.get("external_url", "")
+        if self.instance:
+            file_obj = file_obj if file_obj is not None else self.instance.file
+            external_url = external_url or self.instance.external_url
+        if not file_obj and not external_url:
+            raise serializers.ValidationError("Provide either file or external_url.")
+        if file_obj and external_url:
+            raise serializers.ValidationError("Provide only one of file or external_url.")
+        return attrs
+
     class Meta:
         model = DatasetFile
         fields = (
             "id",
             "file",
+            "external_url",
             "file_name",
             "content_type",
             "file_kind",
@@ -243,36 +256,38 @@ class ProjectManagerSerializer(serializers.ModelSerializer):
 class ProjectSerializer(serializers.ModelSerializer):
     owner_username = serializers.CharField(source="owner.username", read_only=True)
     managers = ProjectManagerSerializer(source="project_managers", many=True, read_only=True)
-    lead_institution_name = serializers.CharField(source="lead_institution.name", read_only=True)
+    organization_name = serializers.CharField(source="organization.name", read_only=True)
 
     class Meta:
         model = Project
         fields = (
             "id",
+            "slug",
             "short_title",
             "full_title",
-            "nybg_pi_name",
-            "external_pi_name",
+            "summary",
+            "description",
+            "hero_image",
+            "lead_name",
+            "lead_email",
             "shared_publicly",
             "start_date",
             "end_date",
             "ongoing",
-            "lead_institution",
-            "lead_institution_name",
-            "contact_email",
             "external_url",
             "institutional_partners",
             "collection_frequency",
             "update_frequency",
             "last_updated_note",
             "organization",
+            "organization_name",
             "owner",
             "owner_username",
             "managers",
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("created_at", "updated_at", "owner_username", "lead_institution_name")
+        read_only_fields = ("slug", "created_at", "updated_at", "owner_username", "organization_name", "owner")
         extra_kwargs = {"owner": {"required": False}}
 
     def validate(self, attrs):
@@ -283,9 +298,14 @@ class ProjectSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("end_date cannot be earlier than start_date")
         if ongoing and end:
             raise serializers.ValidationError("end_date should be empty when ongoing is true")
-        contact_email = attrs.get("contact_email", getattr(self.instance, "contact_email", ""))
-        if not contact_email:
-            raise serializers.ValidationError("contact_email is required")
+        lead_name = (attrs.get("lead_name") or getattr(self.instance, "lead_name", "") or "").strip()
+        if not lead_name:
+            raise serializers.ValidationError({"lead_name": "Project lead name is required."})
+        lead_email = (attrs.get("lead_email") or getattr(self.instance, "lead_email", "") or "").strip()
+        if not lead_email:
+            raise serializers.ValidationError({"lead_email": "Project lead email is required."})
+        if not attrs.get("organization") and not getattr(self.instance, "organization_id", None):
+            raise serializers.ValidationError({"organization": "Organization is required."})
         return attrs
 
     def create(self, validated_data):

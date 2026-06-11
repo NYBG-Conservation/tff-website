@@ -1,22 +1,28 @@
 <script lang="ts">
-	import { page } from '$app/stores';
-	import { datasetRecords } from '$lib/data/datasetRecords';
-	import { researchProjects } from '$lib/data/researchProjects';
+	import type { PublicDatasetRecord, PublicResearchProject } from '$lib/api/public';
 
-	$: selectedProjectId = $page.url.searchParams.get('project') ?? '';
-	$: selectedProject = researchProjects.find((project) => project.id === selectedProjectId);
-	$: visibleDatasets = selectedProjectId
-		? datasetRecords.filter((dataset) => dataset.projectId === selectedProjectId)
-		: datasetRecords;
+	export let data;
+
+	$: researchProjects = data.researchProjects as PublicResearchProject[];
+	$: datasetRecords = data.datasetRecords as PublicDatasetRecord[];
+	$: projectSlug = data.projectSlug as string;
+	$: apiError = data.apiError as string | null;
+	$: selectedProject = researchProjects.find((project) => project.slug === projectSlug);
 </script>
 
 <section class="research-content">
-	<p class="placeholder-note">
-		Dataset records are manually wired and can be filtered by project.
-	</p>
+	{#if apiError}
+		<p class="api-error">Dataset records are temporarily unavailable. ({apiError})</p>
+	{/if}
+
 	{#if selectedProject}
 		<p class="active-filter">
 			Showing datasets linked to <strong>{selectedProject.title}</strong>.
+			<a href="/data">Clear filter</a>
+		</p>
+	{:else if projectSlug}
+		<p class="active-filter">
+			Showing datasets for project <strong>{projectSlug}</strong>.
 			<a href="/data">Clear filter</a>
 		</p>
 	{/if}
@@ -33,18 +39,22 @@
 				</tr>
 			</thead>
 			<tbody>
-				{#if visibleDatasets.length === 0}
+				{#if datasetRecords.length === 0}
 					<tr>
-						<td colspan="5" class="empty-row">No research records available for this project yet.</td>
+						<td colspan="5" class="empty-row">
+							{projectSlug
+								? 'No public datasets are available for this project yet.'
+								: 'No public datasets are available yet.'}
+						</td>
 					</tr>
 				{:else}
-					{#each visibleDatasets as dataset}
+					{#each datasetRecords as dataset}
 						<tr>
 							<td>{dataset.title}</td>
 							<td>{dataset.organization}</td>
 							<td>{dataset.cadence}</td>
 							<td>{dataset.status}</td>
-							<td>{dataset.lastUpdated}</td>
+							<td>{dataset.last_updated}</td>
 						</tr>
 					{/each}
 				{/if}
@@ -60,10 +70,10 @@
 		padding: 0 1rem 2rem;
 	}
 
-	.placeholder-note {
+	.api-error {
 		font-family: 'GT Super Regular', serif;
-		margin: 0 0 1rem 0;
-		color: #222;
+		color: #7a1e1e;
+		margin: 0 0 1rem;
 	}
 
 	.active-filter {

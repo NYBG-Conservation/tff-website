@@ -3,6 +3,8 @@ import os
 
 from dotenv import load_dotenv
 
+from config.db import database_config
+
 BASE_DIR = Path(__file__).resolve().parents[3]
 BACKEND_DIR = BASE_DIR / "backend"
 load_dotenv(BASE_DIR / ".env")
@@ -42,7 +44,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BACKEND_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -67,16 +69,7 @@ if USE_SQLITE:
         }
     }
 else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.getenv("POSTGRES_DB", "tff_db"),
-            "USER": os.getenv("POSTGRES_USER", "postgres"),
-            "PASSWORD": os.getenv("POSTGRES_PASSWORD", "postgres"),
-            "HOST": os.getenv("POSTGRES_HOST", "localhost"),
-            "PORT": os.getenv("POSTGRES_PORT", "5432"),
-        }
-    }
+    DATABASES = {"default": database_config()}
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -91,6 +84,7 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
+STATICFILES_DIRS = [BACKEND_DIR / "static"]
 STATIC_ROOT = BACKEND_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BACKEND_DIR / "media"
@@ -100,6 +94,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")]
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")]
 CORS_ALLOW_CREDENTIALS = True
+
+PROJECT_OVERDUE_DAYS = int(os.getenv("PROJECT_OVERDUE_DAYS", "30"))
+PROJECT_ALERT_REMINDER_DAYS = int(os.getenv("PROJECT_ALERT_REMINDER_DAYS", "7"))
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
