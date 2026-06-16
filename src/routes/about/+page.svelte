@@ -21,9 +21,14 @@
 	disturbances. To preserve the Forest for future generations the Garden manages invasive species, plants
 	native plants, and performs research.
 </p>
-<p>
-	Download the Thain Family Forest Program 2008-2025 to learn more about ongoing forest restoration,
-	education, and research.
+<p class="our-approach">
+	Download the
+	<a
+		href="https://www.nybg.org/content/uploads/2017/04/Forest-Plan-2016.pdf"
+		target="_blank"
+		rel="noopener noreferrer"
+	>Thain Family Forest Program 2008-2025</a>
+	to learn more about ongoing forest restoration, education, and research.
 </p>
 
 

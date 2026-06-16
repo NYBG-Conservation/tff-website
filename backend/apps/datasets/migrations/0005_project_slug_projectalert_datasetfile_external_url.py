@@ -32,6 +32,7 @@ class Migration(migrations.Migration):
             name="slug",
             field=models.SlugField(
                 blank=True,
+                db_index=False,
                 help_text="Stable identifier for public research pages and dataset linking (e.g. knotweed-management-study).",
                 max_length=120,
             ),
@@ -41,6 +42,7 @@ class Migration(migrations.Migration):
             model_name="project",
             name="slug",
             field=models.SlugField(
+                db_index=False,
                 help_text="Stable identifier for public research pages and dataset linking (e.g. knotweed-management-study).",
                 max_length=120,
                 unique=True,
