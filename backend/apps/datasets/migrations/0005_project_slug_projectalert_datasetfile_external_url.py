@@ -27,12 +27,15 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # Use CharField first: SlugField AddField creates a PostgreSQL _like index that
+        # collides when AlterField adds unique=True on the same column.
         migrations.AddField(
             model_name="project",
             name="slug",
-            field=models.SlugField(
+            field=models.CharField(
                 blank=True,
                 db_index=False,
+                default="",
                 help_text="Stable identifier for public research pages and dataset linking (e.g. knotweed-management-study).",
                 max_length=120,
             ),
