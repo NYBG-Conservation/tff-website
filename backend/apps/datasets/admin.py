@@ -1,7 +1,7 @@
 from django.contrib import admin
-from django.db import models
 
 from apps.accounts.models import UserProfile
+from apps.accounts.roles import is_internal_staff, is_internal_superadmin, scoped_datasets_filter, scoped_projects_filter
 
 from .models import (
     Dataset,
@@ -77,10 +77,9 @@ class ProjectAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        profile = getattr(request.user, "profile", None)
-        if profile and profile.role == UserProfile.Role.INTERNAL_ADMIN:
-            return qs.filter(organization__name="New York Botanical Garden")
-        return qs.filter(models.Q(owner=request.user) | models.Q(managers=request.user)).distinct()
+        if is_internal_superadmin(request.user):
+            return qs
+        return qs.filter(scoped_projects_filter(request.user))
 
 
 @admin.register(ProjectAlert)
@@ -111,20 +110,16 @@ class DatasetAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        profile = getattr(request.user, "profile", None)
-        if profile and profile.role == UserProfile.Role.INTERNAL_ADMIN:
+        if is_internal_superadmin(request.user):
             return qs
-        return qs.filter(owner=request.user)
+        return qs.filter(scoped_datasets_filter(request.user))
 
     def get_readonly_fields(self, request, obj=None):
-        profile = getattr(request.user, "profile", None)
-        if profile and profile.role == UserProfile.Role.INTERNAL_ADMIN:
+        if is_internal_superadmin(request.user) or is_internal_staff(request.user):
             return ()
         return ("owner",)
 
     def save_model(self, request, obj, form, change):
-        profile = getattr(request.user, "profile", None)
-        if not (profile and profile.role == UserProfile.Role.INTERNAL_ADMIN):
+        if not (is_internal_superadmin(request.user) or is_internal_staff(request.user)):
             obj.owner = request.user
         super().save_model(request, obj, form, change)
-

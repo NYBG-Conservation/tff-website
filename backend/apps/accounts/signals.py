@@ -1,20 +1,17 @@
-from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
+from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from .constants import EXTERNAL_PARTNER_ADMIN_GROUP, INTERNAL_ADMIN_GROUP
+from .constants import ALL_ROLE_GROUPS, ROLE_TO_GROUP
 from .models import UserProfile
 
 
 def _sync_role_group(profile: UserProfile) -> None:
-    internal_group, _ = Group.objects.get_or_create(name=INTERNAL_ADMIN_GROUP)
-    external_group, _ = Group.objects.get_or_create(name=EXTERNAL_PARTNER_ADMIN_GROUP)
-    profile.user.groups.remove(internal_group, external_group)
-    if profile.role == UserProfile.Role.INTERNAL_ADMIN:
-        profile.user.groups.add(internal_group)
-    else:
-        profile.user.groups.add(external_group)
+    group_name = ROLE_TO_GROUP.get(profile.role, ROLE_TO_GROUP["external_admin"])
+    groups = {name: Group.objects.get_or_create(name=name)[0] for name in ALL_ROLE_GROUPS}
+    profile.user.groups.remove(*groups.values())
+    profile.user.groups.add(groups[group_name])
 
 
 @receiver(post_save, sender=User)

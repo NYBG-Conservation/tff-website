@@ -1,14 +1,22 @@
 from django.contrib.auth.models import User
-from django.db.models import Q
 from rest_framework import generics, permissions, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.models import UserProfile
+from apps.accounts.roles import (
+    NYBG_ORGANIZATION_NAME,
+    is_internal_staff,
+    is_internal_superadmin,
+    scoped_datasets_filter,
+    scoped_projects_filter,
+    user_home_organization,
+)
 
 from .models import Dataset, DatasetFile, MetadataFieldDefinition, Project, ProjectManager
-from .permissions import CanEditProject, IsInternalAdminOrDatasetOwner, NYBG_ORGANIZATION_NAME, is_internal_admin
+from .permissions import CanEditDataset, CanEditProject
 from .serializers import (
     DatasetFileSerializer,
     DatasetSerializer,
@@ -19,19 +27,33 @@ from .serializers import (
 
 
 def scoped_projects_for_user(user):
-    qs = Project.objects.select_related("owner", "organization").prefetch_related("project_managers__user")
-    if is_internal_admin(user):
-        return qs.filter(organization__name=NYBG_ORGANIZATION_NAME)
-    return qs.filter(Q(owner=user) | Q(managers=user)).distinct()
+    return Project.objects.select_related("owner", "organization").prefetch_related(
+        "project_managers__user"
+    ).filter(scoped_projects_filter(user))
 
 
 def scoped_datasets_for_user(user):
-    qs = Dataset.objects.select_related("owner", "organization").prefetch_related(
-        "metadata_fields", "metadata_values", "files", "publications", "project"
-    )
-    if is_internal_admin(user):
-        return qs.filter(Q(project__organization__name=NYBG_ORGANIZATION_NAME) | Q(project__isnull=True))
-    return qs.filter(Q(owner=user) | Q(project__managers=user)).distinct()
+    return Dataset.objects.select_related("owner", "organization", "project").prefetch_related(
+        "metadata_fields", "metadata_values", "files", "publications", "project__managers"
+    ).filter(scoped_datasets_filter(user))
+
+
+def _organization_from_validated(serializer) -> object | None:
+    return serializer.validated_data.get("organization")
+
+
+def _assert_can_create_in_organization(user, organization) -> None:
+    role = user.profile.role
+    if role == UserProfile.Role.INTERNAL_SUPERADMIN:
+        return
+    if role == UserProfile.Role.INTERNAL_ADMIN:
+        if organization.name != NYBG_ORGANIZATION_NAME:
+            raise PermissionDenied("Internal admins can only create NYBG organization records.")
+        return
+    if role == UserProfile.Role.EXTERNAL_SUPERADMIN:
+        home = user_home_organization(user)
+        if not home or organization.id != home.id:
+            raise PermissionDenied("External superadmins can only create records in their organization.")
 
 
 class ProjectListCreateView(generics.ListCreateAPIView):
@@ -53,10 +75,17 @@ class ProjectListCreateView(generics.ListCreateAPIView):
         return qs
 
     def perform_create(self, serializer):
-        if is_internal_admin(self.request.user):
+        user = self.request.user
+        organization = _organization_from_validated(serializer)
+        if organization:
+            _assert_can_create_in_organization(user, organization)
+        if is_internal_superadmin(user) or is_internal_staff(user):
             serializer.save()
             return
-        serializer.save(owner=self.request.user)
+        if user.profile.role == UserProfile.Role.EXTERNAL_SUPERADMIN:
+            serializer.save()
+            return
+        serializer.save(owner=user)
 
 
 class ProjectRetrieveUpdateView(generics.RetrieveUpdateAPIView):
@@ -109,15 +138,22 @@ class DatasetListCreateView(generics.ListCreateAPIView):
         return scoped_datasets_for_user(self.request.user)
 
     def perform_create(self, serializer):
-        if is_internal_admin(self.request.user):
+        user = self.request.user
+        organization = _organization_from_validated(serializer)
+        if organization:
+            _assert_can_create_in_organization(user, organization)
+        if is_internal_superadmin(user) or is_internal_staff(user):
             serializer.save()
             return
-        serializer.save(owner=self.request.user)
+        if user.profile.role == UserProfile.Role.EXTERNAL_SUPERADMIN:
+            serializer.save()
+            return
+        serializer.save(owner=user)
 
 
 class DatasetRetrieveUpdateView(generics.RetrieveUpdateAPIView):
     serializer_class = DatasetSerializer
-    permission_classes = [permissions.IsAuthenticated, IsInternalAdminOrDatasetOwner]
+    permission_classes = [permissions.IsAuthenticated, CanEditDataset]
 
     def get_queryset(self):
         return scoped_datasets_for_user(self.request.user)
@@ -125,7 +161,7 @@ class DatasetRetrieveUpdateView(generics.RetrieveUpdateAPIView):
 
 class DatasetFileUploadView(generics.CreateAPIView):
     serializer_class = DatasetFileSerializer
-    permission_classes = [permissions.IsAuthenticated, IsInternalAdminOrDatasetOwner]
+    permission_classes = [permissions.IsAuthenticated, CanEditDataset]
     parser_classes = [MultiPartParser, FormParser]
 
     def get_dataset(self):
@@ -153,19 +189,3 @@ class MetadataFieldTypeListView(APIView):
         ]
         serializer = FieldTypeSerializer(payload, many=True)
         return Response(serializer.data)
-
-
-class RoleSeedView(APIView):
-    permission_classes = [permissions.IsAdminUser]
-
-    def post(self, request):
-        usernames = request.data.get("internal_admin_usernames", [])
-        updated = []
-        for username in usernames:
-            profile = UserProfile.objects.select_related("user").filter(user__username=username).first()
-            if not profile:
-                continue
-            profile.role = UserProfile.Role.INTERNAL_ADMIN
-            profile.save(update_fields=["role"])
-            updated.append(username)
-        return Response({"updated_internal_admins": updated})

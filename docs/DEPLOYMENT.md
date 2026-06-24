@@ -165,19 +165,12 @@ Sample uploads live under [`src/lib/data/tff-sample-data/`](../src/lib/data/tff-
 | **million tree plot** | Survival paper PDFs; `101-1` `.xlsx` | up to ~543 KB | `tabular` + `document_archive` | mixed `documentation` + `primary_data` |
 | **soil monitoring** | Sampling PDFs; FEMC `.xlsx` | up to ~1.5 MB | `tabular` + `document_archive` | `documentation` + `primary_data` |
 
-Import into Django with `seed_sample_datasets` (run after research projects exist):
+Import into Django — full runbook: **[SEED_DATA.md](SEED_DATA.md)**.
 
 ```bash
-# One-time fix for duplicate projects from earlier seeds (EC2 or local):
 python backend/manage.py cleanup_seed_duplicates
-# Preview only: python backend/manage.py cleanup_seed_duplicates --dry-run
-
 python backend/manage.py seed_sample_datasets --owner <username>
-docker compose -f docker-compose.prod.yml exec backend python backend/manage.py cleanup_seed_duplicates
-docker compose -f docker-compose.prod.yml exec backend python backend/manage.py seed_sample_datasets --owner <username>
 ```
-
-Do **not** re-run `seed_sample_projects` on EC2 unless you need metadata refresh (`--update`). It will consolidate duplicates but cleanup alone is enough to fix the admin list.
 
 | Sample folder | `Project.slug` | Links to existing research project? |
 |---------------|----------------|-------------------------------------|
@@ -394,6 +387,7 @@ PUBLIC_DJANGO_API_BASE_URL=http://127.0.0.1:8000
 
 ## Related docs
 
+- [`docs/SEED_DATA.md`](../docs/SEED_DATA.md) — **seed/cleanup runbook** (read before updating seeds)
 - [`backend/README.md`](../backend/README.md) — API setup, migrations
 - [`backend/API_CONTRACT.md`](../backend/API_CONTRACT.md) — upload governance, endpoints
 - [`backend/OVERDUE_DATA_ALERT_SPEC.md`](../backend/OVERDUE_DATA_ALERT_SPEC.md) — alert automation (future)

@@ -23,16 +23,32 @@ Query params:
 
 ## Roles
 
-- `internal_admin`: read/write all datasets
-- `external_partner_admin`: read/write only owned datasets
+| Role | View | Edit |
+|------|------|------|
+| `internal_superadmin` | All projects and datasets | All; can assign roles via API |
+| `internal_admin` | NYBG organization records | NYBG organization records only |
+| `external_superadmin` | Home organization records | Home organization records only |
+| `external_admin` | Owned (+ project manager) records | Owned (+ project manager) records only |
 
-## Endpoints
+Bootstrap the first superadmin: `python backend/manage.py assign_internal_superadmin <username>`
+
+### `POST /api/accounts/assign-role/` (internal superadmin only)
+
+```json
+{
+  "username": "colleague",
+  "role": "internal_superadmin",
+  "organization": null
+}
+```
+
+External roles require `organization` (organization id). Internal roles must omit `organization`.
+
+### `GET /api/accounts/me/`
+Returns current user, role, organization, and `can_assign_roles` (true for internal superadmins).
 
 ### `GET /api/accounts/csrf/`
 Sets CSRF cookie. No auth required.
-
-### `GET /api/accounts/me/`
-Returns current user and role.
 
 ### `GET /api/organizations/`
 List organizations for dataset assignment.

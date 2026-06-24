@@ -45,7 +45,7 @@ CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhos
 CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174
 ```
 
-Optional: `createsuperuser` + `seed_sample_projects --owner <username>` for `/research` and `/data` test data.
+Optional: `createsuperuser` + seed commands — see [docs/SEED_DATA.md](docs/SEED_DATA.md).
 
 **Docker alternative:** `docker compose up` (local Postgres + Django) — see [backend/README.md](backend/README.md).
 
@@ -66,18 +66,7 @@ The `/research` and `/data` routes load from the Django public API (`/api/public
 
 ### Public API + sample data
 
-`/research` and `/data` need both servers running and `PUBLIC_DJANGO_API_BASE_URL=http://127.0.0.1:8000` in root `.env`.
-
-```bash
-source .venv-local/bin/activate   # macOS / Linux (from repo root)
-# .venv-local\Scripts\Activate.ps1   # Windows PowerShell
-
-python backend/manage.py createsuperuser
-python backend/manage.py seed_sample_projects --owner <your-username>
-python backend/manage.py seed_sample_datasets --owner <your-username>
-```
-
-Mark projects **shared publicly** and datasets **expose on public API** in admin or `/projects`.
+See [docs/SEED_DATA.md](docs/SEED_DATA.md) for safe seed/cleanup workflows (avoid duplicate projects).
 
 ### Minimal architecture
 

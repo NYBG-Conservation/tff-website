@@ -47,23 +47,9 @@ python backend/manage.py migrate
 python backend/manage.py createsuperuser
 ```
 
-6. (Optional) Seed research project metadata:
+6. (Optional) Seed research projects and sample files — **[docs/SEED_DATA.md](../docs/SEED_DATA.md)** (read before re-running seeds).
 
-```bash
-python backend/manage.py seed_sample_projects --owner <your-username>
-# Re-run with --update to refresh summaries/descriptions on existing slugs
-```
-
-7. (Optional) Link sample files from `src/lib/data/tff-sample-data/` to existing projects (idempotent):
-
-```bash
-python backend/manage.py cleanup_seed_duplicates   # one-time: merge duplicate projects from earlier seeds
-python backend/manage.py seed_sample_datasets --owner <your-username>
-# Only if a data-only project slug is still missing:
-# python backend/manage.py seed_sample_datasets --owner <user> --create-missing-projects
-```
-
-8. Run server:
+7. Run server:
 
 ```bash
 python backend/manage.py runserver 0.0.0.0:8000
@@ -76,7 +62,7 @@ python backend/manage.py runserver 0.0.0.0:8000
 
 ## Base apps
 
-- `apps.accounts`: user roles (`internal_admin`, `external_partner_admin`)
+- `apps.accounts`: four platform roles — see [API_CONTRACT.md](API_CONTRACT.md#roles)
 - `apps.organizations`: organizations and partners
 - `apps.datasets`: dataset records, metadata definitions, metadata values, and file versions
 
