@@ -1,0 +1,30 @@
+---
+description: Remind about HTTPS, USE_HTTPS, and security when making the TFF API public or production-facing
+alwaysApply: true
+---
+
+# Public API / production exposure checklist
+
+When the user discusses **making the API public**, **opening port 8000 to the internet**, **Vercel production**, **focus group go-live**, **ALB/domain setup**, or **removing IP-only security group rules**, proactively surface this checklist before or alongside implementation.
+
+## Current staging posture (HTTP on EC2 IP)
+
+- `USE_HTTPS=false` in `backend/.env` on EC2 — required for admin login over `http://EC2_IP:8000` because `CSRF_COOKIE_SECURE` / `SESSION_COOKIE_SECURE` are tied to `USE_HTTPS` in `config/settings/prod.py`.
+- Port **8000** should be restricted to known IPs (home/work), not `0.0.0.0/0`, unless intentionally temporary for Vercel SSR.
+
+## Before the API is truly public (required)
+
+1. **TLS**: ALB or nginx + ACM cert → `https://api.yourdomain.org` (do not leave credentials on plain HTTP for real users).
+2. **`USE_HTTPS=true`** on EC2; restart Docker.
+3. **`CSRF_TRUSTED_ORIGINS`** and **`CORS_ALLOWED_ORIGINS`**: use `https://` Vercel URL + `https://` API domain only (no `http://EC2_IP:8000`).
+4. **`DJANGO_ALLOWED_HOSTS`**: API domain, not raw IP long-term.
+5. **EC2 security group**: close public **8000**; only ALB → EC2:8000 (or 443 on nginx).
+6. **`PUBLIC_DJANGO_API_BASE_URL`** on Vercel → `https://api.yourdomain.org`.
+7. **`/projects` cross-origin login**: may need `SESSION_COOKIE_SAMESITE=None` + secure cookies once frontend and API are on different HTTPS origins.
+8. **Rotate secrets** if `.env` values were ever pasted in chat or committed.
+
+## RDS (unchanged)
+
+- RDS inbound **only** from EC2 security group — never home IP on `tff-rds-sg`.
+
+See `docs/DEPLOYMENT.md` § CORS/sessions and `backend/.env.production.example`.

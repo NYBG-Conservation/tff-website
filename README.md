@@ -69,6 +69,9 @@ The `/research` and `/data` routes load from the Django public API (`/api/public
 `/research` and `/data` need both servers running and `PUBLIC_DJANGO_API_BASE_URL=http://127.0.0.1:8000` in root `.env`.
 
 ```bash
+source .venv-local/bin/activate   # macOS / Linux (from repo root)
+# .venv-local\Scripts\Activate.ps1   # Windows PowerShell
+
 python backend/manage.py createsuperuser
 python backend/manage.py seed_sample_projects --owner <your-username>
 ```

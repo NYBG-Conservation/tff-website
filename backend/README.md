@@ -2,17 +2,63 @@
 
 ## Quick start
 
-1. Create and activate a virtualenv.
+Run these from the **repo root** unless noted.
+
+1. Create and activate a virtualenv (macOS / Linux):
+
+```bash
+python3.12 -m venv .venv-local
+source .venv-local/bin/activate
+```
+
+Windows (PowerShell):
+
+```powershell
+python -m venv .venv-local
+.venv-local\Scripts\Activate.ps1
+```
+
+After activation, your shell prompt usually shows `(.venv-local)`. Use `deactivate` to exit the venv.
+
 2. Install dependencies:
-   - `pip install -r backend/requirements.txt`
+
+```bash
+pip install -r backend/requirements.txt
+```
+
 3. Copy env template:
-   - `copy backend\\.env.example backend\\.env` (Windows)
+
+```bash
+cp backend/.env.example backend/.env   # macOS / Linux
+# copy backend\.env.example backend\.env   # Windows
+```
+
+Set `USE_SQLITE=true` in `backend/.env` for local dev without Postgres.
+
 4. Run migrations:
-   - `python backend/manage.py migrate`
+
+```bash
+python backend/manage.py migrate
+```
+
 5. Create a superuser:
-   - `python backend/manage.py createsuperuser`
-6. Run server:
-   - `python backend/manage.py runserver 0.0.0.0:8000`
+
+```bash
+python backend/manage.py createsuperuser
+```
+
+6. (Optional) Seed research project metadata:
+
+```bash
+python backend/manage.py seed_sample_projects --owner <your-username>
+# Re-run with --update to refresh summaries/descriptions on existing slugs
+```
+
+7. Run server:
+
+```bash
+python backend/manage.py runserver 0.0.0.0:8000
+```
 
 ## Database mode (Postgres default, SQLite fallback)
 

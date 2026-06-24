@@ -259,9 +259,13 @@ git clone <repo-url> tff-website && cd tff-website
 cp backend/.env.production.example backend/.env
 # Edit: RDS, DJANGO_SECRET_KEY, domains, CORS, optional S3 vars
 docker compose -f docker-compose.prod.yml up --build -d
+docker compose -f docker-compose.prod.yml ps   # service name is backend, not web
+docker compose -f docker-compose.prod.yml exec backend python backend/manage.py seed_sample_projects --owner <username> --update
 ```
 
 Entrypoint: migrations → `collectstatic` → Gunicorn ([`backend/docker-entrypoint.sh`](../backend/docker-entrypoint.sh)).
+
+If `exec` fails with **service "web" is not running** (or **service "backend" is not running**), start the stack with `up -d` first, or check `docker compose -f docker-compose.prod.yml ps` and `logs backend`. The production compose file defines one service: **`backend`** ([`docker-compose.prod.yml`](../docker-compose.prod.yml)).
 
 ### TLS (recommended)
 
@@ -296,6 +300,20 @@ Use `@sveltejs/adapter-vercel` if `adapter-auto` does not detect Vercel in CI.
 
 Early staging: use EC2-hosted Django admin only; keep Vercel read-only until cross-origin login is verified.
 
+### Before making the API public (HTTPS checklist)
+
+Staging today uses **`http://EC2_IP:8000`** with **`USE_HTTPS=false`** in `backend/.env` so admin CSRF cookies work over HTTP. **Do not ship that configuration to real users.**
+
+Before opening the API to the internet or the focus group:
+
+1. Put the API behind **TLS** (`https://api.yourdomain.org` via ALB or nginx + ACM).
+2. Set **`USE_HTTPS=true`** on EC2 and restart Docker (`config/settings/prod.py` ties secure cookies to this flag).
+3. Update **`CSRF_TRUSTED_ORIGINS`**, **`CORS_ALLOWED_ORIGINS`**, **`DJANGO_ALLOWED_HOSTS`**, and Vercel **`PUBLIC_DJANGO_API_BASE_URL`** to `https://` URLs (drop raw EC2 IP origins).
+4. Restrict EC2 security group: **no public port 8000**; only load balancer → EC2.
+5. Plan **`SESSION_COOKIE_SAMESITE=None`** if `/projects` login from Vercel still fails after HTTPS.
+
+Cursor rule `.cursor/rules/public-api-https.mdc` reminds the agent to surface this list when you ask about going public.
+
 ---
 
 ## 4. Smoke tests
@@ -304,9 +322,11 @@ Early staging: use EC2-hosted Django admin only; keep Vercel read-only until cro
 curl https://api.yourdomain.org/api/public/projects/
 curl "https://api.yourdomain.org/api/public/datasets/?project=knotweed-management-study"
 
-# On EC2
+# On EC2 (service name is backend — not web)
+docker compose -f docker-compose.prod.yml ps
 docker compose -f docker-compose.prod.yml logs -f backend
 docker compose -f docker-compose.prod.yml exec backend python backend/manage.py createsuperuser
+docker compose -f docker-compose.prod.yml exec backend python backend/manage.py seed_sample_projects --owner <username> --update
 ```
 
 ---
@@ -317,6 +337,26 @@ docker compose -f docker-compose.prod.yml exec backend python backend/manage.py 
 |------|-----|
 | [`docker-compose.yml`](../docker-compose.yml) | Local dev: Postgres container + Django runserver |
 | [`docker-compose.prod.yml`](../docker-compose.prod.yml) | EC2: Django + Gunicorn → RDS |
+
+### Local backend (venv, no Docker)
+
+From the repo root on macOS / Linux:
+
+```bash
+python3.12 -m venv .venv-local          # first time only
+source .venv-local/bin/activate         # every new terminal session
+pip install -r backend/requirements.txt # first time or after dependency changes
+
+cp backend/.env.example backend/.env    # set USE_SQLITE=true for SQLite
+python backend/manage.py migrate
+python backend/manage.py createsuperuser
+python backend/manage.py seed_sample_projects --owner <your-username>
+python backend/manage.py runserver 127.0.0.1:8000
+```
+
+Windows PowerShell: use `.venv-local\Scripts\Activate.ps1` instead of `source .venv-local/bin/activate`.
+
+Use `python backend/manage.py seed_sample_projects --owner <user> --update` to refresh metadata on projects that already exist (matched by slug).
 
 Local frontend (root [`.env.example`](../.env.example)):
 
