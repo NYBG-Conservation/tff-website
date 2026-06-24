@@ -205,6 +205,17 @@ class ProjectModelTests(TestCase):
         )
         self.assertEqual(project.slug, "forest-soil-cores")
 
+    def test_explicit_slug_is_preserved_on_create(self):
+        project = Project.objects.create(
+            short_title="CFI",
+            slug="forest-inventory-transect-study",
+            lead_name="John",
+            lead_email="john@nybg.org",
+            organization=self.organization,
+            owner=self.owner,
+        )
+        self.assertEqual(project.slug, "forest-inventory-transect-study")
+
     def test_slugify_strips_punctuation(self):
         self.assertEqual(
             slugify_project_title("2026 Continuous Forest Index!"),

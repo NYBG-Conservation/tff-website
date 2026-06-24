@@ -1,7 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 
-from apps.datasets.models import Dataset, Project
+from apps.datasets.models import Project
+from apps.datasets.seed_utils import consolidate_projects_for_slug
 from apps.organizations.models import Organization
 
 # Research projects aligned with legacy /research copy and researchProjects.ts.
@@ -193,10 +194,9 @@ class Command(BaseCommand):
         if not owner:
             raise CommandError(f"Owner user '{owner_username}' does not exist.")
 
-        nybg, _ = Organization.objects.get_or_create(name="New York Botanical Garden")
         created = 0
         updated = 0
-        knotweed_project = None
+        consolidated = 0
 
         for source_payload in SAMPLE_PROJECTS:
             payload = dict(source_payload)
@@ -207,36 +207,24 @@ class Command(BaseCommand):
                 raise CommandError(f"Project '{payload['short_title']}' is missing a slug.")
 
             defaults = {**payload, "organization": organization, "owner": owner, "slug": slug}
-            if update:
-                project, was_created = Project.objects.update_or_create(slug=slug, defaults=defaults)
-            else:
-                project, was_created = Project.objects.get_or_create(slug=slug, defaults=defaults)
+            keeper, _, deleted = consolidate_projects_for_slug(slug)
+            if deleted:
+                consolidated += deleted
 
-            if slug == "knotweed-management-study":
-                knotweed_project = project
-            if was_created:
-                created += 1
-            elif update:
-                updated += 1
+            if keeper:
+                if update:
+                    for field, value in defaults.items():
+                        setattr(keeper, field, value)
+                    keeper.save()
+                    updated += 1
+                continue
 
-        if knotweed_project:
-            Dataset.objects.get_or_create(
-                title="Knotweed Treatment Plot Outcomes",
-                project=knotweed_project,
-                defaults={
-                    "description": "Plot-level knotweed treatment outcomes.",
-                    "cadence": Dataset.Cadence.ANNUAL,
-                    "status": Dataset.Status.ACTIVE,
-                    "data_type": Dataset.DataType.TABULAR,
-                    "project_slug": knotweed_project.slug,
-                    "expose_on_public_api": False,
-                    "owner": owner,
-                    "organization": nybg,
-                },
-            )
+            Project.objects.create(**defaults)
+            created += 1
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"Seeded {created} new projects, updated {updated} existing for owner '{owner_username}'"
+                f"Seeded {created} new projects, updated {updated} existing, "
+                f"removed {consolidated} duplicates for owner '{owner_username}'"
             )
         )

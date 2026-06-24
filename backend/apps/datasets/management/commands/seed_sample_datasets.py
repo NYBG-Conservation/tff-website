@@ -7,10 +7,73 @@ from django.core.files import File
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.datasets.models import Dataset, DatasetFile, Project
+from apps.datasets.seed_utils import find_project_by_canonical_slug
 from apps.organizations.models import Organization
 
-# Repo root: .../backend/apps/datasets/management/commands/this_file.py -> parents[5]
 _REPO_ROOT = Path(__file__).resolve().parents[5]
+
+SAMPLE_FOLDER_CONFIG = [
+    {
+        "folder": "knotweed",
+        "project_slug": "knotweed-management-study",
+        "project_title": "Knotweed Management Study",
+        "dataset_title": "Knotweed Treatment Plot Outcomes",
+        "dataset_description": "Plot-level knotweed treatment outcomes and related documentation.",
+        "cadence": Dataset.Cadence.ANNUAL,
+        "data_type": Dataset.DataType.TABULAR,
+    },
+    {
+        "folder": "CFI",
+        "project_slug": "forest-inventory-transect-study",
+        "project_title": "CFI",
+        "project_full_title": "New York Botanical Garden Forest Inventory Transect Study",
+        "dataset_title": "Continuous Forest Inventory — Field Data & Manual",
+        "dataset_description": "Overstory and understory inventory spreadsheets and field manual.",
+        "cadence": Dataset.Cadence.ANNUAL,
+        "data_type": Dataset.DataType.TABULAR,
+    },
+    {
+        "folder": "breeding bird census",
+        "project_slug": "breeding-bird-census",
+        "project_title": "Annual Breeding Bird Census",
+        "dataset_title": "NYBG Breeding Bird Census Data",
+        "dataset_description": "Breeding bird census data, handbook, and presentation materials.",
+        "cadence": Dataset.Cadence.ANNUAL,
+        "data_type": Dataset.DataType.BIODIVERSITY_OBSERVATION,
+    },
+    {
+        "folder": "acorn planting",
+        "project_slug": "acorn-planting",
+        "project_title": "Acorn Planting — Ten Tallest Method",
+        "dataset_title": "Ten Tallest Plot Data",
+        "dataset_description": "Ten-tallest plot data and method instructions.",
+        "cadence": Dataset.Cadence.ANNUAL,
+        "data_type": Dataset.DataType.TABULAR,
+    },
+    {
+        "folder": "million tree plot",
+        "project_slug": "million-tree-plot",
+        "project_title": "Million Tree Plot Monitoring",
+        "dataset_title": "Million Tree Plot — Plot 101-1",
+        "dataset_description": "MillionTreesNYC reforestation plot data and related publications.",
+        "cadence": Dataset.Cadence.ONE_OFF,
+        "data_type": Dataset.DataType.TABULAR,
+    },
+    {
+        "folder": "soil monitoring",
+        "project_slug": "soil-monitoring",
+        "project_title": "Forest Soil Monitoring",
+        "dataset_title": "Forest Soil Sampling & FEMC Analysis",
+        "dataset_description": "Soil sampling plots, FEMC nutrient analysis, and proposal documents.",
+        "cadence": Dataset.Cadence.ANNUAL,
+        "data_type": Dataset.DataType.TABULAR,
+    },
+]
+
+_TABULAR_EXTENSIONS = {".xlsx", ".xls", ".csv"}
+_DOCUMENTATION_EXTENSIONS = {".pdf", ".pptx", ".ppt", ".doc", ".docx"}
+
+
 def resolve_sample_data_root() -> Path | None:
     candidates: list[Path] = []
     env_dir = os.environ.get("TFF_SAMPLE_DATA_DIR", "").strip()
@@ -23,76 +86,6 @@ def resolve_sample_data_root() -> Path | None:
     return None
 
 
-# Maps each folder under tff-sample-data to a project slug. When the project already
-# exists (e.g. from seed_sample_projects), datasets and files are linked to it.
-SAMPLE_FOLDER_CONFIG = [
-    {
-        "folder": "knotweed",
-        "project_slug": "knotweed-management-study",
-        "project_title": "Knotweed Management Study",
-        "dataset_title": "Knotweed Treatment Plot Outcomes",
-        "dataset_description": "Plot-level knotweed treatment outcomes and related documentation.",
-        "cadence": Dataset.Cadence.ANNUAL,
-        "data_type": Dataset.DataType.TABULAR,
-        "require_existing_project": True,
-    },
-    {
-        "folder": "CFI",
-        "project_slug": "forest-inventory-transect-study",
-        "project_title": "CFI",
-        "project_full_title": "New York Botanical Garden Forest Inventory Transect Study",
-        "dataset_title": "Continuous Forest Inventory — Field Data & Manual",
-        "dataset_description": "Overstory and understory inventory spreadsheets and field manual.",
-        "cadence": Dataset.Cadence.ANNUAL,
-        "data_type": Dataset.DataType.TABULAR,
-        "require_existing_project": True,
-    },
-    {
-        "folder": "breeding bird census",
-        "project_slug": "breeding-bird-census",
-        "project_title": "Annual Breeding Bird Census",
-        "dataset_title": "NYBG Breeding Bird Census Data",
-        "dataset_description": "Breeding bird census data, handbook, and presentation materials.",
-        "cadence": Dataset.Cadence.ANNUAL,
-        "data_type": Dataset.DataType.BIODIVERSITY_OBSERVATION,
-        "require_existing_project": False,
-    },
-    {
-        "folder": "acorn planting",
-        "project_slug": "acorn-planting",
-        "project_title": "Acorn Planting — Ten Tallest Method",
-        "dataset_title": "Ten Tallest Plot Data",
-        "dataset_description": "Ten-tallest plot data and method instructions.",
-        "cadence": Dataset.Cadence.ANNUAL,
-        "data_type": Dataset.DataType.TABULAR,
-        "require_existing_project": False,
-    },
-    {
-        "folder": "million tree plot",
-        "project_slug": "million-tree-plot",
-        "project_title": "Million Tree Plot Monitoring",
-        "dataset_title": "Million Tree Plot — Plot 101-1",
-        "dataset_description": "MillionTreesNYC reforestation plot data and related publications.",
-        "cadence": Dataset.Cadence.ONE_OFF,
-        "data_type": Dataset.DataType.TABULAR,
-        "require_existing_project": False,
-    },
-    {
-        "folder": "soil monitoring",
-        "project_slug": "soil-monitoring",
-        "project_title": "Forest Soil Monitoring",
-        "dataset_title": "Forest Soil Sampling & FEMC Analysis",
-        "dataset_description": "Soil sampling plots, FEMC nutrient analysis, and proposal documents.",
-        "cadence": Dataset.Cadence.ANNUAL,
-        "data_type": Dataset.DataType.TABULAR,
-        "require_existing_project": False,
-    },
-]
-
-_TABULAR_EXTENSIONS = {".xlsx", ".xls", ".csv"}
-_DOCUMENTATION_EXTENSIONS = {".pdf", ".pptx", ".ppt", ".doc", ".docx"}
-
-
 def infer_file_kind(filename: str) -> str:
     extension = Path(filename).suffix.lower()
     if extension in _TABULAR_EXTENSIONS:
@@ -103,10 +96,15 @@ def infer_file_kind(filename: str) -> str:
 
 
 class Command(BaseCommand):
-    help = "Import files from src/lib/data/tff-sample-data into datasets, linking to existing projects by slug."
+    help = "Link tff-sample-data files to projects by slug (idempotent; does not create projects by default)."
 
     def add_arguments(self, parser):
         parser.add_argument("--owner", required=True, help="Username assigned as dataset owner and file uploader.")
+        parser.add_argument(
+            "--create-missing-projects",
+            action="store_true",
+            help="Create minimal project rows when the canonical slug is missing (off by default).",
+        )
         parser.add_argument(
             "--update",
             action="store_true",
@@ -121,6 +119,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         owner_username = options["owner"]
+        create_missing_projects = options["create_missing_projects"]
         update = options["update"]
         folder_filter = set(options["folders"] or [])
 
@@ -154,11 +153,11 @@ class Command(BaseCommand):
                 skipped_folders.append(f"{folder_name} (missing directory)")
                 continue
 
-            project = Project.objects.filter(slug=config["project_slug"]).first()
+            project = find_project_by_canonical_slug(config["project_slug"])
             if not project:
-                if config["require_existing_project"]:
+                if not create_missing_projects:
                     skipped_folders.append(
-                        f"{folder_name} (project '{config['project_slug']}' not found — run seed_sample_projects first)"
+                        f"{folder_name} (no project '{config['project_slug']}' — run seed_sample_projects or cleanup_seed_duplicates)"
                     )
                     continue
                 project, was_created = Project.objects.get_or_create(
@@ -195,7 +194,7 @@ class Command(BaseCommand):
             )
             if dataset_was_created:
                 datasets_created += 1
-            elif not dataset.project_slug:
+            elif dataset.project_slug != project.slug:
                 dataset.project_slug = project.slug
                 dataset.save(update_fields=["project_slug"])
 
