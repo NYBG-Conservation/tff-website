@@ -8,7 +8,8 @@ from apps.organizations.models import Organization
 # Intro paragraph for the research page lives in the frontend — not stored as a Project row.
 SAMPLE_PROJECTS = [
     {
-        "short_title": "Forest Inventory Transect Study",
+        "short_title": "CFI",
+        "full_title": "New York Botanical Garden Forest Inventory Transect Study",
         "slug": "forest-inventory-transect-study",
         "lead_name": "NYBG Forest staff",
         "lead_email": "john@nybg.org",

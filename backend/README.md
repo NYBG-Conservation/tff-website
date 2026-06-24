@@ -54,7 +54,15 @@ python backend/manage.py seed_sample_projects --owner <your-username>
 # Re-run with --update to refresh summaries/descriptions on existing slugs
 ```
 
-7. Run server:
+7. (Optional) Import sample dataset files from `src/lib/data/tff-sample-data/`:
+
+```bash
+python backend/manage.py seed_sample_datasets --owner <your-username>
+# Links knotweed + CFI to existing research projects; creates data-only projects for other folders
+# Re-run with --update to replace file blobs; --folder knotweed to import one folder only
+```
+
+8. Run server:
 
 ```bash
 python backend/manage.py runserver 0.0.0.0:8000

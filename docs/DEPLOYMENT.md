@@ -165,6 +165,22 @@ Sample uploads live under [`src/lib/data/tff-sample-data/`](../src/lib/data/tff-
 | **million tree plot** | Survival paper PDFs; `101-1` `.xlsx` | up to ~543 KB | `tabular` + `document_archive` | mixed `documentation` + `primary_data` |
 | **soil monitoring** | Sampling PDFs; FEMC `.xlsx` | up to ~1.5 MB | `tabular` + `document_archive` | `documentation` + `primary_data` |
 
+Import into Django with `seed_sample_datasets` (run after `seed_sample_projects` for knotweed and CFI):
+
+```bash
+python backend/manage.py seed_sample_datasets --owner <username>
+docker compose -f docker-compose.prod.yml exec backend python backend/manage.py seed_sample_datasets --owner <username>
+```
+
+| Sample folder | `Project.slug` | Links to existing research project? |
+|---------------|----------------|-------------------------------------|
+| knotweed | `knotweed-management-study` | Yes |
+| CFI | `forest-inventory-transect-study` | Yes |
+| breeding bird census | `breeding-bird-census` | Creates data-only project |
+| acorn planting | `acorn-planting` | Creates data-only project |
+| million tree plot | `million-tree-plot` | Creates data-only project |
+| soil monitoring | `soil-monitoring` | Creates data-only project |
+
 ### File formats and upload policy
 
 Observed formats: **`.xlsx`, `.xls`, `.pdf`, `.pptx`**.
@@ -177,16 +193,16 @@ Current API policy ([`backend/API_CONTRACT.md`](../backend/API_CONTRACT.md)):
 
 Each real project typically has **multiple files** (raw tables, manuals, proposals, presentations). Model as one `Project` → one or more `Dataset` rows → multiple `DatasetFile` rows with `file_kind` (`primary_data`, `documentation`, `derived_output`, etc.).
 
-### Suggested slug mapping (for future import)
+### Slug mapping (`seed_sample_datasets`)
 
-| Sample folder | Suggested `Project.slug` |
-|---------------|--------------------------|
-| CFI | `continuous-forest-index` |
-| breeding bird census | `breeding-bird-census` |
-| acorn planting | `acorn-planting` |
-| knotweed | `knotweed-management-study` |
-| million tree plot | `million-tree-plot` |
-| soil monitoring | `soil-monitoring` |
+| Sample folder | `Project.slug` | Notes |
+|---------------|----------------|-------|
+| knotweed | `knotweed-management-study` | Links to research project from `seed_sample_projects` |
+| CFI | `forest-inventory-transect-study` | Links to research project from `seed_sample_projects` |
+| breeding bird census | `breeding-bird-census` | Creates data-only project if missing |
+| acorn planting | `acorn-planting` | Creates data-only project if missing |
+| million tree plot | `million-tree-plot` | Creates data-only project if missing |
+| soil monitoring | `soil-monitoring` | Creates data-only project if missing |
 
 ### Storage architecture
 
@@ -261,6 +277,7 @@ cp backend/.env.production.example backend/.env
 docker compose -f docker-compose.prod.yml up --build -d
 docker compose -f docker-compose.prod.yml ps   # service name is backend, not web
 docker compose -f docker-compose.prod.yml exec backend python backend/manage.py seed_sample_projects --owner <username> --update
+docker compose -f docker-compose.prod.yml exec backend python backend/manage.py seed_sample_datasets --owner <username>
 ```
 
 Entrypoint: migrations → `collectstatic` → Gunicorn ([`backend/docker-entrypoint.sh`](../backend/docker-entrypoint.sh)).
@@ -327,6 +344,7 @@ docker compose -f docker-compose.prod.yml ps
 docker compose -f docker-compose.prod.yml logs -f backend
 docker compose -f docker-compose.prod.yml exec backend python backend/manage.py createsuperuser
 docker compose -f docker-compose.prod.yml exec backend python backend/manage.py seed_sample_projects --owner <username> --update
+docker compose -f docker-compose.prod.yml exec backend python backend/manage.py seed_sample_datasets --owner <username>
 ```
 
 ---
@@ -351,6 +369,7 @@ cp backend/.env.example backend/.env    # set USE_SQLITE=true for SQLite
 python backend/manage.py migrate
 python backend/manage.py createsuperuser
 python backend/manage.py seed_sample_projects --owner <your-username>
+python backend/manage.py seed_sample_datasets --owner <your-username>
 python backend/manage.py runserver 127.0.0.1:8000
 ```
 
@@ -375,5 +394,4 @@ PUBLIC_DJANGO_API_BASE_URL=http://127.0.0.1:8000
 ### Optional follow-up (not in this doc)
 
 - Implement S3 + presigned uploads in Django
-- Management command to import `tff-sample-data` into RDS + S3
 - `.gitignore` / Git LFS policy for sample binaries

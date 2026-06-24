@@ -74,6 +74,7 @@ source .venv-local/bin/activate   # macOS / Linux (from repo root)
 
 python backend/manage.py createsuperuser
 python backend/manage.py seed_sample_projects --owner <your-username>
+python backend/manage.py seed_sample_datasets --owner <your-username>
 ```
 
 Mark projects **shared publicly** and datasets **expose on public API** in admin or `/projects`.

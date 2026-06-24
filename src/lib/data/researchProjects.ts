@@ -26,7 +26,7 @@ export const researchProjects: ResearchProject[] = [
 	{
 		id: 'forest-inventory-transect-study',
 		image: '/images/home/forest-trail.png',
-		title: 'Forest Inventory Transect Study',
+		title: 'CFI',
 		summary: 'Long-running transect sampling of trees, shrubs, and herbaceous cover across the forest.',
 		datasetIds: ['transect-db-2024'],
 		descriptionParagraphs: [
