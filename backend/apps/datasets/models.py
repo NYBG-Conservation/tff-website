@@ -59,7 +59,7 @@ class Project(models.Model):
         ordering = ("short_title",)
 
     def save(self, *args, **kwargs):
-        if self.short_title and (not self.slug or not self.pk):
+        if self.short_title and not self.slug:
             self.slug = generate_unique_project_slug(
                 self.short_title,
                 exclude_pk=self.pk,
