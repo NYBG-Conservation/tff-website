@@ -9,12 +9,6 @@ RESEARCH_PROJECT_SLUGS = frozenset(
         "citizen-science-phenology-monitoring",
         "knotweed-management-study",
         "macroinvertebrate-monitoring",
-    }
-)
-
-# Sample-data-only projects (seed_sample_datasets)
-SAMPLE_DATA_PROJECT_SLUGS = frozenset(
-    {
         "breeding-bird-census",
         "acorn-planting",
         "million-tree-plot",
@@ -22,7 +16,25 @@ SAMPLE_DATA_PROJECT_SLUGS = frozenset(
     }
 )
 
-CANONICAL_PROJECT_SLUGS = RESEARCH_PROJECT_SLUGS | SAMPLE_DATA_PROJECT_SLUGS
+# Projects with files under tff-sample-data/ (subset of research projects).
+SAMPLE_FOLDER_PROJECT_SLUGS = frozenset(
+    {
+        "forest-inventory-transect-study",
+        "knotweed-management-study",
+        "breeding-bird-census",
+        "acorn-planting",
+        "million-tree-plot",
+        "soil-monitoring",
+    }
+)
+
+# Backwards-compatible alias.
+SAMPLE_DATA_PROJECT_SLUGS = SAMPLE_FOLDER_PROJECT_SLUGS - {
+    "forest-inventory-transect-study",
+    "knotweed-management-study",
+}
+
+CANONICAL_PROJECT_SLUGS = RESEARCH_PROJECT_SLUGS
 
 # Wrong slugs produced before Project.save() respected explicit slug values.
 PROJECT_SLUG_ALIASES: dict[str, str] = {

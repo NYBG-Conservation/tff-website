@@ -92,5 +92,45 @@ export const researchProjects: ResearchProject[] = [
 			"If you would like to participate as a citizen scientist, please contact Volunteer Services.",
 			"If you would like to participate in a teacher professional development workshop or have your school participate in this project, please contact Children's Education."
 		]
+	},
+	{
+		id: 'breeding-bird-census',
+		image: '/images/home/forest-canopy.png',
+		title: 'Annual Breeding Bird Census',
+		summary: 'Annual breeding bird survey documenting forest avian diversity and habitat use.',
+		descriptionParagraphs: [
+			'The Thain Family Forest breeding bird census tracks bird species breeding within the Forest using standard survey protocols aligned with the New York State Breeding Bird Atlas. Observers document species presence, breeding behavior, and habitat associations across the site.',
+			'Data include annual census spreadsheets, survey presentation materials, and the NYS BBA handbook used to guide field identification and breeding code assignment.'
+		]
+	},
+	{
+		id: 'acorn-planting',
+		image: '/images/home/forest-trail.png',
+		title: 'Acorn Planting — Ten Tallest Method',
+		summary: 'Native oak seedling establishment monitored with the ten-tallest plot method.',
+		descriptionParagraphs: [
+			'This project monitors native oak seedling establishment in restoration plots using the ten-tallest method, which tracks the height and survival of the ten tallest stems in each plot. The approach provides a standardized way to compare regeneration outcomes across planting efforts in the Thain Family Forest.',
+			'Available data include plot measurement spreadsheets and method instructions for field crews.'
+		]
+	},
+	{
+		id: 'million-tree-plot',
+		image: '/images/home/forest-group.png',
+		title: 'Million Tree Plot Monitoring',
+		summary: 'Survival and growth monitoring on a MillionTreesNYC reforestation plot in the Forest.',
+		descriptionParagraphs: [
+			'This project monitors tree survival and establishment on MillionTreesNYC reforestation plot 101-1 within the Thain Family Forest. Plot data document seedling and sapling outcomes following planting, supporting evaluation of urban reforestation success in a mature forest context.',
+			'Datasets include plot data spreadsheets, plot maps, and related research publications on MillionTreesNYC reforestation site survival.'
+		]
+	},
+	{
+		id: 'soil-monitoring',
+		image: '/images/home/forest-canopy.png',
+		title: 'Forest Soil Monitoring',
+		summary: 'Soil sampling and nutrient analysis in partnership with the Forest Ecosystem Monitoring Cooperative.',
+		descriptionParagraphs: [
+			"Forest soil monitoring in the Thain Family Forest documents soil conditions and surface nutrient status across sampling plots. The work is conducted in partnership with the Forest Ecosystem Monitoring Cooperative (FEMC) and supports long-term tracking of soil health in NYBG's old-growth urban forest.",
+			'Available materials include soil sampling plot maps, nutrient analysis spreadsheets, and FEMC proposal and methods documentation.'
+		]
 	}
 ];

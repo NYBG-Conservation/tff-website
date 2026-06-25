@@ -1,5 +1,4 @@
 import mimetypes
-import os
 from pathlib import Path
 
 from django.contrib.auth import get_user_model
@@ -7,83 +6,13 @@ from django.core.files import File
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.datasets.models import Dataset, DatasetFile, Project
+from apps.datasets.sample_data_config import SAMPLE_FOLDER_CONFIG
+from apps.datasets.sample_data_paths import resolve_sample_data_root
 from apps.datasets.seed_utils import find_project_by_canonical_slug
 from apps.organizations.models import Organization
 
-_REPO_ROOT = Path(__file__).resolve().parents[5]
-
-SAMPLE_FOLDER_CONFIG = [
-    {
-        "folder": "knotweed",
-        "project_slug": "knotweed-management-study",
-        "project_title": "Knotweed Management Study",
-        "dataset_title": "Knotweed Treatment Plot Outcomes",
-        "dataset_description": "Plot-level knotweed treatment outcomes and related documentation.",
-        "cadence": Dataset.Cadence.ANNUAL,
-        "data_type": Dataset.DataType.TABULAR,
-    },
-    {
-        "folder": "CFI",
-        "project_slug": "forest-inventory-transect-study",
-        "project_title": "CFI",
-        "project_full_title": "New York Botanical Garden Forest Inventory Transect Study",
-        "dataset_title": "Continuous Forest Inventory — Field Data & Manual",
-        "dataset_description": "Overstory and understory inventory spreadsheets and field manual.",
-        "cadence": Dataset.Cadence.ANNUAL,
-        "data_type": Dataset.DataType.TABULAR,
-    },
-    {
-        "folder": "breeding bird census",
-        "project_slug": "breeding-bird-census",
-        "project_title": "Annual Breeding Bird Census",
-        "dataset_title": "NYBG Breeding Bird Census Data",
-        "dataset_description": "Breeding bird census data, handbook, and presentation materials.",
-        "cadence": Dataset.Cadence.ANNUAL,
-        "data_type": Dataset.DataType.BIODIVERSITY_OBSERVATION,
-    },
-    {
-        "folder": "acorn planting",
-        "project_slug": "acorn-planting",
-        "project_title": "Acorn Planting — Ten Tallest Method",
-        "dataset_title": "Ten Tallest Plot Data",
-        "dataset_description": "Ten-tallest plot data and method instructions.",
-        "cadence": Dataset.Cadence.ANNUAL,
-        "data_type": Dataset.DataType.TABULAR,
-    },
-    {
-        "folder": "million tree plot",
-        "project_slug": "million-tree-plot",
-        "project_title": "Million Tree Plot Monitoring",
-        "dataset_title": "Million Tree Plot — Plot 101-1",
-        "dataset_description": "MillionTreesNYC reforestation plot data and related publications.",
-        "cadence": Dataset.Cadence.ONE_OFF,
-        "data_type": Dataset.DataType.TABULAR,
-    },
-    {
-        "folder": "soil monitoring",
-        "project_slug": "soil-monitoring",
-        "project_title": "Forest Soil Monitoring",
-        "dataset_title": "Forest Soil Sampling & FEMC Analysis",
-        "dataset_description": "Soil sampling plots, FEMC nutrient analysis, and proposal documents.",
-        "cadence": Dataset.Cadence.ANNUAL,
-        "data_type": Dataset.DataType.TABULAR,
-    },
-]
-
 _TABULAR_EXTENSIONS = {".xlsx", ".xls", ".csv"}
 _DOCUMENTATION_EXTENSIONS = {".pdf", ".pptx", ".ppt", ".doc", ".docx"}
-
-
-def resolve_sample_data_root() -> Path | None:
-    candidates: list[Path] = []
-    env_dir = os.environ.get("TFF_SAMPLE_DATA_DIR", "").strip()
-    if env_dir:
-        candidates.append(Path(env_dir))
-    candidates.extend((_REPO_ROOT / "src/lib/data/tff-sample-data", Path("/app/sample-data")))
-    for candidate in candidates:
-        if candidate.is_dir():
-            return candidate
-    return None
 
 
 def infer_file_kind(filename: str) -> str:

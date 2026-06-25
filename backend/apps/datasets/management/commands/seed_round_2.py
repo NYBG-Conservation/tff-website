@@ -8,7 +8,7 @@ from apps.datasets.models import Dataset, DatasetFile, Project
 class Command(BaseCommand):
     help = (
         "Round 2 bootstrap: consolidate duplicate projects, refresh research metadata, "
-        "create any missing data-only projects, and import all tff-sample-data files."
+        "create any missing sample-data projects, and import all tff-sample-data files."
     )
 
     def add_arguments(self, parser):
@@ -27,6 +27,11 @@ class Command(BaseCommand):
             "--update-files",
             action="store_true",
             help="Replace file blobs that already exist (passes --update to seed_sample_datasets).",
+        )
+        parser.add_argument(
+            "--publish",
+            action="store_true",
+            help="Flag sample projects/datasets for the public /research and /data pages.",
         )
 
     def handle(self, *args, **options):
@@ -65,3 +70,7 @@ class Command(BaseCommand):
                     "(sample files are copied to /app/sample-data at image build) and re-run."
                 )
             )
+
+        if options["publish"]:
+            self.stdout.write(self.style.MIGRATE_HEADING("Publishing sample data to public API"))
+            call_command("publish_sample_data")

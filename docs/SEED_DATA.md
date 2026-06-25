@@ -6,9 +6,11 @@ How to load research project metadata and `tff-sample-data` files without creati
 
 | Command | Purpose |
 |---------|---------|
-| `seed_sample_projects` | 6 research projects (metadata only) |
+| `seed_sample_projects` | 10 research projects (metadata only) |
 | `seed_sample_datasets` | 18 sample files → datasets on existing projects |
 | `seed_round_2` | **All-in-one**: cleanup + research metadata + sample files + data-only projects |
+| `audit_sample_data` | Compare disk vs database; show what's missing |
+| `publish_sample_data` | Turn on `shared_publicly` / `expose_on_public_api` for sample rows |
 | `cleanup_seed_duplicates` | Merge wrong-slug duplicates onto canonical slugs |
 
 Canonical slugs and alias mappings live in [`backend/apps/datasets/seed_constants.py`](../backend/apps/datasets/seed_constants.py).
@@ -50,11 +52,10 @@ python backend/manage.py seed_sample_projects --owner <username>
 python backend/manage.py seed_sample_datasets --owner <username>
 ```
 
-For data-only projects (breeding bird, acorn planting, etc.) that are not in `seed_sample_projects`, either run cleanup after creating them once, or:
-
-```bash
 python backend/manage.py seed_sample_datasets --owner <username> --create-missing-projects
 ```
+
+`--create-missing-projects` is only needed if you skip `seed_sample_projects` and import sample files first; with the current seeds all six sample folders map to projects in `seed_sample_projects`.
 
 ### Refresh research metadata only
 
@@ -102,6 +103,34 @@ This runs, in order:
 Idempotent — safe to re-run; skips files already attached unless you add `--update-files`.
 
 Expected result: **6 datasets**, **18 files**.
+
+**Important:** `tff-sample-data` only contains files for 6 folders. These **research** projects have metadata but **no sample files in the repo**:
+
+- `filling-in-the-gaps`
+- `redback-salamander-monitoring`
+- `citizen-science-phenology-monitoring`
+- `macroinvertebrate-monitoring`
+
+These sample folders also have full research metadata and appear on `/research` after `publish_sample_data`:
+
+- `breeding-bird-census`, `acorn-planting`, `million-tree-plot`, `soil-monitoring`
+
+Diagnose gaps:
+
+```bash
+python backend/manage.py audit_sample_data
+```
+
+Make sample data visible on Vercel `/research` + `/data`:
+
+```bash
+python backend/manage.py publish_sample_data          # all 10 research projects + 6 sample datasets
+python backend/manage.py publish_sample_data --research-only   # /research metadata only (no /data datasets)
+```
+
+Or: `seed_round_2 --owner <user> --publish`
+
+Note: the public `/data` page lists **datasets** (not individual file downloads yet). Files are in admin and the researcher API.
 
 | Dataset title | Project slug |
 |---------------|--------------|

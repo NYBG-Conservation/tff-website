@@ -172,6 +172,90 @@ SAMPLE_PROJECTS = [
         "collection_frequency": "seasonal",
         "update_frequency": "seasonal",
     },
+    {
+        "short_title": "Annual Breeding Bird Census",
+        "slug": "breeding-bird-census",
+        "lead_name": "NYBG Forest staff",
+        "lead_email": "john@nybg.org",
+        "organization_name": "New York Botanical Garden",
+        "shared_publicly": False,
+        "summary": "Annual breeding bird survey documenting forest avian diversity and habitat use.",
+        "description": (
+            "The Thain Family Forest breeding bird census tracks bird species breeding within the Forest "
+            "using standard survey protocols aligned with the New York State Breeding Bird Atlas. "
+            "Observers document species presence, breeding behavior, and habitat associations across the site.\n\n"
+            "Data include annual census spreadsheets, survey presentation materials, and the NYS BBA handbook "
+            "used to guide field identification and breeding code assignment."
+        ),
+        "hero_image": "/images/home/forest-canopy.png",
+        "ongoing": True,
+        "institutional_partners": ["NYC Bird Alliance"],
+        "collection_frequency": "annual",
+        "update_frequency": "annual",
+    },
+    {
+        "short_title": "Acorn Planting — Ten Tallest Method",
+        "slug": "acorn-planting",
+        "lead_name": "NYBG Forest staff",
+        "lead_email": "john@nybg.org",
+        "organization_name": "New York Botanical Garden",
+        "shared_publicly": False,
+        "summary": "Native oak seedling establishment monitored with the ten-tallest plot method.",
+        "description": (
+            "This project monitors native oak seedling establishment in restoration plots using the "
+            "ten-tallest method, which tracks the height and survival of the ten tallest stems in each plot. "
+            "The approach provides a standardized way to compare regeneration outcomes across planting efforts "
+            "in the Thain Family Forest.\n\n"
+            "Available data include plot measurement spreadsheets and method instructions for field crews."
+        ),
+        "hero_image": "/images/home/forest-trail.png",
+        "ongoing": True,
+        "collection_frequency": "annual",
+        "update_frequency": "annual",
+    },
+    {
+        "short_title": "Million Tree Plot Monitoring",
+        "slug": "million-tree-plot",
+        "lead_name": "NYBG Forest staff",
+        "lead_email": "john@nybg.org",
+        "organization_name": "New York Botanical Garden",
+        "shared_publicly": False,
+        "summary": "Survival and growth monitoring on a MillionTreesNYC reforestation plot in the Forest.",
+        "description": (
+            "This project monitors tree survival and establishment on MillionTreesNYC reforestation plot 101-1 "
+            "within the Thain Family Forest. Plot data document seedling and sapling outcomes following "
+            "planting, supporting evaluation of urban reforestation success in a mature forest context.\n\n"
+            "Datasets include plot data spreadsheets, plot maps, and related research publications on "
+            "MillionTreesNYC reforestation site survival."
+        ),
+        "hero_image": "/images/home/forest-group.png",
+        "ongoing": False,
+        "collection_frequency": "one-time",
+        "update_frequency": "one-time",
+    },
+    {
+        "short_title": "Forest Soil Monitoring",
+        "slug": "soil-monitoring",
+        "lead_name": "NYBG Forest staff",
+        "lead_email": "brad@nybg.org",
+        "organization_name": "New York Botanical Garden",
+        "shared_publicly": False,
+        "summary": "Soil sampling and nutrient analysis in partnership with the Forest Ecosystem Monitoring Cooperative.",
+        "description": (
+            "Forest soil monitoring in the Thain Family Forest documents soil conditions and surface nutrient "
+            "status across sampling plots. The work is conducted in partnership with the Forest Ecosystem "
+            "Monitoring Cooperative (FEMC) and supports long-term tracking of soil health in NYBG's old-growth "
+            "urban forest.\n\n"
+            "Available materials include soil sampling plot maps, nutrient analysis spreadsheets, and FEMC "
+            "proposal and methods documentation."
+        ),
+        "hero_image": "/images/home/forest-canopy.png",
+        "ongoing": True,
+        "institutional_partners": ["Forest Ecosystem Monitoring Cooperative"],
+        "collection_frequency": "annual",
+        "update_frequency": "annual",
+        "external_url": "https://www.uvm.edu/femc/project-enhanced-ecosystem-monitoring-new-york-citys-only-old-growth-forest-overview",
+    },
 ]
 
 
