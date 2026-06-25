@@ -59,7 +59,6 @@ injectAnalytics({ mode: dev ? 'development' : 'production' });
 
 <style>
 	.app-container {
-		--nav-height: 112px;
 		min-height: 100vh;
 		transition: background-color 0.3s ease;
 	}
@@ -74,12 +73,7 @@ injectAnalytics({ mode: dev ? 'development' : 'production' });
 
 	.nav-header-band {
 		background-color: transparent;
-		padding-top: var(--nav-height);
-	}
-
-	@media (max-width: 768px) {
-		.app-container {
-			--nav-height: 104px;
-		}
+		padding-top: var(--site-nav-height, 112px);
+		transition: padding-top 0.28s ease;
 	}
 </style>

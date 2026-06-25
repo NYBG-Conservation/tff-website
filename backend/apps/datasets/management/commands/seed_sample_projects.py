@@ -13,7 +13,7 @@ SAMPLE_PROJECTS = [
         "full_title": "New York Botanical Garden Forest Inventory Transect Study",
         "slug": "forest-inventory-transect-study",
         "lead_name": "NYBG Forest staff",
-        "lead_email": "john@nybg.org",
+        "lead_email": "jzeiger@nybg.org",
         "organization_name": "New York Botanical Garden",
         "shared_publicly": False,
         "summary": "Long-running transect sampling of trees, shrubs, and herbaceous cover across the forest.",
@@ -29,7 +29,6 @@ SAMPLE_PROJECTS = [
             "the Forest. The biggest focus of management recently was derived from these data, the Japanese angelica "
             "tree is currently on the rise and the Forest staff is focusing management efforts on this species."
         ),
-        "hero_image": "/images/home/forest-trail.png",
         "ongoing": True,
         "collection_frequency": "periodic",
         "update_frequency": "periodic",
@@ -38,7 +37,7 @@ SAMPLE_PROJECTS = [
         "short_title": "Filling in the Gaps: Plant Establishment After Hurricane Sandy",
         "slug": "filling-in-the-gaps",
         "lead_name": "NYBG Forest staff",
-        "lead_email": "john@nybg.org",
+        "lead_email": "jzeiger@nybg.org",
         "organization_name": "New York Botanical Garden",
         "shared_publicly": False,
         "summary": "Post-disturbance canopy gap study following Hurricane Sandy.",
@@ -54,7 +53,6 @@ SAMPLE_PROJECTS = [
             "herbaceous seedling species in 10 newly formed canopy gaps. 1 m2 plots were placed within the canopy "
             "gaps and intact forest along a 10 m transect north and south of the center of the canopy gap."
         ),
-        "hero_image": "/images/home/forest-group.png",
         "ongoing": True,
         "collection_frequency": "periodic",
         "update_frequency": "periodic",
@@ -63,7 +61,7 @@ SAMPLE_PROJECTS = [
         "short_title": "Long-term Redback Salamander Monitoring",
         "slug": "redback-salamander-monitoring",
         "lead_name": "NYBG Forest staff",
-        "lead_email": "eve@nybg.org",
+        "lead_email": "ebeaury@nybg.org",
         "organization_name": "New York Botanical Garden",
         "shared_publicly": False,
         "summary": "Indicator species monitoring for forest health in urban northeastern deciduous forest.",
@@ -74,7 +72,6 @@ SAMPLE_PROJECTS = [
             "Forest. See a blog post featuring a short video documentary focusing on the salamander study on the "
             "NYBG blog, Plant Talk."
         ),
-        "hero_image": "/images/home/forest-canopy.png",
         "ongoing": True,
         "start_date": "2010-01-01",
         "collection_frequency": "annual",
@@ -84,7 +81,7 @@ SAMPLE_PROJECTS = [
         "short_title": "Citizen Science Phenology Monitoring",
         "slug": "citizen-science-phenology-monitoring",
         "lead_name": "NYBG Forest staff",
-        "lead_email": "john@nybg.org",
+        "lead_email": "jzeiger@nybg.org",
         "organization_name": "New York Botanical Garden",
         "shared_publicly": False,
         "summary": "Volunteer-supported phenology observations to track climate-related seasonal changes.",
@@ -101,7 +98,6 @@ SAMPLE_PROJECTS = [
             "as well as gain an intimate knowledge of the beautiful Thain Family Forest.\n\n"
             "If you would like to participate as a citizen scientist, please contact Volunteer Services."
         ),
-        "hero_image": "/images/home/forest-trail.png",
         "ongoing": True,
         "institutional_partners": [
             "National Phenology Network",
@@ -115,7 +111,7 @@ SAMPLE_PROJECTS = [
         "short_title": "Knotweed Management Study",
         "slug": "knotweed-management-study",
         "lead_name": "NYBG Staff",
-        "lead_email": "john@nybg.org",
+        "lead_email": "jzeiger@nybg.org",
         "organization_name": "Bronx River Alliance",
         "shared_publicly": False,
         "summary": "Collaborative invasive species management trial for Japanese knotweed control.",
@@ -130,7 +126,6 @@ SAMPLE_PROJECTS = [
             "This project was supported by a grant from WCS-NOAA Regional Partnership Grants (2009 to 2011). "
             "Project is ongoing 2009 to present."
         ),
-        "hero_image": "/images/home/forest-group.png",
         "ongoing": True,
         "institutional_partners": [
             "Bronx River Alliance",
@@ -145,7 +140,7 @@ SAMPLE_PROJECTS = [
         "short_title": "Macroinvertebrate Monitoring",
         "slug": "macroinvertebrate-monitoring",
         "lead_name": "NYBG Forest staff",
-        "lead_email": "john@nybg.org",
+        "lead_email": "jzeiger@nybg.org",
         "organization_name": "Bronx River Alliance",
         "shared_publicly": False,
         "summary": "Community science stream biodiversity and water quality monitoring.",
@@ -165,7 +160,6 @@ SAMPLE_PROJECTS = [
             "If you would like to participate in a teacher professional development workshop or have your school "
             "participate in this project, please contact Children's Education."
         ),
-        "hero_image": "/images/home/forest-canopy.png",
         "ongoing": True,
         "institutional_partners": ["Bronx River Alliance"],
         "start_date": "2010-01-01",
@@ -176,7 +170,7 @@ SAMPLE_PROJECTS = [
         "short_title": "Annual Breeding Bird Census",
         "slug": "breeding-bird-census",
         "lead_name": "NYBG Forest staff",
-        "lead_email": "john@nybg.org",
+        "lead_email": "jzeiger@nybg.org",
         "organization_name": "New York Botanical Garden",
         "shared_publicly": False,
         "summary": "Annual breeding bird survey documenting forest avian diversity and habitat use.",
@@ -187,7 +181,6 @@ SAMPLE_PROJECTS = [
             "Data include annual census spreadsheets, survey presentation materials, and the NYS BBA handbook "
             "used to guide field identification and breeding code assignment."
         ),
-        "hero_image": "/images/home/forest-canopy.png",
         "ongoing": True,
         "institutional_partners": ["NYC Bird Alliance"],
         "collection_frequency": "annual",
@@ -197,7 +190,7 @@ SAMPLE_PROJECTS = [
         "short_title": "Acorn Planting — Ten Tallest Method",
         "slug": "acorn-planting",
         "lead_name": "NYBG Forest staff",
-        "lead_email": "john@nybg.org",
+        "lead_email": "jzeiger@nybg.org",
         "organization_name": "New York Botanical Garden",
         "shared_publicly": False,
         "summary": "Native oak seedling establishment monitored with the ten-tallest plot method.",
@@ -208,7 +201,6 @@ SAMPLE_PROJECTS = [
             "in the Thain Family Forest.\n\n"
             "Available data include plot measurement spreadsheets and method instructions for field crews."
         ),
-        "hero_image": "/images/home/forest-trail.png",
         "ongoing": True,
         "collection_frequency": "annual",
         "update_frequency": "annual",
@@ -217,7 +209,7 @@ SAMPLE_PROJECTS = [
         "short_title": "Million Tree Plot Monitoring",
         "slug": "million-tree-plot",
         "lead_name": "NYBG Forest staff",
-        "lead_email": "john@nybg.org",
+        "lead_email": "jzeiger@nybg.org",
         "organization_name": "New York Botanical Garden",
         "shared_publicly": False,
         "summary": "Survival and growth monitoring on a MillionTreesNYC reforestation plot in the Forest.",
@@ -228,7 +220,6 @@ SAMPLE_PROJECTS = [
             "Datasets include plot data spreadsheets, plot maps, and related research publications on "
             "MillionTreesNYC reforestation site survival."
         ),
-        "hero_image": "/images/home/forest-group.png",
         "ongoing": False,
         "collection_frequency": "one-time",
         "update_frequency": "one-time",
@@ -237,7 +228,7 @@ SAMPLE_PROJECTS = [
         "short_title": "Forest Soil Monitoring",
         "slug": "soil-monitoring",
         "lead_name": "NYBG Forest staff",
-        "lead_email": "brad@nybg.org",
+        "lead_email": "boberle@nybg.org",
         "organization_name": "New York Botanical Garden",
         "shared_publicly": False,
         "summary": "Soil sampling and nutrient analysis in partnership with the Forest Ecosystem Monitoring Cooperative.",
@@ -249,7 +240,6 @@ SAMPLE_PROJECTS = [
             "Available materials include soil sampling plot maps, nutrient analysis spreadsheets, and FEMC "
             "proposal and methods documentation."
         ),
-        "hero_image": "/images/home/forest-canopy.png",
         "ongoing": True,
         "institutional_partners": ["Forest Ecosystem Monitoring Cooperative"],
         "collection_frequency": "annual",

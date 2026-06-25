@@ -10,15 +10,24 @@
 		type Project,
 		type ProjectInput
 	} from '$lib/api/projects';
+	import {
+		createProjectPublication,
+		deleteProjectPublication,
+		listProjectPublications,
+		type ProjectPublication,
+		type ProjectPublicationInput
+	} from '$lib/api/projectPublications';
 	import { getCurrentUser, type CurrentUser } from '$lib/api/accounts';
 	import { createOrganization, listOrganizations, type Organization } from '$lib/api/organizations';
 
 	let loading = true;
 	let savingProject = false;
 	let addingDataset = false;
+	let addingPublication = false;
 	let projects: Project[] = [];
 	let organizations: Organization[] = [];
 	let datasets: Dataset[] = [];
+	let projectPublications: ProjectPublication[] = [];
 	let selectedProjectId: number | null = null;
 	let managerUsername = '';
 	let message = '';
@@ -29,11 +38,21 @@
 	let newOrganizationName = '';
 	let newOrganizationContactEmail = '';
 
+	let publicationForm: ProjectPublicationInput = {
+		citation: '',
+		title: '',
+		publication_year: undefined,
+		doi: '',
+		url: '',
+		featured: false,
+		expose_on_public_api: false,
+		sort_order: 0
+	};
+
 	let projectForm: ProjectInput = {
 		short_title: '',
 		summary: '',
 		description: '',
-		hero_image: '',
 		full_title: '',
 		lead_name: '',
 		lead_email: '',
@@ -109,18 +128,28 @@
 			project_id: project.slug,
 			organization: project.organization
 		};
+		void loadProjectPublications(project.id);
 		message = '';
 		error = '';
 	}
 
+	async function loadProjectPublications(projectId: number) {
+		try {
+			projectPublications = await listProjectPublications(projectId);
+		} catch (err) {
+			projectPublications = [];
+			error = err instanceof Error ? err.message : 'Failed to load project publications.';
+		}
+	}
+
 	function resetProjectForm() {
 		selectedProjectId = null;
+		projectPublications = [];
 		dataUploadChoice = 'upload_later';
 		projectForm = {
 			short_title: '',
 			summary: '',
 			description: '',
-			hero_image: '',
 			full_title: '',
 			lead_name: '',
 			lead_email: '',
@@ -223,6 +252,48 @@
 		}
 	}
 
+	async function addPublicationToProject() {
+		if (!selectedProject) return;
+		addingPublication = true;
+		error = '';
+		message = '';
+		try {
+			await createProjectPublication(selectedProject.id, {
+				...publicationForm,
+				publication_year: publicationForm.publication_year || undefined
+			});
+			message = 'Publication added to project.';
+			publicationForm = {
+				citation: '',
+				title: '',
+				publication_year: undefined,
+				doi: '',
+				url: '',
+				featured: false,
+				expose_on_public_api: false,
+				sort_order: 0
+			};
+			await loadProjectPublications(selectedProject.id);
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Unable to add publication.';
+		} finally {
+			addingPublication = false;
+		}
+	}
+
+	async function handleDeletePublication(publicationId: number) {
+		if (!selectedProject) return;
+		error = '';
+		message = '';
+		try {
+			await deleteProjectPublication(selectedProject.id, publicationId);
+			message = 'Publication removed.';
+			await loadProjectPublications(selectedProject.id);
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Unable to remove publication.';
+		}
+	}
+
 	async function addOrganizationOption() {
 		if (!newOrganizationName.trim()) return;
 		creatingOrganization = true;
@@ -294,7 +365,6 @@
 					{/if}
 					<label>Summary<textarea rows="2" bind:value={projectForm.summary} /></label>
 					<label>Description<textarea rows="4" bind:value={projectForm.description} placeholder="Separate paragraphs with a blank line" /></label>
-					<label>Hero image path<input bind:value={projectForm.hero_image} placeholder="/images/home/forest-canopy.png" /></label>
 					<label>Full title<input bind:value={projectForm.full_title} /></label>
 
 					<h3 class="form-section-heading">Project lead</h3>
@@ -489,6 +559,73 @@
 					</ul>
 				</div>
 			</div>
+
+			<div class="panel publications-panel">
+				<h2>Publications for {selectedProject.short_title}</h2>
+				<p class="hint">
+					Add formatted citations for papers and reports linked to this project. Use basic HTML such as
+					<code>&lt;em&gt;</code> for journal titles. Mark a publication as featured to include it in the
+					site-wide Selected Publications list on <code>/research</code>.
+				</p>
+				<div class="publication-form">
+					<textarea
+						rows="3"
+						placeholder="Full citation (HTML allowed for italics)"
+						bind:value={publicationForm.citation}
+					></textarea>
+					<div class="inline">
+						<input
+							type="number"
+							placeholder="Year"
+							bind:value={publicationForm.publication_year}
+						/>
+						<input placeholder="DOI (optional)" bind:value={publicationForm.doi} />
+					</div>
+					<input placeholder="URL (optional)" bind:value={publicationForm.url} />
+					<label class="checkbox">
+						<input type="checkbox" bind:checked={publicationForm.expose_on_public_api} />
+						Show on public website
+					</label>
+					<label class="checkbox">
+						<input type="checkbox" bind:checked={publicationForm.featured} />
+						Include in Selected Publications list
+					</label>
+					<button
+						type="button"
+						on:click={addPublicationToProject}
+						disabled={addingPublication || !publicationForm.citation.trim()}
+					>
+						{addingPublication ? 'Adding...' : 'Add publication'}
+					</button>
+				</div>
+				<ul class="publication-list">
+					{#if projectPublications.length === 0}
+						<li>No publications linked yet.</li>
+					{:else}
+						{#each projectPublications as publication}
+							<li>
+								<div class="publication-item">
+									<p>{@html publication.citation}</p>
+									<div class="publication-meta">
+										{#if publication.publication_year}
+											<span>{publication.publication_year}</span>
+										{/if}
+										{#if publication.featured}
+											<span>Featured</span>
+										{/if}
+										{#if publication.expose_on_public_api}
+											<span>Public</span>
+										{/if}
+									</div>
+									<button type="button" on:click={() => handleDeletePublication(publication.id)}>
+										Remove
+									</button>
+								</div>
+							</li>
+						{/each}
+					{/if}
+				</ul>
+			</div>
 		{/if}
 	{/if}
 </section>
@@ -533,6 +670,42 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+	}
+
+	.project-list,
+	.manager-list,
+	.dataset-list,
+	.publication-list {
+		list-style: none;
+		padding: 0;
+		margin: 0.7rem 0 0;
+	}
+
+	.publications-panel {
+		margin-top: 1rem;
+	}
+
+	.publication-form {
+		display: grid;
+		gap: 0.6rem;
+	}
+
+	.publication-item {
+		display: grid;
+		gap: 0.35rem;
+		padding: 0.6rem 0;
+		border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+	}
+
+	.publication-item p {
+		margin: 0;
+	}
+
+	.publication-meta {
+		display: flex;
+		gap: 0.6rem;
+		font-size: 0.8rem;
+		color: #5a5a5a;
 	}
 
 	.project-list,

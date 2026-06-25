@@ -15,13 +15,14 @@ from apps.accounts.roles import (
     user_home_organization,
 )
 
-from .models import Dataset, DatasetFile, MetadataFieldDefinition, Project, ProjectManager
-from .permissions import CanEditDataset, CanEditProject
+from .models import Dataset, DatasetFile, MetadataFieldDefinition, Project, ProjectManager, ProjectPublication
+from .permissions import CanEditDataset, CanEditProject, CanEditProjectPublication
 from .serializers import (
     DatasetFileSerializer,
     DatasetSerializer,
     FieldTypeSerializer,
     ProjectManagerAddSerializer,
+    ProjectPublicationSerializer,
     ProjectSerializer,
 )
 
@@ -128,6 +129,38 @@ class ProjectManagerRemoveView(APIView):
             return Response({"detail": "Project manager relationship not found."}, status=status.HTTP_404_NOT_FOUND)
         link.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ProjectPublicationListCreateView(generics.ListCreateAPIView):
+    serializer_class = ProjectPublicationSerializer
+    permission_classes = [permissions.IsAuthenticated, CanEditProject]
+
+    def get_project(self):
+        project = generics.get_object_or_404(
+            Project.objects.select_related("organization"),
+            pk=self.kwargs["pk"],
+        )
+        self.check_object_permissions(self.request, project)
+        return project
+
+    def get_queryset(self):
+        project = self.get_project()
+        return ProjectPublication.objects.filter(project=project).select_related("project")
+
+    def perform_create(self, serializer):
+        project = self.get_project()
+        serializer.save(project=project)
+
+
+class ProjectPublicationDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ProjectPublicationSerializer
+    permission_classes = [permissions.IsAuthenticated, CanEditProjectPublication]
+
+    def get_queryset(self):
+        qs = ProjectPublication.objects.select_related("project", "project__organization")
+        if is_internal_superadmin(self.request.user):
+            return qs
+        return qs.filter(project__in=Project.objects.filter(scoped_projects_filter(self.request.user)))
 
 
 class DatasetListCreateView(generics.ListCreateAPIView):

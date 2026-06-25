@@ -10,6 +10,7 @@ from .models import (
     MetadataFieldDefinition,
     Project,
     ProjectManager,
+    ProjectPublication,
 )
 
 
@@ -107,6 +108,35 @@ class DatasetPublicationSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = ("created_at", "updated_at")
+
+
+class ProjectPublicationSerializer(serializers.ModelSerializer):
+    project_slug = serializers.SlugField(source="project.slug", read_only=True, allow_null=True)
+
+    class Meta:
+        model = ProjectPublication
+        fields = (
+            "id",
+            "project",
+            "project_slug",
+            "citation",
+            "title",
+            "publication_year",
+            "doi",
+            "url",
+            "featured",
+            "expose_on_public_api",
+            "sort_order",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = ("created_at", "updated_at", "project_slug")
+
+    def validate_citation(self, value: str) -> str:
+        citation = (value or "").strip()
+        if not citation:
+            raise serializers.ValidationError("Citation is required.")
+        return citation
 
 
 class DatasetSerializer(serializers.ModelSerializer):
@@ -267,7 +297,6 @@ class ProjectSerializer(serializers.ModelSerializer):
             "full_title",
             "summary",
             "description",
-            "hero_image",
             "lead_name",
             "lead_email",
             "shared_publicly",

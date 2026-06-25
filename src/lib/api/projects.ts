@@ -16,7 +16,6 @@ export type Project = {
 	full_title?: string;
 	summary?: string;
 	description?: string;
-	hero_image?: string;
 	lead_name: string;
 	lead_email: string;
 	shared_publicly: boolean;

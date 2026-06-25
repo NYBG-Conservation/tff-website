@@ -309,10 +309,11 @@ class PublicApiTests(APITestCase):
             short_title="Public Forest Study",
             summary="A public-facing study.",
             description="First paragraph.\n\nSecond paragraph.",
-            hero_image="/images/home/forest-trail.png",
             lead_name="Jane",
             lead_email="jane@nybg.org",
             shared_publicly=True,
+            ongoing=True,
+            institutional_partners=["Example Partner Lab"],
             organization=self.organization,
             owner=self.owner,
         )
@@ -361,6 +362,8 @@ class PublicApiTests(APITestCase):
         self.assertEqual(response.data[0]["slug"], "public-forest-study")
         self.assertEqual(response.data[0]["description_paragraphs"], ["First paragraph.", "Second paragraph."])
         self.assertEqual(response.data[0]["dataset_ids"], [str(self.public_dataset.id)])
+        self.assertTrue(response.data[0]["ongoing"])
+        self.assertEqual(response.data[0]["institutional_partners"], ["Example Partner Lab"])
 
     def test_public_datasets_filters_visibility(self):
         response = self.client.get(reverse("public-dataset-list"))

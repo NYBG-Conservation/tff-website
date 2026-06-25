@@ -1,7 +1,6 @@
 /** @deprecated Public pages load from `/api/public/projects/` via `+page.server.ts`. */
 export type ResearchProject = {
 	id: string;
-	image: string;
 	title: string;
 	summary: string;
 	descriptionParagraphs: string[];
@@ -14,7 +13,6 @@ export type ResearchProject = {
 export const researchProjects: ResearchProject[] = [
 	{
 		id: 'continuous-forest-index-2026',
-		image: '/images/home/forest-canopy.png',
 		title: '2026 Continuous Forest Index',
 		summary: 'Longitudinal monitoring initiative tracking urban forest condition and restoration outcomes.',
 		datasetIds: ['forest-index-method-notes'],
@@ -25,7 +23,6 @@ export const researchProjects: ResearchProject[] = [
 	},
 	{
 		id: 'forest-inventory-transect-study',
-		image: '/images/home/forest-trail.png',
 		title: 'CFI',
 		summary: 'Long-running transect sampling of trees, shrubs, and herbaceous cover across the forest.',
 		datasetIds: ['transect-db-2024'],
@@ -36,7 +33,6 @@ export const researchProjects: ResearchProject[] = [
 	},
 	{
 		id: 'filling-in-the-gaps',
-		image: '/images/home/forest-group.png',
 		title: 'Filling in the Gaps: Plant Establishment After Hurricane Sandy',
 		summary: 'Post-disturbance canopy gap study following Hurricane Sandy.',
 		datasetIds: ['canopy-gap-regeneration-2023'],
@@ -47,7 +43,6 @@ export const researchProjects: ResearchProject[] = [
 	},
 	{
 		id: 'redback-salamander-monitoring',
-		image: '/images/home/forest-canopy.png',
 		title: 'Long-term Redback Salamander Monitoring',
 		summary: 'Indicator species monitoring for forest health in urban northeastern deciduous forest.',
 		datasetIds: ['salamander-coverboards-2010-present'],
@@ -58,7 +53,6 @@ export const researchProjects: ResearchProject[] = [
 	},
 	{
 		id: 'citizen-science-phenology-monitoring',
-		image: '/images/home/forest-trail.png',
 		title: 'Citizen Science Phenology Monitoring',
 		summary: 'Volunteer-supported phenology observations to track climate-related seasonal changes.',
 		datasetIds: ['phenology-observations'],
@@ -70,7 +64,6 @@ export const researchProjects: ResearchProject[] = [
 	},
 	{
 		id: 'knotweed-management-study',
-		image: '/images/home/forest-group.png',
 		title: 'Knotweed Management Study',
 		summary: 'Collaborative invasive species management trial for Japanese knotweed control.',
 		datasetIds: ['knotweed-treatment-plots'],
@@ -81,7 +74,6 @@ export const researchProjects: ResearchProject[] = [
 	},
 	{
 		id: 'macroinvertebrate-monitoring',
-		image: '/images/home/forest-canopy.png',
 		title: 'Macroinvertebrate Monitoring',
 		summary: 'Community science stream biodiversity and water quality monitoring.',
 		datasetIds: ['bronx-river-macroinvertebrates'],
@@ -95,7 +87,6 @@ export const researchProjects: ResearchProject[] = [
 	},
 	{
 		id: 'breeding-bird-census',
-		image: '/images/home/forest-canopy.png',
 		title: 'Annual Breeding Bird Census',
 		summary: 'Annual breeding bird survey documenting forest avian diversity and habitat use.',
 		descriptionParagraphs: [
@@ -105,7 +96,6 @@ export const researchProjects: ResearchProject[] = [
 	},
 	{
 		id: 'acorn-planting',
-		image: '/images/home/forest-trail.png',
 		title: 'Acorn Planting — Ten Tallest Method',
 		summary: 'Native oak seedling establishment monitored with the ten-tallest plot method.',
 		descriptionParagraphs: [
@@ -115,7 +105,6 @@ export const researchProjects: ResearchProject[] = [
 	},
 	{
 		id: 'million-tree-plot',
-		image: '/images/home/forest-group.png',
 		title: 'Million Tree Plot Monitoring',
 		summary: 'Survival and growth monitoring on a MillionTreesNYC reforestation plot in the Forest.',
 		descriptionParagraphs: [
@@ -125,7 +114,6 @@ export const researchProjects: ResearchProject[] = [
 	},
 	{
 		id: 'soil-monitoring',
-		image: '/images/home/forest-canopy.png',
 		title: 'Forest Soil Monitoring',
 		summary: 'Soil sampling and nutrient analysis in partnership with the Forest Ecosystem Monitoring Cooperative.',
 		descriptionParagraphs: [

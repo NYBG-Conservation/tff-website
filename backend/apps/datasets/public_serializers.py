@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Dataset, Project
+from .models import Dataset, Project, ProjectPublication
 
 
 def _cadence_label(value: str) -> str:
@@ -48,7 +48,6 @@ class PublicDatasetSerializer(serializers.ModelSerializer):
 
 class PublicProjectSerializer(serializers.ModelSerializer):
     title = serializers.CharField(source="short_title", read_only=True)
-    image = serializers.SerializerMethodField()
     description_paragraphs = serializers.SerializerMethodField()
     dataset_ids = serializers.SerializerMethodField()
     organization_name = serializers.CharField(source="organization.name", read_only=True)
@@ -60,21 +59,17 @@ class PublicProjectSerializer(serializers.ModelSerializer):
             "title",
             "full_title",
             "summary",
-            "image",
             "description_paragraphs",
             "dataset_ids",
             "external_url",
             "lead_name",
             "lead_email",
             "organization_name",
+            "institutional_partners",
+            "ongoing",
             "collection_frequency",
             "update_frequency",
         )
-
-    def get_image(self, obj: Project) -> str:
-        if obj.hero_image:
-            return obj.hero_image
-        return "/images/home/forest-canopy.png"
 
     def get_description_paragraphs(self, obj: Project) -> list[str]:
         if obj.description:
@@ -89,3 +84,25 @@ class PublicProjectSerializer(serializers.ModelSerializer):
         public_statuses = [Dataset.Status.ACTIVE, Dataset.Status.ARCHIVED]
         ids = obj.datasets.filter(expose_on_public_api=True, status__in=public_statuses).values_list("id", flat=True)
         return [str(dataset_id) for dataset_id in ids]
+
+
+class PublicPublicationSerializer(serializers.ModelSerializer):
+    project_slug = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProjectPublication
+        fields = (
+            "id",
+            "citation",
+            "title",
+            "publication_year",
+            "doi",
+            "url",
+            "featured",
+            "project_slug",
+        )
+
+    def get_project_slug(self, obj: ProjectPublication) -> str | None:
+        if obj.project_id:
+            return obj.project.slug
+        return None

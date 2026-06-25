@@ -13,7 +13,7 @@ These endpoints power the public `/research` and `/data` pages.
 ### `GET /api/public/projects/`
 Returns projects where `shared_publicly=true`.
 
-Response fields include: `slug`, `title`, `summary`, `image`, `description_paragraphs`, `dataset_ids`, and PI metadata.
+Response fields include: `slug`, `title`, `summary`, `description_paragraphs`, `dataset_ids`, `ongoing`, `institutional_partners`, and PI metadata.
 
 ### `GET /api/public/datasets/`
 Returns datasets where `expose_on_public_api=true`, status is `active` or `archived`, and the linked project is public (or no project is linked).

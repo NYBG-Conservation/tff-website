@@ -12,6 +12,7 @@ from .models import (
     Project,
     ProjectAlert,
     ProjectManager,
+    ProjectPublication,
 )
 
 
@@ -34,6 +35,12 @@ class DatasetMetadataValueInline(admin.TabularInline):
 class DatasetPublicationInline(admin.TabularInline):
     model = DatasetPublication
     extra = 0
+
+
+class ProjectPublicationInline(admin.TabularInline):
+    model = ProjectPublication
+    extra = 0
+    fields = ("citation", "publication_year", "featured", "expose_on_public_api", "sort_order")
 
 
 class ProjectManagerInline(admin.TabularInline):
@@ -61,7 +68,7 @@ class ProjectAdmin(admin.ModelAdmin):
         "updated_at",
     )
     fieldsets = (
-        (None, {"fields": ("short_title", "slug", "full_title", "summary", "description", "hero_image", "shared_publicly")}),
+        (None, {"fields": ("short_title", "slug", "full_title", "summary", "description", "shared_publicly")}),
         (
             "Project lead",
             {"fields": ("lead_name", "lead_email", "organization")},
@@ -73,13 +80,38 @@ class ProjectAdmin(admin.ModelAdmin):
     list_filter = ("organization", "shared_publicly", "ongoing")
     search_fields = ("short_title", "slug", "full_title", "lead_name", "lead_email", "organization__name", "owner__username")
     readonly_fields = ("slug",)
-    inlines = [ProjectManagerInline, ProjectAlertInline]
+    inlines = [ProjectPublicationInline, ProjectManagerInline, ProjectAlertInline]
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if is_internal_superadmin(request.user):
             return qs
         return qs.filter(scoped_projects_filter(request.user))
+
+
+@admin.register(ProjectPublication)
+class ProjectPublicationAdmin(admin.ModelAdmin):
+    list_display = (
+        "short_label",
+        "project",
+        "publication_year",
+        "featured",
+        "expose_on_public_api",
+        "updated_at",
+    )
+    list_filter = ("featured", "expose_on_public_api", "publication_year")
+    search_fields = ("citation", "title", "doi", "project__short_title", "project__slug")
+    autocomplete_fields = ("project",)
+
+    @admin.display(description="Citation")
+    def short_label(self, obj: ProjectPublication) -> str:
+        return obj.citation[:100]
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if is_internal_superadmin(request.user):
+            return qs
+        return qs.filter(project__in=Project.objects.filter(scoped_projects_filter(request.user)))
 
 
 @admin.register(ProjectAlert)

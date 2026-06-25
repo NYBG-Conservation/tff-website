@@ -1,15 +1,29 @@
-import { fetchPublicDatasets, fetchPublicProjects } from '$lib/api/public';
+import { fetchPublicDatasets, fetchPublicProjects, fetchPublicPublications } from '$lib/api/public';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch }) => {
 	try {
-		const [researchProjects, publicDatasets] = await Promise.all([
+		const [researchProjects, publicDatasets, featuredPublications, publicPublications] = await Promise.all([
 			fetchPublicProjects(fetch),
-			fetchPublicDatasets('', fetch)
+			fetchPublicDatasets('', fetch),
+			fetchPublicPublications({ featured: true }, fetch),
+			fetchPublicPublications({}, fetch)
 		]);
-		return { researchProjects, publicDatasets, apiError: null as string | null };
+		return {
+			researchProjects,
+			publicDatasets,
+			featuredPublications,
+			publicPublications,
+			apiError: null as string | null
+		};
 	} catch (err) {
 		const message = err instanceof Error ? err.message : 'Unable to load research data.';
-		return { researchProjects: [], publicDatasets: [], apiError: message };
+		return {
+			researchProjects: [],
+			publicDatasets: [],
+			featuredPublications: [],
+			publicPublications: [],
+			apiError: message
+		};
 	}
 };

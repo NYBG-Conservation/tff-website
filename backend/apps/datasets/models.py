@@ -24,11 +24,6 @@ class Project(models.Model):
         blank=True,
         help_text="Longer project description for the public modal. Separate paragraphs with a blank line.",
     )
-    hero_image = models.CharField(
-        max_length=500,
-        blank=True,
-        help_text="Public site image path or URL (e.g. /images/home/forest-canopy.png).",
-    )
     lead_name = models.CharField(max_length=255, help_text="Primary project lead (display name).")
     lead_email = models.EmailField(help_text="Project lead contact email.")
     shared_publicly = models.BooleanField(
@@ -129,6 +124,43 @@ class ProjectManager(models.Model):
 
     def __str__(self) -> str:
         return f"{self.project.short_title} :: {self.user.username}"
+
+
+class ProjectPublication(models.Model):
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name="publications",
+        null=True,
+        blank=True,
+        help_text="Optional. Leave blank for site-wide research publications.",
+    )
+    citation = models.TextField(
+        help_text="Formatted citation. Basic HTML such as <em> for journal titles is allowed.",
+    )
+    title = models.CharField(max_length=500, blank=True)
+    publication_year = models.PositiveIntegerField(null=True, blank=True)
+    doi = models.CharField(max_length=120, blank=True)
+    url = models.URLField(blank=True)
+    featured = models.BooleanField(
+        default=False,
+        help_text="When enabled, appears in the Selected Publications list on /research.",
+    )
+    expose_on_public_api = models.BooleanField(
+        default=False,
+        help_text="Controls whether this publication is exposed via the public-facing website API.",
+    )
+    sort_order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-publication_year", "-sort_order", "-created_at")
+
+    def __str__(self) -> str:
+        if self.title:
+            return self.title
+        return self.citation[:80]
 
 
 class Dataset(models.Model):

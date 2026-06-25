@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .public_views import PublicDatasetListView, PublicProjectListView
+from .public_views import PublicDatasetListView, PublicProjectListView, PublicPublicationListView
 from .views import (
     DatasetFileUploadView,
     DatasetListCreateView,
@@ -9,14 +9,27 @@ from .views import (
     ProjectListCreateView,
     ProjectManagerAddView,
     ProjectManagerRemoveView,
+    ProjectPublicationDetailView,
+    ProjectPublicationListCreateView,
     ProjectRetrieveUpdateView,
 )
 
 urlpatterns = [
     path("public/projects/", PublicProjectListView.as_view(), name="public-project-list"),
     path("public/datasets/", PublicDatasetListView.as_view(), name="public-dataset-list"),
+    path("public/publications/", PublicPublicationListView.as_view(), name="public-publication-list"),
     path("projects/", ProjectListCreateView.as_view(), name="project-list-create"),
     path("projects/<int:pk>/", ProjectRetrieveUpdateView.as_view(), name="project-retrieve-update"),
+    path(
+        "projects/<int:pk>/publications/",
+        ProjectPublicationListCreateView.as_view(),
+        name="project-publication-list-create",
+    ),
+    path(
+        "projects/<int:project_pk>/publications/<int:pk>/",
+        ProjectPublicationDetailView.as_view(),
+        name="project-publication-detail",
+    ),
     path("projects/<int:pk>/managers/", ProjectManagerAddView.as_view(), name="project-manager-add"),
     path(
         "projects/<int:pk>/managers/<int:user_id>/",

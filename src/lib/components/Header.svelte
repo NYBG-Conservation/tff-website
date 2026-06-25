@@ -4,7 +4,7 @@
     const pageTitles: Record<string, string> = {
         '/': 'Urban Conservation Hub',
         '/about': 'About the Forest',
-        '/research': 'Ongoing research',
+        '/research': 'Forest Research',
         '/visit': 'Visit the Forest',
         '/education': 'Education',
         '/data': 'Data & Archives',

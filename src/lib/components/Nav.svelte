@@ -27,6 +27,21 @@
 	let isMobile = false;
 	let isInfoMenuOpen = false;
 	let infoMenuWrap: HTMLDivElement | null = null;
+	let subnavHidden = false;
+	let lastScrollY = 0;
+
+	const SCROLL_DELTA = 6;
+	const TOP_REVEAL_OFFSET = 12;
+	const UTILITY_NAV_HEIGHT_DESKTOP = 64;
+	const UTILITY_NAV_HEIGHT_MOBILE = 56;
+	const SUBNAV_HEIGHT = 48;
+
+	$: utilityNavHeight = isMobile ? UTILITY_NAV_HEIGHT_MOBILE : UTILITY_NAV_HEIGHT_DESKTOP;
+	$: siteNavHeight = utilityNavHeight + (subnavHidden && !isMenuOpen ? 0 : SUBNAV_HEIGHT);
+
+	$: if (typeof document !== 'undefined') {
+		document.documentElement.style.setProperty('--site-nav-height', `${siteNavHeight}px`);
+	}
 
 	function isActive(href: string): boolean {
 		const currentPath = $page.url.pathname;
@@ -62,6 +77,22 @@
 		}
 	}
 
+	function updateSubnavOnScroll() {
+		if (typeof window === 'undefined') return;
+
+		const currentScrollY = window.scrollY;
+
+		if (isMenuOpen || currentScrollY <= TOP_REVEAL_OFFSET) {
+			subnavHidden = false;
+		} else if (currentScrollY > lastScrollY + SCROLL_DELTA) {
+			subnavHidden = true;
+		} else if (currentScrollY < lastScrollY - SCROLL_DELTA) {
+			subnavHidden = false;
+		}
+
+		lastScrollY = currentScrollY;
+	}
+
 	onMount(() => {
 		const handleOutsideClick = (event: MouseEvent) => {
 			const target = event.target as Node;
@@ -71,18 +102,29 @@
 		};
 
 		checkMobile();
+		lastScrollY = window.scrollY;
+		document.documentElement.style.setProperty('--site-nav-height', `${siteNavHeight}px`);
+
 		if (typeof window !== 'undefined') {
 			window.addEventListener('resize', checkMobile);
 			window.addEventListener('click', handleOutsideClick);
+			window.addEventListener('scroll', updateSubnavOnScroll, { passive: true });
 			return () => {
 				window.removeEventListener('resize', checkMobile);
 				window.removeEventListener('click', handleOutsideClick);
+				window.removeEventListener('scroll', updateSubnavOnScroll);
+				document.documentElement.style.removeProperty('--site-nav-height');
 			};
 		}
 	});
+
+	$: if ($page.url.pathname) {
+		subnavHidden = false;
+		lastScrollY = typeof window !== 'undefined' ? window.scrollY : 0;
+	}
 </script>
 
-<nav>
+<nav class:menu-open={isMenuOpen}>
 	<div class="utility-bar">
 		<div class="utility-dropdown" bind:this={infoMenuWrap}>
 			<button
@@ -109,7 +151,7 @@
 		<span class="utility-spacer" aria-hidden="true"></span>
 	</div>
 
-	<div class="main-nav-row">
+	<div class="main-nav-row" class:subnav-hidden={subnavHidden && !isMenuOpen}>
 		<button
 			class="menu-toggle"
 			class:open={isMenuOpen}
@@ -139,6 +181,11 @@
 		z-index: 1000;
 		font-family: 'GT Super Regular', serif;
 		box-shadow: 0 3px 10px rgba(0, 0, 0, 0.16);
+		overflow: hidden;
+	}
+
+	nav.menu-open {
+		overflow: visible;
 	}
 
 	.utility-bar {
@@ -227,6 +274,21 @@
 		padding: 0 1rem;
 		position: relative;
 		border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+		max-height: 48px;
+		overflow: hidden;
+		transition:
+			max-height 0.28s ease,
+			opacity 0.24s ease,
+			border-color 0.28s ease;
+		opacity: 1;
+	}
+
+	.main-nav-row.subnav-hidden {
+		max-height: 0;
+		min-height: 0;
+		opacity: 0;
+		border-bottom-color: transparent;
+		pointer-events: none;
 	}
 
 	.links {

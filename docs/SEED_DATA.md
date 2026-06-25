@@ -11,6 +11,7 @@ How to load research project metadata and `tff-sample-data` files without creati
 | `seed_round_2` | **All-in-one**: cleanup + research metadata + sample files + data-only projects |
 | `audit_sample_data` | Compare disk vs database; show what's missing |
 | `publish_sample_data` | Turn on `shared_publicly` / `expose_on_public_api` for sample rows |
+| `seed_research_publications` | Load the Selected Publications list on `/research` |
 | `cleanup_seed_duplicates` | Merge wrong-slug duplicates onto canonical slugs |
 
 Canonical slugs and alias mappings live in [`backend/apps/datasets/seed_constants.py`](../backend/apps/datasets/seed_constants.py).
@@ -129,6 +130,14 @@ python backend/manage.py publish_sample_data --research-only   # /research metad
 ```
 
 Or: `seed_round_2 --owner <user> --publish`
+
+Load the curated publications list (site-wide, not tied to a project):
+
+```bash
+python backend/manage.py seed_research_publications --publish
+```
+
+Researchers can add project-linked publications from `/projects` or Django admin. Site-wide publications (no project) are managed in admin or via `seed_research_publications`.
 
 Note: the public `/data` page lists **datasets** (not individual file downloads yet). Files are in admin and the researcher API.
 

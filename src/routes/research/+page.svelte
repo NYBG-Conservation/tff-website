@@ -1,15 +1,18 @@
 <script lang="ts">
-	import type { PublicDatasetRecord, PublicResearchProject } from '$lib/api/public';
+	import type { PublicDatasetRecord, PublicPublicationRecord, PublicResearchProject } from '$lib/api/public';
 
 	export let data;
 
 	$: researchProjects = data.researchProjects as PublicResearchProject[];
 	$: publicDatasets = data.publicDatasets as PublicDatasetRecord[];
+	$: featuredPublications = data.featuredPublications as PublicPublicationRecord[];
+	$: publicPublications = data.publicPublications as PublicPublicationRecord[];
 	$: apiError = data.apiError as string | null;
 
 	let activeProjectSlug: string | null = null;
 	$: activeProject = researchProjects.find((project) => project.slug === activeProjectSlug) ?? null;
 	$: relatedDatasets = activeProject ? getRelatedDatasets(activeProject) : [];
+	$: relatedPublications = activeProject ? getRelatedPublications(activeProject) : [];
 
 	function openProject(projectSlug: string) {
 		activeProjectSlug = projectSlug;
@@ -37,30 +40,111 @@
 			(record) => linkedIds.has(String(record.id)) || record.project_slug === project.slug
 		);
 	}
+
+	function getRelatedPublications(project: PublicResearchProject) {
+		return publicPublications.filter((record) => record.project_slug === project.slug);
+	}
+
+	const livingCollectionsApplicationUrl =
+		'https://survey123.arcgis.com/share/512cee2ac8f444008ec5f5ddeae69072';
+
+	const visitingResearchResources = [
+		{
+			label: 'On-site Research Agreement Form and Release',
+			href: 'https://www.nybg.org/content/uploads/2023/03/NYBG-On-site-Research-Release-Form-1.pdf'
+		},
+		{
+			label: 'Plant Material Collections Agreement Form and Release',
+			href: 'https://www.nybg.org/content/uploads/2023/03/Plant-Material-Distribution-Agreement-1-1.pdf'
+		},
+		{
+			label: 'Thain Family Forest Program 2008–2025',
+			href: 'https://www.nybg.org/content/uploads/2017/04/Forest-Plan-2016.pdf'
+		},
+		{
+			label: 'NYBG Plant Tracker',
+			href: 'https://www.nybg.org/gardens/planttracker/'
+		},
+		{
+			label: 'NYBG Gardens & Collections',
+			href: 'https://www.nybg.org/gardens/gardens-collections/'
+		}
+	];
 </script>
 
 <svelte:window on:keydown={handleEscapeKey} />
 
 <section class="research-content">
-	<!-- <h1 class="page-title">Research in the Thain Family Forest</h1> -->
-	<p class="intro-paragraph">
-		The Thain Family Forest is a living laboratory with several ongoing research projects focused on
-		understanding the impacts of the urban environment on the Forest and evaluating ecological
-		restoration projects.
-	</p><br/>
-	<p class="intro-paragraph">
-		Research in the Forest is conducted by staff, students, and volunteers. Visiting researchers,
-		including students, are welcome to conduct research in the Forest; please visit the Visiting
-		Research page for more information.
-	</p>
-	<p class="intro-paragraph">
-		<a class="admin-login-link" href="http://localhost:8000/admin/login/?next=/admin/">
-			Researcher / Admin Login
-		</a>
-	</p>
+	<section class="page-section" aria-labelledby="research-overview-heading">
+		<!-- <h2 id="research-overview-heading" class="section-heading">Research in the Thain Family Forest</h2> -->
+		<div class="section-body">
+			<p class="body-paragraph">
+				The Thain Family Forest is a living laboratory—the largest uncut expanse of New York City's
+				original wooded landscape. For thousands of years this old-growth forest has changed, adapted,
+				and survived. Today it supports long-term studies of urban ecology, forest health, biodiversity,
+				and the outcomes of restoration work across NYBG's 50-acre woodland.
+			</p>
+			<p class="body-paragraph">
+				Research in the Forest helps us understand how cities shape natural systems, track how the
+				woodland responds to disturbance and management, and share what we learn with students,
+				visitors, and the broader scientific community. Explore active and past projects below, along
+				with selected publications from decades of work in the Forest.
+			</p>
+		</div>
+	</section>
 
-	<div class="research-main-column">
-	<h2 class="section-heading">Ongoing Research Projects</h2>
+	<section class="page-section" aria-labelledby="conducting-research-heading">
+		<h2 id="conducting-research-heading" class="section-heading">Conducting Research</h2>
+		<div class="section-body">
+			<p class="body-paragraph">
+				Research in the Thain Family Forest is carried out by NYBG staff, graduate students,
+				undergraduate interns, volunteers, and visiting scientists. Projects range from long-term
+				ecological monitoring to focused studies on plants, soils, wildlife, and stream health.
+			</p>
+			<p class="body-paragraph">
+				Visiting researchers and students are welcome to propose on-site work in the Forest and across
+				NYBG's living collections. Use the resources below to apply, review required agreements, and
+				learn more about the Garden's collections.
+			</p>
+
+			<div class="application-callout">
+				<h3 class="subsection-heading">NYBG Living Collections Research Application</h3>
+				<p class="body-paragraph">
+					At NYBG, we encourage the use of our living collections for scientific research and
+					educational purposes. If you are interested in conducting on-site research or requesting
+					plant material for educational or research purposes, please complete the application below.
+					Please note, applications must be submitted two weeks prior to the anticipated start date of
+					the project. If your application is accepted, you will be asked to complete an agreement form.
+				</p>
+				<a
+					class="apply-button"
+					href={livingCollectionsApplicationUrl}
+					target="_blank"
+					rel="noopener noreferrer"
+				>
+					Apply for on-site research
+				</a>
+			</div>
+
+			<h3 class="subsection-heading">Additional resources</h3>
+			<ul class="resource-list">
+				{#each visitingResearchResources as resource}
+					<li>
+						<a href={resource.href} target="_blank" rel="noopener noreferrer">{resource.label}</a>
+					</li>
+				{/each}
+			</ul>
+
+			<p class="staff-login-note">
+				NYBG staff and approved researchers can manage projects and datasets on the
+				<a class="text-link" href="/projects">researcher dashboard</a>.
+			</p>
+		</div>
+	</section>
+
+	<section class="page-section" aria-labelledby="project-directory-heading">
+		<div class="research-main-column">
+	<h2 id="project-directory-heading" class="section-heading">Project Directory</h2>
 
 	{#if apiError}
 		<p class="api-error">Research project data is temporarily unavailable. ({apiError})</p>
@@ -69,8 +153,10 @@
 	<div class="project-grid">
 		{#each researchProjects as project}
 			<button type="button" class="project-card" on:click={() => openProject(project.slug)}>
-				<img src={project.image} alt={project.title} loading="lazy" />
 				<div class="project-card-body">
+					<span class="status-tag" class:ongoing={project.ongoing} class:concluded={!project.ongoing}>
+						{project.ongoing ? 'Ongoing' : 'Concluded'}
+					</span>
 					<h2 class="project-title">{project.title}</h2>
 					<p class="project-summary">{project.summary || project.full_title || ''}</p>
 					<span class="read-more-link">
@@ -105,6 +191,51 @@
 					</button>
 				</div>
 				<div class="modal-body">
+					<dl class="project-metadata">
+						<div class="metadata-item">
+							<dt>Status</dt>
+							<dd>
+								<span
+									class="status-tag"
+									class:ongoing={activeProject.ongoing}
+									class:concluded={!activeProject.ongoing}
+								>
+									{activeProject.ongoing ? 'Ongoing' : 'Concluded'}
+								</span>
+							</dd>
+						</div>
+						{#if activeProject.organization_name}
+							<div class="metadata-item">
+								<dt>Lead institution</dt>
+								<dd>{activeProject.organization_name}</dd>
+							</div>
+						{/if}
+						{#if activeProject.institutional_partners?.length}
+							<div class="metadata-item">
+								<dt>Partner institutions</dt>
+								<dd>
+									<ul class="metadata-list">
+										{#each activeProject.institutional_partners as partner}
+											<li>{partner}</li>
+										{/each}
+									</ul>
+								</dd>
+							</div>
+						{/if}
+						{#if activeProject.lead_name}
+							<div class="metadata-item">
+								<dt>Project lead</dt>
+								<dd>
+									{#if activeProject.lead_email}
+										<a href={`mailto:${activeProject.lead_email}`}>{activeProject.lead_name}</a>
+									{:else}
+										{activeProject.lead_name}
+									{/if}
+								</dd>
+							</div>
+						{/if}
+					</dl>
+
 					{#if activeProject.descriptionParagraphs.length === 0}
 						<p class="empty-related">Project details will be published soon.</p>
 					{:else}
@@ -126,6 +257,26 @@
 							<p class="empty-related">No linked datasets yet.</p>
 						{/if}
 					</div>
+					<div class="related-publications">
+						<h4>Related publications</h4>
+						{#if relatedPublications.length > 0}
+							<ul>
+								{#each relatedPublications as publication}
+									<li>
+										{#if publication.url}
+											<a href={publication.url} target="_blank" rel="noopener noreferrer">
+												{@html publication.citation}
+											</a>
+										{:else}
+											<span>{@html publication.citation}</span>
+										{/if}
+									</li>
+								{/each}
+							</ul>
+						{:else}
+							<p class="empty-related">No linked publications yet.</p>
+						{/if}
+					</div>
 				</div>
 			</div>
 		</div>
@@ -133,66 +284,26 @@
 
 	<section class="publications">
 		<h2 class="section-heading">Selected Publications from Research in the Thain Family Forest</h2>
-		<ul>
-			<li>
-				Atha, D., J.A. Schuler, S.L. Tobing. 2014. Corydalis incisa (Fumariaceae) in Bronx and
-				Westchester Counties, New York. <em>Phytoneuron</em> 96: 1-6.
-			</li>
-			<li>
-				Munshi-South, J. and C. Nagy. 2014. Urban park characteristics, genetic variation, and
-				historical demography of white-footed mouse (<em>Peromyscus leucopus</em>) populations in New
-				York City. <em>PeerJ</em> 2:e310; DOI 10.7717/peerj.310.
-			</li>
-			<li>
-				Rachlin J.W., B.E. Warkentine, A. Pappantoniou. 2007. An Evaluation of the Ichthyofauna of the
-				Bronx River, a Resilient Urban Waterway. <em>Northeastern Naturalist</em> 14(4):531-544.
-			</li>
-			<li>
-				Gregg, J. W., C.G. Jones, and T.E. Dawson. 2003. Urbanization on Tree Growth in the Vicinity of
-				New York City. <em>Nature</em> 424:183-187.
-			</li>
-			<li>
-				McDonnell, M.J., S.T.A. Pickett, P. Groffman, P. Bohlen, R. Pouyat, W.C. Zipperer, and R.W.
-				Parmelee. 1997. Ecosystem Processes along an urban-to-rural gradient. <em>Urban Ecosystems</em>
-				1: 21-36.
-			</li>
-			<li>
-				McDonnell, M.J. and S.T.A. Pickett. 1990. Ecosystem Structure and Function along Urban-Rural
-				Gradients: An Unexploited Opportunity for Ecology. <em>Ecology</em> 71(4): 1232-1237.
-			</li>
-			<li>
-				Rudnicky, J.L. and M. J. McDonnell. 1989. Forty-Eight Years of Canopy Change in a
-				Hardwood-Hemlock Forest in New York City. <em>Bulletin of the Torrey Botanical Club</em>
-				116(1): 52-64.
-			</li>
-			<li>
-				White, C.S. and M.J. McDonnell. 1988. Nitrogen Cycling Processes and Soil Characteristics in an
-				Urban versus Rural Forest. <em>Biogeochemistry</em> 5(2): 243-262.
-			</li>
-			<li>Leonardi L. 1987. The Bryophytes of The New York Botanical Garden Forest. <em>Evansia</em> 4: 8-11.</li>
-			<li>
-				Honkala, D.A. and J.B. McAninch. 1980. The New York Botanical Garden Hemlock Forest Project Part
-				I. NYBG Institutional Report.
-			</li>
-			<li>
-				Honkala, D.A. and J.B. McAninch. 1981. The New York Botanical Garden Hemlock Forest Project Part
-				II. NYBG Institutional Report.
-			</li>
-			<li>
-				Moore, B., H.M. Richards, H.A. Gleason, and A.B. Stout. 1924. Hemlock and its environment.
-				<em>Bulletin of The New York Botanical Garden</em> 12(45):325-350.
-			</li>
-			<li>
-				Britton, N.L. 1906. The Hemlock Grove on the banks of the Bronx River and what it signifies.
-				<em>Contributions from The New York Botanical Garden</em> 88:5-13.
-			</li>
-			<li>
-				Howe, M.A. and E.G. Britton. 1899. Lists of Plants in the Grounds, 1898.
-				<em>Bulletin of The New York Botanical Garden</em> 1(4): 195-203.
-			</li>
-		</ul>
+		{#if featuredPublications.length === 0}
+			<p class="empty-related">Publications will be published here soon.</p>
+		{:else}
+			<ul>
+				{#each featuredPublications as publication}
+					<li>
+						{#if publication.url}
+							<a href={publication.url} target="_blank" rel="noopener noreferrer">
+								{@html publication.citation}
+							</a>
+						{:else}
+							{@html publication.citation}
+						{/if}
+					</li>
+				{/each}
+			</ul>
+		{/if}
 	</section>
 	</div>
+	</section>
 </section>
 
 <style>
@@ -215,38 +326,101 @@
 		width: 100%;
 	}
 
-	.intro-paragraph {
+	.page-section {
+		max-width: 1100px;
+		margin: 0 auto 2.5rem;
+	}
+
+	.section-body {
+		/* max-width: 760px; */
+	}
+
+	.body-paragraph {
 		font-family: 'GT Super Regular', serif;
 		font-size: 1.05rem;
-		line-height: 1.55;
-		margin-left: auto;
-		margin-right: auto;
+		line-height: 1.6;
+		margin: 0 0 1rem;
 		color: #222;
-		max-width: 1100px;
 	}
 
-	.admin-login-link {
-		color: #111;
-		text-decoration: none;
-		position: relative;
+	.subsection-heading {
+		font-family: 'GT Super Bold', serif;
+		font-size: 1.05rem;
+		margin: 1.5rem 0 0.65rem;
+		color: #1e2f1e;
+	}
+
+	.application-callout {
+		margin: 1.5rem 0;
+		padding: 1.25rem 1.35rem;
+		border: 1px solid rgba(0, 0, 0, 0.12);
+		background: rgba(200, 181, 0, 0.08);
+	}
+
+	.application-callout .body-paragraph:last-of-type {
+		margin-bottom: 1.1rem;
+	}
+
+	.application-callout .subsection-heading {
+		margin-top: 0;
+	}
+
+	.apply-button {
 		display: inline-flex;
 		align-items: center;
+		justify-content: center;
+		padding: 0.65rem 1.15rem;
+		border: 1px solid #1e2f1e;
+		background: #1e2f1e;
+		color: #fff;
+		font-family: 'GT Super Bold', serif;
+		font-size: 0.95rem;
+		text-decoration: none;
+		transition: background 0.18s ease, color 0.18s ease;
 	}
 
-	.admin-login-link::after {
-		content: '';
-		position: absolute;
-		bottom: -1px;
-		left: 0;
-		width: 0;
-		height: 1.5px;
-		background-color: #111;
-		transition: width 0.22s ease;
+	.apply-button:hover,
+	.apply-button:focus-visible {
+		background: #fff;
+		color: #1e2f1e;
 	}
 
-	.admin-login-link:hover::after,
-	.admin-login-link:focus-visible::after {
-		width: 100%;
+	.apply-button:focus-visible {
+		outline: 2px solid #1e2f1e;
+		outline-offset: 2px;
+	}
+
+	.resource-list {
+		margin: 0;
+		padding-left: 1.25rem;
+	}
+
+	.resource-list li {
+		font-family: 'GT Super Regular', serif;
+		font-size: 1rem;
+		line-height: 1.55;
+		margin-bottom: 0.55rem;
+	}
+
+	.resource-list a,
+	.text-link {
+		color: #1b3d1b;
+		text-decoration: underline;
+		text-underline-offset: 2px;
+	}
+
+	.resource-list a:hover,
+	.resource-list a:focus-visible,
+	.text-link:hover,
+	.text-link:focus-visible {
+		color: #0f2a0f;
+	}
+
+	.staff-login-note {
+		margin: 1.5rem 0 0;
+		font-family: 'GT Super Regular', serif;
+		font-size: 0.95rem;
+		color: #555;
 	}
 
 	.section-heading {
@@ -254,8 +428,38 @@
 		font-size: clamp(1.35rem, 2.2vw, 2rem);
 		text-transform: uppercase;
 		line-height: 1.1;
-		margin: 2rem 0 1rem;
+		margin: 0 0 1rem;
 		color: #1e2f1e;
+	}
+
+	.page-section .section-heading {
+		margin-top: 0;
+	}
+
+	#project-directory-heading {
+		margin-top: 0;
+	}
+
+	.status-tag {
+		display: inline-block;
+		padding: 0.2rem 0.55rem;
+		border-radius: 999px;
+		font-family: 'Martian Mono', serif;
+		font-size: 0.72rem;
+		letter-spacing: 0.03em;
+		text-transform: uppercase;
+		line-height: 1.2;
+		width: fit-content;
+	}
+
+	.status-tag.ongoing {
+		background: #d8ead8;
+		color: #1b4d1b;
+	}
+
+	.status-tag.concluded {
+		background: #e8e8e8;
+		color: #555;
 	}
 
 	.project-grid {
@@ -290,19 +494,12 @@
 		outline-offset: 2px;
 	}
 
-	.project-card img {
-		width: 100%;
-		aspect-ratio: 4 / 3;
-		object-fit: cover;
-		display: block;
-		background: #f4f4f4;
-	}
-
 	.project-card-body {
 		padding: 0.95rem 1rem 1rem;
 		display: flex;
 		flex-direction: column;
 		flex: 1;
+		gap: 0.45rem;
 	}
 
 	.project-title {
@@ -359,6 +556,48 @@
 	.project-card:hover .read-more-arrow,
 	.project-card:focus-visible .read-more-arrow {
 		transform: translateX(3px);
+	}
+
+	.project-metadata {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.85rem 1.25rem;
+		margin: 0 0 1.25rem;
+		padding: 0 0 1.1rem;
+		border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+	}
+
+	.metadata-item {
+		margin: 0;
+	}
+
+	.project-metadata dt {
+		font-family: 'GT Super Bold', serif;
+		font-size: 0.78rem;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: #5a5a5a;
+		margin: 0 0 0.2rem;
+	}
+
+	.project-metadata dd {
+		margin: 0;
+		font-family: 'GT Super Regular', serif;
+		font-size: 0.98rem;
+		color: #222;
+	}
+
+	.project-metadata a {
+		color: #1b3d1b;
+	}
+
+	.metadata-list {
+		margin: 0;
+		padding-left: 1.1rem;
+	}
+
+	.metadata-list li {
+		margin-bottom: 0.2rem;
 	}
 
 	.modal-overlay {
@@ -449,6 +688,26 @@
 		color: #1b3d1b;
 	}
 
+	.related-publications {
+		margin-top: 1.25rem;
+	}
+
+	.related-publications ul {
+		margin: 0;
+		padding-left: 1.25rem;
+	}
+
+	.related-publications li {
+		font-family: 'GT Super Regular', serif;
+		font-size: 0.95rem;
+		line-height: 1.5;
+		margin-bottom: 0.6rem;
+	}
+
+	.related-publications a {
+		color: #1b3d1b;
+	}
+
 	.empty-related {
 		margin-bottom: 0;
 		color: #555;
@@ -467,8 +726,16 @@
 		color: #222;
 	}
 
+	.publications a {
+		color: inherit;
+	}
+
 	@media (max-width: 900px) {
 		.project-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.project-metadata {
 			grid-template-columns: 1fr;
 		}
 	}
