@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.core.management import call_command
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -77,3 +78,28 @@ class AssignRoleApiTests(APITestCase):
         self.client.force_authenticate(self.internal_admin)
         response = self.client.get(reverse("current-user"))
         self.assertFalse(response.data["can_assign_roles"])
+
+
+class SeedNybgInternalSuperadminsTests(APITestCase):
+    def test_creates_nybg_internal_superadmins(self):
+        call_command("seed_nybg_internal_superadmins")
+
+        for username in ("ebeaury", "boberle", "jzeiger", "tforrest"):
+            user = User.objects.get(username=username)
+            self.assertTrue(user.is_staff)
+            self.assertTrue(user.is_superuser)
+            self.assertEqual(user.profile.role, UserProfile.Role.INTERNAL_SUPERADMIN)
+            self.assertIsNone(user.profile.organization_id)
+            self.assertTrue(user.groups.filter(name="internal_superadmin").exists())
+
+    def test_idempotent_for_existing_user(self):
+        existing = User.objects.create_user(username="jzeiger", password="pass12345", email="old@nybg.org")
+        existing.profile.role = UserProfile.Role.EXTERNAL_ADMIN
+        existing.profile.save()
+
+        call_command("seed_nybg_internal_superadmins", "--update")
+
+        existing.refresh_from_db()
+        self.assertEqual(existing.email, "jzeiger@nybg.org")
+        self.assertEqual(existing.first_name, "John")
+        self.assertEqual(existing.profile.role, UserProfile.Role.INTERNAL_SUPERADMIN)
