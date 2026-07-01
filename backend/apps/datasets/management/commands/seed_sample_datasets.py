@@ -95,7 +95,7 @@ class Command(BaseCommand):
                         "short_title": config["project_title"],
                         "full_title": config.get("project_full_title", ""),
                         "lead_name": "NYBG Forest staff",
-                        "lead_email": "john@nybg.org",
+                        "lead_email": "jzeiger@nybg.org",
                         "organization": nybg,
                         "owner": owner,
                         "shared_publicly": False,

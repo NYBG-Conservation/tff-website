@@ -112,7 +112,7 @@ class ProjectApiPermissionTests(APITestCase):
         self.project_nybg = Project.objects.create(
             short_title="NYBG Project",
             lead_name="John",
-            lead_email="john@nybg.org",
+            lead_email="jzeiger@nybg.org",
             organization=self.nybg_org,
             owner=self.owner_user,
         )
@@ -199,7 +199,7 @@ class ProjectModelTests(TestCase):
         project = Project.objects.create(
             short_title="Forest Soil Cores",
             lead_name="Brad",
-            lead_email="brad@nybg.org",
+            lead_email="boberle@nybg.org",
             organization=self.organization,
             owner=self.owner,
         )
@@ -210,7 +210,7 @@ class ProjectModelTests(TestCase):
             short_title="CFI",
             slug="forest-inventory-transect-study",
             lead_name="John",
-            lead_email="john@nybg.org",
+            lead_email="jzeiger@nybg.org",
             organization=self.organization,
             owner=self.owner,
         )
@@ -226,14 +226,14 @@ class ProjectModelTests(TestCase):
         Project.objects.create(
             short_title="Forest Soil Cores",
             lead_name="Brad",
-            lead_email="brad@nybg.org",
+            lead_email="boberle@nybg.org",
             organization=self.organization,
             owner=self.owner,
         )
         second = Project.objects.create(
             short_title="Forest Soil Cores",
             lead_name="Eve",
-            lead_email="eve@nybg.org",
+            lead_email="ebeaury@nybg.org",
             organization=self.organization,
             owner=self.owner,
         )
@@ -249,7 +249,7 @@ class ProjectModelTests(TestCase):
         project = Project.objects.create(
             short_title="Overdue Study",
             lead_name="Eve",
-            lead_email="eve@nybg.org",
+            lead_email="ebeaury@nybg.org",
             organization=self.organization,
             owner=self.owner,
         )
@@ -323,7 +323,7 @@ class PublicApiTests(APITestCase):
             slug="private-study",
             short_title="Private Study",
             lead_name="John",
-            lead_email="john@nybg.org",
+            lead_email="jzeiger@nybg.org",
             shared_publicly=False,
             organization=self.organization,
             owner=self.owner,

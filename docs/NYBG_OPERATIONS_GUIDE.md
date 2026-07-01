@@ -584,6 +584,12 @@ When ready:
 2. Set `UserProfile.role` to `internal_admin` (see [§6](#6-user-accounts-and-permissions))
 3. Share `/admin/` URL and credentials via secure channel
 
+### Onboard an external partner
+
+1. Create user in admin; assign `external_admin` or `external_superadmin` and link **Organization**
+2. Share [EXTERNAL_PARTNER_GUIDE.md](EXTERNAL_PARTNER_GUIDE.md) and admin login URL
+3. Partner reserves Figshare DOI before creating their first project
+
 ### Refresh sample data after git pull
 
 ```bash
@@ -657,6 +663,7 @@ Global `scroll-padding-top: var(--site-nav-height)` in `src/styles/all.css`.
 
 | Document | Contents |
 |----------|----------|
+| [EXTERNAL_PARTNER_GUIDE.md](EXTERNAL_PARTNER_GUIDE.md) | **Partner onboarding** — required fields, Figshare, uploads, public visibility |
 | [README.md](../README.md) | Quick local start |
 | [backend/README.md](../backend/README.md) | Backend setup, Docker |
 | [SEED_DATA.md](SEED_DATA.md) | Seed commands, slugs, duplicate cleanup |

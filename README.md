@@ -49,6 +49,8 @@ Optional: `createsuperuser` + seed commands — see [docs/SEED_DATA.md](docs/SEE
 
 **NYBG staff handoff:** see **[docs/NYBG_OPERATIONS_GUIDE.md](docs/NYBG_OPERATIONS_GUIDE.md)** for the full operations runbook (admin, roles, public content, seeds, troubleshooting).
 
+**External partners:** see **[docs/EXTERNAL_PARTNER_GUIDE.md](docs/EXTERNAL_PARTNER_GUIDE.md)** (account setup, required fields, Figshare, upload policy).
+
 **Docker alternative:** `docker compose up` (local Postgres + Django) — see [backend/README.md](backend/README.md).
 
 Production AWS (Vercel, EC2, RDS, member account) is documented in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for when you are ready.
