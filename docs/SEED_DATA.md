@@ -137,7 +137,7 @@ Load the curated publications list (site-wide, not tied to a project):
 python backend/manage.py seed_research_publications --publish
 ```
 
-Researchers can add project-linked publications from `/projects` or Django admin. Site-wide publications (no project) are managed in admin or via `seed_research_publications`.
+Researchers can add project-linked publications from Django admin. Site-wide publications (no project) are managed in admin or via `seed_research_publications`.
 
 Note: the public `/data` page lists **datasets** (not individual file downloads yet). Files are in admin and the researcher API.
 
@@ -218,15 +218,16 @@ Add new aliases there if a future seed typo produces a new wrong slug pattern.
 
 ## After seeding: public site
 
-Admin list ≠ public site. In Django admin (or `/projects`), enable:
+Admin list ≠ public site. In Django admin, enable:
 
 - **Shared publicly** on projects for `/research`
 - **Expose on public API** on datasets (and files if needed) for `/data`
 
 ---
 
-## Related files
+## Related documentation
 
+- **[NYBG_OPERATIONS_GUIDE.md](NYBG_OPERATIONS_GUIDE.md)** — full staff handoff / operations guide
 - [`seed_sample_projects.py`](../backend/apps/datasets/management/commands/seed_sample_projects.py)
 - [`seed_sample_datasets.py`](../backend/apps/datasets/management/commands/seed_sample_datasets.py)
 - [`cleanup_seed_duplicates.py`](../backend/apps/datasets/management/commands/cleanup_seed_duplicates.py)

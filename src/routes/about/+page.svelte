@@ -35,11 +35,11 @@
 <style>
 	p {
 		color: #000;
-		font-family: 'GT Super Text';
+		font-family: 'GT Super Regular', serif;
 		font-size: 1.15rem;
 		font-style: normal;
 		font-weight: 400;
-		line-height: normal;
+		line-height: 1.6;
 		width: 42rem;
 		max-width: 90%;
 		margin: 1em auto;
@@ -91,28 +91,6 @@
 		object-fit: contain;
 		/* filter: grayscale(100%); */
 		opacity: 0.85;
-	}
-
-	/* Our Approach section links: pine color + underline animation */
-	.our-approach p :global(a) {
-		color: var(--sugar-pine);
-		text-decoration: underline;
-		position: relative;
-	}
-
-	.our-approach p :global(a)::after {
-		content: '';
-		position: absolute;
-		bottom: 0;
-		left: 0;
-		width: 0;
-		height: 2px;
-		background-color: var(--sugar-pine);
-		transition: width 0.3s ease;
-	}
-
-	.our-approach p :global(a:hover)::after {
-		width: 100%;
 	}
 
 </style>

@@ -37,7 +37,7 @@ SAMPLE_FOLDER_CONFIG: list[dict] = [
     {
         "folder": "acorn planting",
         "project_slug": "acorn-planting",
-        "project_title": "Acorn Planting — Ten Tallest Method",
+        "project_title": "Acorn Planting",
         "dataset_title": "Ten Tallest Plot Data",
         "dataset_description": "Ten-tallest plot data and method instructions.",
         "cadence": Dataset.Cadence.ANNUAL,

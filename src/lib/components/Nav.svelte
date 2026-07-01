@@ -1,5 +1,4 @@
 <script lang="ts">
-	import '../../styles/all.css';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 
@@ -124,7 +123,7 @@
 	}
 </script>
 
-<nav class:menu-open={isMenuOpen}>
+<nav class:menu-open={isMenuOpen} class:info-menu-open={isInfoMenuOpen}>
 	<div class="utility-bar">
 		<div class="utility-dropdown" bind:this={infoMenuWrap}>
 			<button
@@ -184,11 +183,14 @@
 		overflow: hidden;
 	}
 
-	nav.menu-open {
+	nav.menu-open,
+	nav.info-menu-open {
 		overflow: visible;
 	}
 
 	.utility-bar {
+		position: relative;
+		z-index: 2;
 		background-color: var(--olive);
 		min-height: 64px;
 		display: grid;

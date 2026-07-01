@@ -107,6 +107,12 @@ CORS_ALLOW_CREDENTIALS = True
 
 PROJECT_OVERDUE_DAYS = int(os.getenv("PROJECT_OVERDUE_DAYS", "30"))
 PROJECT_ALERT_REMINDER_DAYS = int(os.getenv("PROJECT_ALERT_REMINDER_DAYS", "7"))
+FIGSHARE_DOI_GUIDE_URL = os.getenv(
+    "FIGSHARE_DOI_GUIDE_URL",
+    "https://info.figshare.com/user-guide/how-to-reserve-a-doi/",
+)
+DJANGO_API_PUBLIC_URL = os.getenv("DJANGO_API_PUBLIC_URL", "http://127.0.0.1:8000")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@localhost")
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [

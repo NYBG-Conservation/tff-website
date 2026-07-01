@@ -49,6 +49,8 @@ python backend/manage.py createsuperuser
 
 6. (Optional) Seed research projects and sample files — **[docs/SEED_DATA.md](../docs/SEED_DATA.md)** (read before re-running seeds).
 
+**NYBG operations:** [docs/NYBG_OPERATIONS_GUIDE.md](../docs/NYBG_OPERATIONS_GUIDE.md)
+
 7. Run server:
 
 ```bash

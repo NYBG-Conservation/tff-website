@@ -1416,10 +1416,6 @@ p {font-family: 'GT Super Regular', serif;}
 		scroll-margin-top: 5rem;
 	}
 
-	a {
-		color: #e4ffb2;
-	}
-
 	@media (min-width: 768px) {
 		.content-body {
 			position: relative;

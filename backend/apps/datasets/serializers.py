@@ -1,7 +1,9 @@
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from rest_framework import serializers
 
+from .figshare import validate_figshare_doi_url
 from .models import (
     Dataset,
     DatasetFile,
@@ -12,6 +14,7 @@ from .models import (
     ProjectManager,
     ProjectPublication,
 )
+from .overdue_uploads import get_active_missing_data_alert, is_overdue_missing_data, overdue_days
 
 
 FIELD_TYPE_CHOICES = [choice for choice, _ in MetadataFieldDefinition.FieldType.choices]
@@ -287,6 +290,10 @@ class ProjectSerializer(serializers.ModelSerializer):
     owner_username = serializers.CharField(source="owner.username", read_only=True)
     managers = ProjectManagerSerializer(source="project_managers", many=True, read_only=True)
     organization_name = serializers.CharField(source="organization.name", read_only=True)
+    is_overdue_missing_data = serializers.SerializerMethodField()
+    overdue_days = serializers.SerializerMethodField()
+    active_alert_id = serializers.SerializerMethodField()
+    last_alert_emailed_at = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
@@ -304,6 +311,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             "end_date",
             "ongoing",
             "external_url",
+            "figshare_doi_url",
             "institutional_partners",
             "collection_frequency",
             "update_frequency",
@@ -313,11 +321,47 @@ class ProjectSerializer(serializers.ModelSerializer):
             "owner",
             "owner_username",
             "managers",
+            "is_overdue_missing_data",
+            "overdue_days",
+            "active_alert_id",
+            "last_alert_emailed_at",
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("slug", "created_at", "updated_at", "owner_username", "organization_name", "owner")
+        read_only_fields = (
+            "slug",
+            "created_at",
+            "updated_at",
+            "owner_username",
+            "organization_name",
+            "owner",
+            "is_overdue_missing_data",
+            "overdue_days",
+            "active_alert_id",
+            "last_alert_emailed_at",
+        )
         extra_kwargs = {"owner": {"required": False}}
+
+    def get_is_overdue_missing_data(self, obj: Project) -> bool:
+        return is_overdue_missing_data(obj)
+
+    def get_overdue_days(self, obj: Project) -> int:
+        return overdue_days(obj)
+
+    def get_active_alert_id(self, obj: Project) -> int | None:
+        alert = get_active_missing_data_alert(obj)
+        return alert.id if alert else None
+
+    def get_last_alert_emailed_at(self, obj: Project):
+        alert = get_active_missing_data_alert(obj)
+        return alert.last_emailed_at if alert else None
+
+    def validate_figshare_doi_url(self, value: str) -> str:
+        required = self.instance is None
+        try:
+            return validate_figshare_doi_url(value, required=required)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(exc.messages) from exc
 
     def validate(self, attrs):
         start = attrs.get("start_date", getattr(self.instance, "start_date", None))
@@ -335,6 +379,12 @@ class ProjectSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"lead_email": "Project lead email is required."})
         if not attrs.get("organization") and not getattr(self.instance, "organization_id", None):
             raise serializers.ValidationError({"organization": "Organization is required."})
+        if self.instance is None:
+            figshare_value = attrs.get("figshare_doi_url", "")
+            try:
+                attrs["figshare_doi_url"] = validate_figshare_doi_url(figshare_value, required=True)
+            except DjangoValidationError as exc:
+                raise serializers.ValidationError({"figshare_doi_url": exc.messages}) from exc
         return attrs
 
     def create(self, validated_data):

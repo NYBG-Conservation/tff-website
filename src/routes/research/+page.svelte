@@ -1,5 +1,11 @@
 <script lang="ts">
 	import type { PublicDatasetRecord, PublicPublicationRecord, PublicResearchProject } from '$lib/api/public';
+	import { djangoAdminHomeUrl } from '$lib/api/djangoAdmin';
+	import { FIGSHARE_DOI_GUIDE_URL } from '$lib/constants/figshare';
+	import AccordianList from '$lib/components/AccordianList.svelte';
+	import ResearchProjectCard from '$lib/components/ResearchProjectCard.svelte';
+	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
 
 	export let data;
 
@@ -17,6 +23,18 @@
 	function openProject(projectSlug: string) {
 		activeProjectSlug = projectSlug;
 	}
+
+	function applyProjectFromUrl() {
+		const slug = $page.url.searchParams.get('project');
+		if (!slug) return;
+		if (researchProjects.some((project) => project.slug === slug)) {
+			openProject(slug);
+		}
+	}
+
+	onMount(() => {
+		applyProjectFromUrl();
+	});
 
 	function closeProjectModal() {
 		activeProjectSlug = null;
@@ -70,6 +88,13 @@
 			href: 'https://www.nybg.org/gardens/gardens-collections/'
 		}
 	];
+
+	const additionalResourcesHtml = `<ul class="resource-list">${visitingResearchResources
+		.map(
+			(resource) =>
+				`<li><a href="${resource.href}" target="_blank" rel="noopener noreferrer">${resource.label}</a></li>`
+		)
+		.join('')}</ul>`;
 </script>
 
 <svelte:window on:keydown={handleEscapeKey} />
@@ -88,56 +113,7 @@
 				Research in the Forest helps us understand how cities shape natural systems, track how the
 				woodland responds to disturbance and management, and share what we learn with students,
 				visitors, and the broader scientific community. Explore active and past projects below, along
-				with selected publications from decades of work in the Forest.
-			</p>
-		</div>
-	</section>
-
-	<section class="page-section" aria-labelledby="conducting-research-heading">
-		<h2 id="conducting-research-heading" class="section-heading">Conducting Research</h2>
-		<div class="section-body">
-			<p class="body-paragraph">
-				Research in the Thain Family Forest is carried out by NYBG staff, graduate students,
-				undergraduate interns, volunteers, and visiting scientists. Projects range from long-term
-				ecological monitoring to focused studies on plants, soils, wildlife, and stream health.
-			</p>
-			<p class="body-paragraph">
-				Visiting researchers and students are welcome to propose on-site work in the Forest and across
-				NYBG's living collections. Use the resources below to apply, review required agreements, and
-				learn more about the Garden's collections.
-			</p>
-
-			<div class="application-callout">
-				<h3 class="subsection-heading">NYBG Living Collections Research Application</h3>
-				<p class="body-paragraph">
-					At NYBG, we encourage the use of our living collections for scientific research and
-					educational purposes. If you are interested in conducting on-site research or requesting
-					plant material for educational or research purposes, please complete the application below.
-					Please note, applications must be submitted two weeks prior to the anticipated start date of
-					the project. If your application is accepted, you will be asked to complete an agreement form.
-				</p>
-				<a
-					class="apply-button"
-					href={livingCollectionsApplicationUrl}
-					target="_blank"
-					rel="noopener noreferrer"
-				>
-					Apply for on-site research
-				</a>
-			</div>
-
-			<h3 class="subsection-heading">Additional resources</h3>
-			<ul class="resource-list">
-				{#each visitingResearchResources as resource}
-					<li>
-						<a href={resource.href} target="_blank" rel="noopener noreferrer">{resource.label}</a>
-					</li>
-				{/each}
-			</ul>
-
-			<p class="staff-login-note">
-				NYBG staff and approved researchers can manage projects and datasets on the
-				<a class="text-link" href="/projects">researcher dashboard</a>.
+				with selected publications from decades of work in the Forest. To learn how to conduct research in the Forest, please see the <a href="#conducting-research-heading">Visiting Research</a> section.
 			</p>
 		</div>
 	</section>
@@ -152,19 +128,12 @@
 
 	<div class="project-grid">
 		{#each researchProjects as project}
-			<button type="button" class="project-card" on:click={() => openProject(project.slug)}>
-				<div class="project-card-body">
-					<span class="status-tag" class:ongoing={project.ongoing} class:concluded={!project.ongoing}>
-						{project.ongoing ? 'Ongoing' : 'Concluded'}
-					</span>
-					<h2 class="project-title">{project.title}</h2>
-					<p class="project-summary">{project.summary || project.full_title || ''}</p>
-					<span class="read-more-link">
-						Read more
-						<span class="read-more-arrow" aria-hidden="true">→</span>
-					</span>
-				</div>
-			</button>
+			<ResearchProjectCard
+				title={project.title}
+				summary={project.summary || project.full_title || ''}
+				ongoing={project.ongoing}
+				onSelect={() => openProject(project.slug)}
+			/>
 		{/each}
 	</div>
 
@@ -281,9 +250,71 @@
 			</div>
 		</div>
 	{/if}
+<br/><br/>
 
+	<section class="page-section" aria-labelledby="conducting-research-heading">
+		<h2 id="conducting-research-heading" class="section-heading">Conducting Research</h2>
+		<div class="section-body">
+			<p class="body-paragraph">
+				Research in the Thain Family Forest is carried out by NYBG staff, graduate students,
+				undergraduate interns, volunteers, and visiting scientists. Projects range from long-term
+				ecological monitoring to focused studies on plants, soils, wildlife, and Bronx River health.
+			</p>
+			<p class="body-paragraph">
+				Visiting researchers and students are welcome to propose on-site work in the Forest and across
+				NYBG's living collections. Use the resources below to apply, review required agreements, and
+				learn more about the Garden's collections.
+			</p>
+
+			<p class="body-paragraph">
+				All Forest research projects must reserve a DOI in Figshare for associated datasets before field
+				work begins. Upload data to that deposit as it becomes available, then link files or the Figshare
+				URL from your project record in Django admin.
+				<a href={FIGSHARE_DOI_GUIDE_URL} target="_blank" rel="noopener noreferrer">
+					How to reserve a DOI in Figshare
+				</a>.
+			</p>
+
+			<p class="staff-login-note">
+				NYBG staff and approved researchers can manage projects and datasets in
+				<a href={djangoAdminHomeUrl()}>Django admin</a>.
+			</p>
+
+			<div class="application-callout">
+				<h3 class="subsection-heading">NYBG Living Collections Research Application</h3>
+				<p class="body-paragraph">
+					At NYBG, we encourage the use of our living collections for scientific research and
+					educational purposes. If you are interested in conducting on-site research or requesting
+					plant material for educational or research purposes, please complete the application below.
+					Please note, applications must be submitted two weeks prior to the anticipated start date of
+					the project. If your application is accepted, you will be asked to complete an agreement form.
+				</p>
+				<a
+					class="apply-button"
+					href={livingCollectionsApplicationUrl}
+					target="_blank"
+					rel="noopener noreferrer"
+				>
+					Apply for on-site research
+				</a>
+
+			<div class="resources-accordion">
+				<AccordianList
+					theme="light"
+					type="files"
+					items={['Additional resources']}
+					text={[additionalResourcesHtml]}
+				/>
+			</div>
+			</div>
+
+
+
+		</div>
+	</section>
+<br><br/>
 	<section class="publications">
-		<h2 class="section-heading">Selected Publications from Research in the Thain Family Forest</h2>
+		<h2 class="section-heading">Publication Archive</h2>
 		{#if featuredPublications.length === 0}
 			<p class="empty-related">Publications will be published here soon.</p>
 		{:else}
@@ -329,10 +360,6 @@
 	.page-section {
 		max-width: 1100px;
 		margin: 0 auto 2.5rem;
-	}
-
-	.section-body {
-		/* max-width: 760px; */
 	}
 
 	.body-paragraph {
@@ -390,30 +417,8 @@
 		outline-offset: 2px;
 	}
 
-	.resource-list {
-		margin: 0;
-		padding-left: 1.25rem;
-	}
-
-	.resource-list li {
-		font-family: 'GT Super Regular', serif;
-		font-size: 1rem;
-		line-height: 1.55;
-		margin-bottom: 0.55rem;
-	}
-
-	.resource-list a,
-	.text-link {
-		color: #1b3d1b;
-		text-decoration: underline;
-		text-underline-offset: 2px;
-	}
-
-	.resource-list a:hover,
-	.resource-list a:focus-visible,
-	.text-link:hover,
-	.text-link:focus-visible {
-		color: #0f2a0f;
+	.resources-accordion {
+		margin-top: 1.5rem;
 	}
 
 	.staff-login-note {
@@ -468,96 +473,6 @@
 		gap: 1.5rem;
 	}
 
-	.project-card {
-		background: #fff;
-		border: 1px solid rgba(0, 0, 0, 0.12);
-		padding: 0;
-		text-align: left;
-		display: flex;
-		flex-direction: column;
-		min-height: 100%;
-		box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
-		cursor: pointer;
-		font: inherit;
-		color: inherit;
-		transition: transform 0.18s ease, box-shadow 0.18s ease;
-	}
-
-	.project-card:hover,
-	.project-card:focus-visible {
-		transform: translateY(-2px);
-		box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
-	}
-
-	.project-card:focus-visible {
-		outline: 2px solid #1e2f1e;
-		outline-offset: 2px;
-	}
-
-	.project-card-body {
-		padding: 0.95rem 1rem 1rem;
-		display: flex;
-		flex-direction: column;
-		flex: 1;
-		gap: 0.45rem;
-	}
-
-	.project-title {
-		margin: 0;
-		padding: 0;
-		font-family: 'GT Super Regular', serif;
-		font-size: clamp(1.15rem, 1.9vw, 1.6rem);
-		line-height: 1.2;
-		color: #111;
-	}
-
-	.project-summary {
-		margin: 0;
-		padding: 0.4rem 0 0.9rem;
-		font-family: 'GT Super Regular', serif;
-		font-size: 0.96rem;
-		line-height: 1.4;
-		color: #333;
-	}
-
-	.read-more-link {
-		margin-top: auto;
-		align-self: flex-end;
-		padding: 0.15rem 0 0.1rem;
-		font-family: 'GT Super Regular', serif;
-		font-size: 0.95rem;
-		color: #111;
-		position: relative;
-		display: inline-flex;
-		align-items: center;
-		gap: 0.4rem;
-	}
-
-	.read-more-link::after {
-		content: '';
-		position: absolute;
-		left: 0;
-		bottom: -1px;
-		width: 0;
-		height: 1.5px;
-		background-color: #111;
-		transition: width 0.22s ease;
-	}
-
-	.read-more-arrow {
-		transition: transform 0.22s ease;
-	}
-
-	.project-card:hover .read-more-link::after,
-	.project-card:focus-visible .read-more-link::after {
-		width: 100%;
-	}
-
-	.project-card:hover .read-more-arrow,
-	.project-card:focus-visible .read-more-arrow {
-		transform: translateX(3px);
-	}
-
 	.project-metadata {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -585,10 +500,6 @@
 		font-family: 'GT Super Regular', serif;
 		font-size: 0.98rem;
 		color: #222;
-	}
-
-	.project-metadata a {
-		color: #1b3d1b;
 	}
 
 	.metadata-list {
@@ -683,11 +594,6 @@
 		padding-left: 1.25rem;
 	}
 
-	.related-datasets a {
-		font-family: 'GT Super Regular', serif;
-		color: #1b3d1b;
-	}
-
 	.related-publications {
 		margin-top: 1.25rem;
 	}
@@ -702,10 +608,6 @@
 		font-size: 0.95rem;
 		line-height: 1.5;
 		margin-bottom: 0.6rem;
-	}
-
-	.related-publications a {
-		color: #1b3d1b;
 	}
 
 	.empty-related {
@@ -724,10 +626,6 @@
 		line-height: 1.55;
 		margin-bottom: 0.75rem;
 		color: #222;
-	}
-
-	.publications a {
-		color: inherit;
 	}
 
 	@media (max-width: 900px) {

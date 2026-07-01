@@ -1,4 +1,5 @@
 <script lang="ts">
+	import '../styles/all.css';
 	import Nav from '$lib/components/Nav.svelte';
 	import Header from '$lib/components/Header.svelte';
 	import { page } from '$app/stores';
@@ -72,6 +73,8 @@ injectAnalytics({ mode: dev ? 'development' : 'production' });
 	}
 
 	.nav-header-band {
+		position: relative;
+		z-index: 1000;
 		background-color: transparent;
 		padding-top: var(--site-nav-height, 112px);
 		transition: padding-top 0.28s ease;

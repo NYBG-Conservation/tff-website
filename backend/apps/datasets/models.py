@@ -34,6 +34,14 @@ class Project(models.Model):
     end_date = models.DateField(null=True, blank=True)
     ongoing = models.BooleanField(default=False)
     external_url = models.URLField(blank=True)
+    figshare_doi_url = models.URLField(
+        max_length=500,
+        blank=True,
+        help_text=(
+            "Figshare item URL or reserved DOI link for this project's data deposit. "
+            "Required when creating a new project."
+        ),
+    )
     institutional_partners = models.JSONField(default=list, blank=True)
     collection_frequency = models.CharField(max_length=120, blank=True)
     update_frequency = models.CharField(max_length=120, blank=True)

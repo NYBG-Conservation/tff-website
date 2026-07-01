@@ -1,3 +1,4 @@
+from django.urls import reverse
 from rest_framework import serializers
 
 from .models import Dataset, Project, ProjectPublication
@@ -13,12 +14,58 @@ def _status_label(value: str) -> str:
     return labels.get(value, value)
 
 
+def _data_type_label(value: str) -> str:
+    return dict(Dataset.DataType.choices).get(value, value)
+
+
+class PublicDatasetFileSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    file_name = serializers.CharField()
+    file_kind = serializers.CharField()
+    download_available = serializers.BooleanField()
+    download_url = serializers.CharField(allow_blank=True)
+
+
+def _public_file_payload(request, dataset: Dataset, file_record) -> dict:
+    download_url = ""
+    download_available = False
+
+    if file_record.external_url:
+        download_url = file_record.external_url
+        download_available = True
+    elif file_record.file:
+        path = reverse(
+            "public-dataset-file-download",
+            kwargs={"dataset_pk": dataset.pk, "file_pk": file_record.pk},
+        )
+        download_url = request.build_absolute_uri(path) if request else path
+        download_available = True
+
+    return {
+        "id": file_record.id,
+        "file_name": file_record.file_name,
+        "file_kind": file_record.get_file_kind_display(),
+        "download_available": download_available,
+        "download_url": download_url,
+    }
+
+
+class PublicMetadataFieldSerializer(serializers.Serializer):
+    label = serializers.CharField()
+    field_type = serializers.CharField()
+    unit = serializers.CharField()
+    required = serializers.BooleanField()
+
+
 class PublicDatasetSerializer(serializers.ModelSerializer):
     organization = serializers.CharField(source="organization.name", read_only=True)
     project_slug = serializers.SerializerMethodField()
     cadence = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
+    data_type = serializers.SerializerMethodField()
     last_updated = serializers.DateTimeField(source="updated_at", format="%Y-%m-%d")
+    files = serializers.SerializerMethodField()
+    metadata_fields = serializers.SerializerMethodField()
 
     class Meta:
         model = Dataset
@@ -32,6 +79,8 @@ class PublicDatasetSerializer(serializers.ModelSerializer):
             "status",
             "last_updated",
             "data_type",
+            "files",
+            "metadata_fields",
         )
 
     def get_project_slug(self, obj: Dataset) -> str:
@@ -44,6 +93,27 @@ class PublicDatasetSerializer(serializers.ModelSerializer):
 
     def get_status(self, obj: Dataset) -> str:
         return _status_label(obj.status)
+
+    def get_data_type(self, obj: Dataset) -> str:
+        return _data_type_label(obj.data_type)
+
+    def get_files(self, obj: Dataset) -> list[dict]:
+        request = self.context.get("request")
+        return [
+            _public_file_payload(request, obj, file_record)
+            for file_record in obj.files.filter(expose_on_public_api=True).order_by("-uploaded_at")
+        ]
+
+    def get_metadata_fields(self, obj: Dataset) -> list[dict]:
+        return [
+            {
+                "label": field.label,
+                "field_type": field.get_field_type_display(),
+                "unit": field.unit,
+                "required": field.required,
+            }
+            for field in obj.metadata_fields.all().order_by("sort_order", "id")
+        ]
 
 
 class PublicProjectSerializer(serializers.ModelSerializer):

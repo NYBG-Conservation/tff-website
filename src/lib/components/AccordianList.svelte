@@ -1,14 +1,12 @@
 <script lang="ts">
 	import AccordionItem from '$lib/components/AccordianItem.svelte';
 
-	/**
-	 * @type {null}
-	 */
-	let show: null = null;
+	let show: number | null = null;
 
 	export let items;
 	export let text;
 	export let type;
+	export let theme: 'dark' | 'light' = 'dark';
 	// export let data;
 
 	let module_data: ArrayLike<unknown> | { [s: string]: unknown };
@@ -22,7 +20,7 @@
 
 		console.log(module_data);
 	}
-	const showCollapse = (/** @type {null} */ i: null) => {
+	const showCollapse = (i: number) => {
 		i === show ? (show = null) : (show = i);
 	};
 
@@ -33,17 +31,16 @@
 	// }
 </script>
 
-<div class="accordian">
+<div class="accordian" class:theme-light={theme === 'light'}>
 	{#if type === 'regular' || type === 'files'}
 		{#each items as item, i}
-			<AccordionItem {i} {show} {showCollapse} {item} text={text[i]} {type} />
+			<AccordionItem {i} {show} {showCollapse} {item} text={text[i]} {type} {theme} />
 		{/each}
 	{:else if type == 'educational-modules'}
 		{#each Object.entries(module_data) as [key, value], i}
-			<AccordionItem {i} {show} {showCollapse} item={key} text={[value]} />
+			<AccordionItem {i} {show} {showCollapse} item={key} text={[value]} {type} {theme} />
 		{/each}
 	{/if}
-	<br /><br /><br />
 </div>
 
 <style>

@@ -32,8 +32,8 @@ npm run dev
 | URL | Purpose |
 |-----|---------|
 | http://localhost:5173 (or 5174) | Public site |
-| http://127.0.0.1:8000/admin/ | Django admin |
-| http://localhost:5173/projects | Researcher project dashboard (needs login) |
+| http://127.0.0.1:8000/admin/ | Django admin (primary management UI) |
+| http://localhost:5173/projects | Redirects to Django admin |
 
 **Minimal `backend/.env` for SQLite:**
 
@@ -46,6 +46,8 @@ CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhos
 ```
 
 Optional: `createsuperuser` + seed commands — see [docs/SEED_DATA.md](docs/SEED_DATA.md).
+
+**NYBG staff handoff:** see **[docs/NYBG_OPERATIONS_GUIDE.md](docs/NYBG_OPERATIONS_GUIDE.md)** for the full operations runbook (admin, roles, public content, seeds, troubleshooting).
 
 **Docker alternative:** `docker compose up` (local Postgres + Django) — see [backend/README.md](backend/README.md).
 
@@ -62,7 +64,9 @@ A Django + Postgres backend scaffold now lives in `backend/` for researcher/admi
 
 ### Public research/data pages
 
-The `/research` and `/data` routes load from the Django public API (`/api/public/projects/`, `/api/public/datasets/`). Set `PUBLIC_DJANGO_API_BASE_URL` in a root `.env` file (see `.env.example`) and mark records `shared_publicly` / `expose_on_public_api` in the admin or `/projects` dashboard.
+The `/research` and `/data` routes load from the Django public API (`/api/public/projects/`, `/api/public/datasets/`). Set `PUBLIC_DJANGO_API_BASE_URL` in a root `.env` file (see `.env.example`) and mark records `shared_publicly` / `expose_on_public_api` in Django admin.
+
+**Operations guide:** [docs/NYBG_OPERATIONS_GUIDE.md](docs/NYBG_OPERATIONS_GUIDE.md)
 
 ### Public API + sample data
 

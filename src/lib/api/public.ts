@@ -19,6 +19,21 @@ export type PublicResearchProject = {
 	update_frequency?: string;
 };
 
+export type PublicDatasetFile = {
+	id: number;
+	file_name: string;
+	file_kind: string;
+	download_available: boolean;
+	download_url: string;
+};
+
+export type PublicMetadataField = {
+	label: string;
+	field_type: string;
+	unit: string;
+	required: boolean;
+};
+
 export type PublicDatasetRecord = {
 	id: number;
 	title: string;
@@ -29,6 +44,8 @@ export type PublicDatasetRecord = {
 	status: string;
 	last_updated: string;
 	data_type?: string;
+	files?: PublicDatasetFile[];
+	metadata_fields?: PublicMetadataField[];
 };
 
 export type PublicPublicationRecord = {

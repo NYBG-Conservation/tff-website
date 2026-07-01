@@ -387,6 +387,7 @@ PUBLIC_DJANGO_API_BASE_URL=http://127.0.0.1:8000
 
 ## Related docs
 
+- [`docs/NYBG_OPERATIONS_GUIDE.md`](../docs/NYBG_OPERATIONS_GUIDE.md) — **NYBG staff handoff** (admin, roles, public content, troubleshooting)
 - [`docs/SEED_DATA.md`](../docs/SEED_DATA.md) — **seed/cleanup runbook** (read before updating seeds)
 - [`backend/README.md`](../backend/README.md) — API setup, migrations
 - [`backend/API_CONTRACT.md`](../backend/API_CONTRACT.md) — upload governance, endpoints

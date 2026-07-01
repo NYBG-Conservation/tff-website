@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
 	import { createDataset, listDatasets, type Dataset, type DatasetInput } from '$lib/api/datasets';
 	import {
 		addProjectManager,
@@ -18,6 +19,7 @@
 		type ProjectPublicationInput
 	} from '$lib/api/projectPublications';
 	import { getCurrentUser, type CurrentUser } from '$lib/api/accounts';
+	import { FIGSHARE_DOI_GUIDE_URL } from '$lib/constants/figshare';
 	import { createOrganization, listOrganizations, type Organization } from '$lib/api/organizations';
 
 	let loading = true;
@@ -61,6 +63,7 @@
 		end_date: '',
 		ongoing: false,
 		external_url: '',
+		figshare_doi_url: '',
 		institutional_partners: [],
 		collection_frequency: '',
 		update_frequency: '',
@@ -109,6 +112,7 @@
 				projectForm.organization = organizations[0].id;
 				datasetForm.organization = organizations[0].id;
 			}
+			applyProjectFromUrl();
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to load project dashboard data.';
 		} finally {
@@ -131,6 +135,19 @@
 		void loadProjectPublications(project.id);
 		message = '';
 		error = '';
+	}
+
+	function applyProjectFromUrl() {
+		const param = $page.url.searchParams.get('project');
+		if (!param || projects.length === 0) return;
+
+		const match =
+			projects.find((project) => project.slug === param) ??
+			projects.find((project) => String(project.id) === param);
+
+		if (match && selectedProjectId !== match.id) {
+			selectProject(match);
+		}
 	}
 
 	async function loadProjectPublications(projectId: number) {
@@ -158,6 +175,7 @@
 			end_date: '',
 			ongoing: false,
 			external_url: '',
+			figshare_doi_url: '',
 			institutional_partners: [],
 			collection_frequency: '',
 			update_frequency: '',
@@ -383,6 +401,21 @@
 					<label>Start date<input type="date" bind:value={projectForm.start_date} /></label>
 					<label>End date<input type="date" bind:value={projectForm.end_date} /></label>
 					<label>External URL<input type="url" bind:value={projectForm.external_url} /></label>
+					<label>
+						Figshare item URL or reserved DOI
+						<input
+							type="url"
+							bind:value={projectForm.figshare_doi_url}
+							placeholder="https://figshare.com/articles/..."
+							required={!selectedProject}
+						/>
+					</label>
+					<p class="field-note">
+						Required for new projects. Reserve a DOI first —
+						<a href={FIGSHARE_DOI_GUIDE_URL} target="_blank" rel="noopener noreferrer">
+							How to reserve a DOI in Figshare
+						</a>.
+					</p>
 					<label>Collection frequency<input bind:value={projectForm.collection_frequency} /></label>
 					<label>Update frequency<input bind:value={projectForm.update_frequency} /></label>
 					<label class="checkbox">
@@ -485,7 +518,7 @@
 					<button
 						type="button"
 						on:click={saveProject}
-						disabled={savingProject || !projectForm.short_title || !projectForm.lead_name?.trim() || !projectForm.lead_email?.trim() || !projectForm.organization}
+						disabled={savingProject || !projectForm.short_title || !projectForm.lead_name?.trim() || !projectForm.lead_email?.trim() || !projectForm.organization || (!selectedProject && !projectForm.figshare_doi_url?.trim())}
 					>
 						{savingProject ? 'Saving...' : selectedProject ? 'Save changes' : 'Create project'}
 					</button>
@@ -517,9 +550,10 @@
 				<div class="panel">
 					<h2>Datasets for {selectedProject.short_title}</h2>
 					<p class="upload-governance">
-						<strong>Upload governance:</strong> Upload files up to 100 MB. For 100 MB-1 GB, links are
-						preferred. Files above 1 GB must be provided as an external link. Publications may be uploaded
-						or linked via DOI/URL.
+						<strong>Data deposit:</strong> Upload associated files to your project's Figshare item
+						(<a href={FIGSHARE_DOI_GUIDE_URL} target="_blank" rel="noopener noreferrer">reserve a DOI</a>).
+						Link files here: up to 100 MB direct upload; 100 MB–1 GB prefer external links; above 1 GB use
+						Figshare or another external URL. Publications may be uploaded or linked via DOI/URL.
 					</p>
 					<div class="dataset-form">
 						<input placeholder="Dataset title" bind:value={datasetForm.title} />

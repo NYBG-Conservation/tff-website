@@ -1,18 +1,16 @@
-<script>
-	// @ts-nocheck
-
-	import muirImage from '$lib/assets/mw-for-web.png';
-	import processImage from '$lib/assets/processdiag-transparent.png';
+<script lang="ts">
 	import { slide } from 'svelte/transition';
 
-	import { ChevronDownIcon, ChevronUpIcon } from 'svelte-feather-icons';
+	const muirImage = '/imgs/mw-for-web.png';
+	const processImage = '/imgs/processdiag-transparent.png';
 
-	export let i;
-	export let show;
-	export let showCollapse;
-	export let item;
-	export let text;
-	export let type;
+	export let i: number;
+	export let show: number | null;
+	export let showCollapse: (index: number) => void;
+	export let item: string;
+	export let text: string | string[] | unknown[];
+	export let type: string;
+	export let theme: 'dark' | 'light' = 'dark';
 
 	let lesson_data = [
 		{
@@ -121,26 +119,54 @@
 		}
 	];
 
-	let splitted;
-	if (typeof text == 'object') {
+	let splitted: string[] = [];
+	if (typeof text === 'object' && text !== null && Array.isArray(text) && typeof text[0] === 'string') {
 		splitted = text[0].split(',');
 	}
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
-<div class="collapse__header" on:click={showCollapse(i)}>
+<div class="collapse__header" class:theme-light={theme === 'light'} on:click={() => showCollapse(i)}>
 	<span>{item}</span>
 	<span class="icon-spot">
 		{#if show === i}
-			<ChevronUpIcon size="26" />
+			<svg
+				class="chevron-icon"
+				xmlns="http://www.w3.org/2000/svg"
+				width="26"
+				height="26"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"
+			>
+				<polyline points="18 15 12 9 6 15" />
+			</svg>
 		{:else}
-			<ChevronDownIcon size="26" />
+			<svg
+				class="chevron-icon"
+				xmlns="http://www.w3.org/2000/svg"
+				width="26"
+				height="26"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				aria-hidden="true"
+			>
+				<polyline points="6 9 12 15 18 9" />
+			</svg>
 		{/if}
 	</span>
 </div>
 {#if show === i}
-	<div class="collapse__body" transition:slide>
+	<div class="collapse__body" class:theme-light={theme === 'light'} transition:slide>
 		{#if typeof text == 'object'}
 			<ul class="ed-list">
 				{#each splitted as o}
@@ -276,6 +302,36 @@
 		/* background: #f7f7f7; */
 		cursor: pointer;
 	}
+
+	.collapse__header.theme-light {
+		padding: 0.85rem 0 0.65rem;
+		border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+		color: #1e2f1e;
+		font-family: 'GT Super Bold', serif;
+		font-size: 1.05rem;
+	}
+
+	.collapse__header.theme-light:hover {
+		color: #111;
+	}
+
+	.collapse__body.theme-light {
+		padding: 0.75rem 0 0.25rem;
+		color: #222;
+	}
+
+	.collapse__body.theme-light :global(.resource-list) {
+		margin: 0;
+		padding-left: 1.25rem;
+	}
+
+	.collapse__body.theme-light :global(.resource-list li) {
+		font-family: 'GT Super Regular', serif;
+		font-size: 1rem;
+		line-height: 1.55;
+		margin-bottom: 0.55rem;
+	}
+
 	.collapse__body {
 		padding: 1rem;
 		/* background: #f0f0f0; */

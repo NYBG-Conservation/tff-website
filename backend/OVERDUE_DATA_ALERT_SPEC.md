@@ -100,15 +100,29 @@ Optional CC (feature flag):
 
 Email subject:
 
-- `[Action needed] Project data upload overdue: <short_title>`
+- `[Action needed] Upload project data to Figshare: <short_title>`
 
 Email body includes:
 
 - project title
-- end date and threshold date
-- current overdue days
-- direct URL to project dashboard/edit screen
-- short guidance: upload data now or mark exception
+- end date
+- **Figshare deposit URL** (`Project.figshare_doi_url`)
+- link to [How to reserve a DOI in Figshare](https://info.figshare.com/user-guide/how-to-reserve-a-doi/)
+- direct URL to Django admin project edit screen
+- steps: upload to Figshare, then link files or external URL in a dataset
+
+Reminder cadence unchanged (first email on trigger, then every 7 days).
+
+## Figshare DOI requirement (project creation)
+
+Every **new** project must include `figshare_doi_url` — the Figshare item URL or reserved DOI link.
+
+- Validated in API (`ProjectSerializer`) and Django admin (`ProjectAdminForm`)
+- Accepted hosts: `figshare.com` (including institutional subdomains), `doi.org`, `dx.doi.org`
+- Legacy seeded projects may have a blank value until backfilled
+- Guide URL configurable via `FIGSHARE_DOI_GUIDE_URL` (default: Figshare user guide)
+
+Researchers reserve the DOI **before** data collection, upload files to Figshare when ready, and link deposits from the project's dataset records on this site.
 
 ## API Changes
 

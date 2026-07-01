@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
@@ -180,6 +181,7 @@ class ProjectApiPermissionTests(APITestCase):
             "shared_publicly": True,
             "collection_frequency": "annual",
             "update_frequency": "annual",
+            "figshare_doi_url": "https://figshare.com/articles/example/12345678",
         }
         response = self.client.post(reverse("project-list-create"), payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -354,6 +356,23 @@ class PublicApiTests(APITestCase):
             project=self.private_project,
             expose_on_public_api=True,
         )
+        self.public_file = DatasetFile.objects.create(
+            dataset=self.public_dataset,
+            file_name="survey.csv",
+            file_kind=DatasetFile.FileKind.PRIMARY_DATA,
+            content_type="text/csv",
+            uploaded_by=self.owner,
+            expose_on_public_api=True,
+            file=SimpleUploadedFile("survey.csv", b"plot,canopy\n1,42", content_type="text/csv"),
+        )
+        self.external_public_file = DatasetFile.objects.create(
+            dataset=self.public_dataset,
+            file_name="remote-archive.zip",
+            file_kind=DatasetFile.FileKind.PRIMARY_DATA,
+            uploaded_by=self.owner,
+            expose_on_public_api=True,
+            external_url="https://example.org/remote-archive.zip",
+        )
 
     def test_public_projects_requires_no_auth(self):
         response = self.client.get(reverse("public-project-list"))
@@ -376,3 +395,180 @@ class PublicApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["project_slug"], "public-forest-study")
+
+    def test_public_datasets_include_download_metadata(self):
+        response = self.client.get(reverse("public-dataset-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        files = response.data[0]["files"]
+        self.assertEqual(len(files), 2)
+
+        uploaded = next(item for item in files if item["file_name"] == "survey.csv")
+        self.assertTrue(uploaded["download_available"])
+        self.assertIn("/api/public/datasets/", uploaded["download_url"])
+        self.assertIn("/download/", uploaded["download_url"])
+
+        external = next(item for item in files if item["file_name"] == "remote-archive.zip")
+        self.assertTrue(external["download_available"])
+        self.assertEqual(external["download_url"], "https://example.org/remote-archive.zip")
+
+    def test_public_dataset_file_download_serves_uploaded_file(self):
+        response = self.client.get(
+            reverse(
+                "public-dataset-file-download",
+                kwargs={"dataset_pk": self.public_dataset.id, "file_pk": self.public_file.id},
+            )
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("attachment", response["Content-Disposition"])
+        self.assertEqual(b"".join(response.streaming_content), b"plot,canopy\n1,42")
+
+    def test_public_dataset_file_download_redirects_external_url(self):
+        response = self.client.get(
+            reverse(
+                "public-dataset-file-download",
+                kwargs={"dataset_pk": self.public_dataset.id, "file_pk": self.external_public_file.id},
+            )
+        )
+        self.assertEqual(response.status_code, status.HTTP_302_FOUND)
+        self.assertEqual(response["Location"], "https://example.org/remote-archive.zip")
+
+    def test_public_dataset_file_download_rejects_private_dataset(self):
+        private_dataset = Dataset.objects.create(
+            title="Hidden Dataset",
+            cadence=Dataset.Cadence.ANNUAL,
+            status=Dataset.Status.ACTIVE,
+            owner=self.owner,
+            organization=self.organization,
+            project=self.private_project,
+            expose_on_public_api=True,
+        )
+        private_file = DatasetFile.objects.create(
+            dataset=private_dataset,
+            file_name="hidden.csv",
+            uploaded_by=self.owner,
+            expose_on_public_api=True,
+            file=SimpleUploadedFile("hidden.csv", b"secret", content_type="text/csv"),
+        )
+        response = self.client.get(
+            reverse(
+                "public-dataset-file-download",
+                kwargs={"dataset_pk": private_dataset.id, "file_pk": private_file.id},
+            )
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_public_dataset_file_download_rejects_mobile_user_agent(self):
+        response = self.client.get(
+            reverse(
+                "public-dataset-file-download",
+                kwargs={"dataset_pk": self.public_dataset.id, "file_pk": self.public_file.id},
+            ),
+            HTTP_USER_AGENT="Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class FigshareDoiUrlTests(TestCase):
+    def test_rejects_missing_url_on_create(self):
+        from apps.datasets.figshare import validate_figshare_doi_url
+
+        with self.assertRaises(ValidationError):
+            validate_figshare_doi_url("", required=True)
+
+    def test_accepts_figshare_and_doi_hosts(self):
+        from apps.datasets.figshare import validate_figshare_doi_url
+
+        self.assertEqual(
+            validate_figshare_doi_url("https://figshare.com/articles/example/12345678"),
+            "https://figshare.com/articles/example/12345678",
+        )
+        self.assertEqual(
+            validate_figshare_doi_url("https://doi.org/10.6084/m9.figshare.12345678"),
+            "https://doi.org/10.6084/m9.figshare.12345678",
+        )
+
+    def test_rejects_unrelated_host(self):
+        from apps.datasets.figshare import validate_figshare_doi_url
+
+        with self.assertRaises(ValidationError):
+            validate_figshare_doi_url("https://example.org/not-figshare")
+
+
+class OverdueUploadTests(APITestCase):
+    def setUp(self):
+        self.organization = Organization.objects.create(name="NYBG")
+        self.owner = User.objects.create_user(username="overdue_owner", password="pass12345", email="owner@nybg.org")
+        self.client.force_authenticate(self.owner)
+
+    def test_project_create_requires_figshare_url(self):
+        payload = {
+            "short_title": "No Figshare",
+            "lead_name": "Pat",
+            "lead_email": "pat@nybg.org",
+            "organization": self.organization.id,
+        }
+        response = self.client.post(reverse("project-list-create"), payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("figshare_doi_url", response.data)
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_overdue_command_flags_project_and_sends_email(self):
+        from datetime import timedelta
+
+        from django.core import mail
+
+        project = Project.objects.create(
+            short_title="Ended Study",
+            lead_name="Pat",
+            lead_email="pat@nybg.org",
+            organization=self.organization,
+            owner=self.owner,
+            ongoing=False,
+            end_date=timezone.localdate() - timedelta(days=45),
+            figshare_doi_url="https://figshare.com/articles/ended-study/999",
+        )
+
+        from django.core.management import call_command
+
+        mail.outbox.clear()
+        call_command("check_overdue_project_uploads")
+
+        project.refresh_from_db()
+        alert = project.alerts.filter(status=ProjectAlert.Status.ACTIVE).first()
+        self.assertIsNotNone(alert)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("Figshare", mail.outbox[0].body)
+        self.assertIn(project.figshare_doi_url, mail.outbox[0].body)
+
+    def test_overdue_resolves_when_dataset_file_added(self):
+        from datetime import timedelta
+
+        from django.core.management import call_command
+
+        project = Project.objects.create(
+            short_title="Resolved Study",
+            lead_name="Pat",
+            lead_email="pat@nybg.org",
+            organization=self.organization,
+            owner=self.owner,
+            ongoing=False,
+            end_date=timezone.localdate() - timedelta(days=45),
+            figshare_doi_url="https://figshare.com/articles/resolved/888",
+        )
+        dataset = Dataset.objects.create(
+            title="Field notes",
+            cadence=Dataset.Cadence.ONE_OFF,
+            owner=self.owner,
+            organization=self.organization,
+            project=project,
+            project_slug=project.slug,
+        )
+        DatasetFile.objects.create(
+            dataset=dataset,
+            file_name="notes.csv",
+            uploaded_by=self.owner,
+            external_url="https://figshare.com/articles/resolved/888",
+        )
+
+        call_command("check_overdue_project_uploads")
+        self.assertFalse(project.alerts.filter(status=ProjectAlert.Status.ACTIVE).exists())
