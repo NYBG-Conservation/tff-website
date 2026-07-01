@@ -54,7 +54,15 @@ class ProjectManagerInline(admin.TabularInline):
 class ProjectAlertInline(admin.TabularInline):
     model = ProjectAlert
     extra = 0
-    readonly_fields = ("first_triggered_at", "last_evaluated_at", "last_emailed_at", "resolved_at", "created_at", "updated_at")
+    readonly_fields = (
+        "first_triggered_at",
+        "last_evaluated_at",
+        "last_emailed_at",
+        "emailed_milestones",
+        "resolved_at",
+        "created_at",
+        "updated_at",
+    )
 
 
 class ProjectAdminForm(forms.ModelForm):
@@ -75,11 +83,13 @@ class ProjectAdmin(admin.ModelAdmin):
         "short_title",
         "slug",
         "shared_publicly",
+        "manual_outreach_required",
         "organization",
         "lead_name",
         "lead_email",
         "owner",
         "ongoing",
+        "end_date",
         "updated_at",
     )
     fieldsets = (
@@ -90,6 +100,10 @@ class ProjectAdmin(admin.ModelAdmin):
         ),
         ("Permissions", {"fields": ("owner",)}),
         ("Schedule", {"fields": ("start_date", "end_date", "ongoing", "collection_frequency", "update_frequency", "last_updated_note")}),
+        (
+            "Data upload follow-up",
+            {"fields": ("manual_outreach_required", "manual_outreach_at")},
+        ),
         (
             "Data deposit (Figshare)",
             {
@@ -102,7 +116,7 @@ class ProjectAdmin(admin.ModelAdmin):
         ),
         ("Links", {"fields": ("external_url", "institutional_partners")}),
     )
-    list_filter = ("organization", "shared_publicly", "ongoing")
+    list_filter = ("organization", "shared_publicly", "ongoing", "manual_outreach_required")
     search_fields = ("short_title", "slug", "full_title", "lead_name", "lead_email", "organization__name", "owner__username")
     readonly_fields = ("slug",)
     inlines = [ProjectPublicationInline, ProjectManagerInline, ProjectAlertInline]
@@ -141,7 +155,15 @@ class ProjectPublicationAdmin(admin.ModelAdmin):
 
 @admin.register(ProjectAlert)
 class ProjectAlertAdmin(admin.ModelAdmin):
-    list_display = ("project", "alert_type", "status", "first_triggered_at", "last_emailed_at", "resolved_at")
+    list_display = (
+        "project",
+        "alert_type",
+        "status",
+        "emailed_milestones",
+        "first_triggered_at",
+        "last_emailed_at",
+        "resolved_at",
+    )
     list_filter = ("alert_type", "status")
     search_fields = ("project__short_title", "project__slug", "resolution_note")
     readonly_fields = ("created_at", "updated_at")

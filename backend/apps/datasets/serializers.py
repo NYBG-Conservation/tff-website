@@ -14,7 +14,13 @@ from .models import (
     ProjectManager,
     ProjectPublication,
 )
-from .overdue_uploads import get_active_missing_data_alert, is_overdue_missing_data, overdue_days
+from .overdue_uploads import (
+    days_since_project_end,
+    get_active_manual_outreach_alert,
+    get_active_missing_data_alert,
+    is_overdue_missing_data,
+    overdue_days,
+)
 
 
 FIELD_TYPE_CHOICES = [choice for choice, _ in MetadataFieldDefinition.FieldType.choices]
@@ -292,8 +298,12 @@ class ProjectSerializer(serializers.ModelSerializer):
     organization_name = serializers.CharField(source="organization.name", read_only=True)
     is_overdue_missing_data = serializers.SerializerMethodField()
     overdue_days = serializers.SerializerMethodField()
+    days_since_project_end = serializers.SerializerMethodField()
+    manual_outreach_required = serializers.BooleanField(read_only=True)
+    manual_outreach_at = serializers.DateTimeField(read_only=True)
     active_alert_id = serializers.SerializerMethodField()
     last_alert_emailed_at = serializers.SerializerMethodField()
+    emailed_milestones = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
@@ -323,8 +333,12 @@ class ProjectSerializer(serializers.ModelSerializer):
             "managers",
             "is_overdue_missing_data",
             "overdue_days",
+            "days_since_project_end",
+            "manual_outreach_required",
+            "manual_outreach_at",
             "active_alert_id",
             "last_alert_emailed_at",
+            "emailed_milestones",
             "created_at",
             "updated_at",
         )
@@ -337,10 +351,17 @@ class ProjectSerializer(serializers.ModelSerializer):
             "owner",
             "is_overdue_missing_data",
             "overdue_days",
+            "days_since_project_end",
+            "manual_outreach_required",
+            "manual_outreach_at",
             "active_alert_id",
             "last_alert_emailed_at",
+            "emailed_milestones",
         )
         extra_kwargs = {"owner": {"required": False}}
+
+    def get_days_since_project_end(self, obj: Project) -> int | None:
+        return days_since_project_end(obj)
 
     def get_is_overdue_missing_data(self, obj: Project) -> bool:
         return is_overdue_missing_data(obj)
@@ -355,6 +376,14 @@ class ProjectSerializer(serializers.ModelSerializer):
     def get_last_alert_emailed_at(self, obj: Project):
         alert = get_active_missing_data_alert(obj)
         return alert.last_emailed_at if alert else None
+
+    def get_emailed_milestones(self, obj: Project) -> list[int]:
+        alert = get_active_missing_data_alert(obj)
+        if not alert:
+            alert = get_active_manual_outreach_alert(obj)
+        if not alert:
+            return []
+        return [int(day) for day in (alert.emailed_milestones or [])]
 
     def validate_figshare_doi_url(self, value: str) -> str:
         required = self.instance is None

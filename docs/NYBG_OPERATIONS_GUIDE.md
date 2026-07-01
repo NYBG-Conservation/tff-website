@@ -197,6 +197,34 @@ Alternative without activating:
 .venv-local/bin/python backend/manage.py <command>
 ```
 
+### `manage.py` path cheat sheet
+
+Django runs in different places depending on environment. Use the **working directory** and **command prefix** from this table — do not mix them.
+
+| Environment | Working directory | Example (`migrate`) |
+|-------------|-------------------|---------------------|
+| **EC2 production (Docker)** | Repo root (`~/tff-website`) | `docker compose -f docker-compose.prod.yml exec backend python backend/manage.py migrate` |
+| **Local laptop (venv)** | Repo root | `python backend/manage.py migrate` |
+| **Local laptop (inside `backend/`)** | `backend/` subdirectory only | `python manage.py migrate` |
+
+**EC2 rules:**
+
+- Django is **not** installed on the Ubuntu host. Running `python3 backend/manage.py` on the server (outside Docker) fails with `Couldn't import Django`.
+- Always run `docker compose … exec backend …` from the **repo root**, not from `backend/`.
+- **Common mistake:** `cd backend` then `python3 backend/manage.py migrate` looks for `backend/backend/manage.py` and errors with “No such file or directory”.
+- Migrations also run automatically when the container starts ([`backend/docker-entrypoint.sh`](../backend/docker-entrypoint.sh)). Manual `migrate` is only needed for debugging or one-off runs.
+
+**Before `docker compose exec` on EC2:**
+
+```bash
+cd ~/tff-website
+docker compose -f docker-compose.prod.yml ps          # container must be Up
+docker compose -f docker-compose.prod.yml up --build -d   # start/rebuild if needed
+docker compose -f docker-compose.prod.yml logs backend    # if exec fails
+```
+
+Replace `migrate` with any management command (`createsuperuser`, `seed_round_2`, `publish_sample_data`, etc.). Full EC2 runbook: [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ---
 
 ## 5. Environment variables
@@ -322,7 +350,13 @@ Path: **Datasets → Projects**
 
 **Inlines on project:** Publications, Managers, Alerts.
 
-When a concluded project passes its end date by 30 days with no linked dataset files, the system emails the project lead with upload instructions (`python backend/manage.py check_overdue_project_uploads` — schedule daily in production). See [OVERDUE_DATA_ALERT_SPEC.md](../backend/OVERDUE_DATA_ALERT_SPEC.md).
+When a concluded project (not ongoing, with an `end_date`) has no linked dataset files for its Figshare deposit, automated reminders go to the project lead at **30, 60, and 90 days** after the end date. At **90 days**, `manual_outreach_required` is set for NYBG staff follow-up. Run daily on production:
+
+```bash
+docker compose -f docker-compose.prod.yml exec backend python backend/manage.py check_overdue_project_uploads
+```
+
+Filter **Projects → Manual outreach required** in Django admin. Full spec: [OVERDUE_DATA_ALERT_SPEC.md](../backend/OVERDUE_DATA_ALERT_SPEC.md).
 
 ### Datasets
 
@@ -585,6 +619,16 @@ python backend/manage.py test apps.datasets.tests.PublicApiTests
 
 Use `source .venv-local/bin/activate`, not `python3 .venv-local/bin/activate`.
 
+### `Couldn't import Django` or `backend/backend/manage.py` on EC2
+
+You ran `manage.py` on the Ubuntu host instead of inside Docker. From `~/tff-website`:
+
+```bash
+docker compose -f docker-compose.prod.yml exec backend python backend/manage.py migrate
+```
+
+See [§4 manage.py path cheat sheet](#managepy-path-cheat-sheet).
+
 ### API 403 “Authentication credentials were not provided”
 
 - Expected for anonymous API calls to protected endpoints
@@ -618,7 +662,7 @@ Global `scroll-padding-top: var(--site-nav-height)` in `src/styles/all.css`.
 | [SEED_DATA.md](SEED_DATA.md) | Seed commands, slugs, duplicate cleanup |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | AWS, Vercel, EC2, RDS, HTTPS |
 | [backend/API_CONTRACT.md](../backend/API_CONTRACT.md) | Full REST API + roles |
-| [backend/OVERDUE_DATA_ALERT_SPEC.md](../backend/OVERDUE_DATA_ALERT_SPEC.md) | Project alert spec (future) |
+| [backend/OVERDUE_DATA_ALERT_SPEC.md](../backend/OVERDUE_DATA_ALERT_SPEC.md) | 30/60/90-day upload reminders + manual outreach flag |
 
 ### Key code locations
 

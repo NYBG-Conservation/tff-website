@@ -2,6 +2,7 @@
 	import '../styles/all.css';
 	import Nav from '$lib/components/Nav.svelte';
 	import Header from '$lib/components/Header.svelte';
+	import Footer from '$lib/components/Footer.svelte';
 	import { page } from '$app/stores';
 
 	let { children, data } = $props();
@@ -54,13 +55,19 @@ injectAnalytics({ mode: dev ? 'development' : 'production' });
 			{/if}
 		</div>
 
-		{@render children()}
+		<main class="page-main">
+			{@render children()}
+		</main>
+
+		<Footer />
 	</div>
 {/if}
 
 <style>
 	.app-container {
 		min-height: 100vh;
+		display: flex;
+		flex-direction: column;
 		transition: background-color 0.3s ease;
 	}
 
@@ -78,5 +85,9 @@ injectAnalytics({ mode: dev ? 'development' : 'production' });
 		background-color: transparent;
 		padding-top: var(--site-nav-height, 112px);
 		transition: padding-top 0.28s ease;
+	}
+
+	.page-main {
+		flex: 1 0 auto;
 	}
 </style>

@@ -11,7 +11,8 @@ const FILE_TYPE_LABELS: Record<string, string> = {
 	xlsx: 'Excel spreadsheet',
 	xls: 'Excel spreadsheet',
 	doc: 'Word document',
-	docx: 'Word document',
+	pptx: 'PowerPoint presentation',
+	ppt: 'PowerPoint presentation',
 	png: 'Image file',
 	jpg: 'Image file',
 	jpeg: 'Image file',
@@ -46,4 +47,12 @@ export function fileTypeLabel(fileName: string): string {
 	const extension = fileExtension(fileName);
 	if (!extension) return 'File';
 	return FILE_TYPE_LABELS[extension] ?? `${extension.toUpperCase()} file`;
+}
+
+/** Filename without extension for display (e.g. "report.pdf" → "report"). */
+export function fileDisplayTitle(fileName: string): string {
+	const trimmed = fileName.trim();
+	const lastDot = trimmed.lastIndexOf('.');
+	if (lastDot <= 0) return trimmed;
+	return trimmed.slice(0, lastDot);
 }

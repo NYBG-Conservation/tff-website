@@ -5,7 +5,7 @@
 	import { getCurrentUser } from '$lib/api/accounts';
 	import type { PublicDatasetFile, PublicDatasetRecord, PublicResearchProject } from '$lib/api/public';
 	import { djangoAdminDatasetUrl } from '$lib/api/djangoAdmin';
-	import { fileTypeLabel } from '$lib/utils/fileTypes';
+	import { fileDisplayTitle, fileTypeLabel } from '$lib/utils/fileTypes';
 
 	type SortColumn = 'title' | 'organization' | 'project_slug' | 'cadence' | 'status' | 'last_updated';
 	type SortDirection = 'asc' | 'desc';
@@ -412,18 +412,18 @@
 														<li class="file-item">
 															{#if fileDownloadEnabled(file)}
 																<a
-																	class="file-type file-download-link"
+																	class="file-title file-download-link"
 																	href={file.download_url}
 																	target="_blank"
 																	rel="noopener noreferrer"
 																	on:click|stopPropagation
 																>
-																	{fileTypeLabel(file.file_name)}
+																	{fileDisplayTitle(file.file_name)}
 																</a>
 															{:else}
-																<span class="file-type">{fileTypeLabel(file.file_name)}</span>
+																<span class="file-title">{fileDisplayTitle(file.file_name)}</span>
 															{/if}
-															<span class="file-name">{file.file_name}</span>
+															<span class="file-type">{fileTypeLabel(file.file_name)}</span>
 														</li>
 													{/each}
 												</ul>
@@ -560,32 +560,32 @@
 
 	.data-table th:nth-child(2),
 	.data-table td:nth-child(2) {
-		width: 22%;
+		width: 34%;
 	}
 
 	.data-table th:nth-child(3),
 	.data-table td:nth-child(3) {
-		width: 16%;
+		width: 14%;
 	}
 
 	.data-table th:nth-child(4),
 	.data-table td:nth-child(4) {
-		width: 18%;
+		width: 16%;
 	}
 
 	.data-table th:nth-child(5),
 	.data-table td:nth-child(5) {
-		width: 12%;
+		width: 10%;
 	}
 
 	.data-table th:nth-child(6),
 	.data-table td:nth-child(6) {
-		width: 12%;
+		width: 10%;
 	}
 
 	.data-table th:nth-child(7),
 	.data-table td:nth-child(7) {
-		width: 14%;
+		width: 12%;
 	}
 
 	.expand-icon {
@@ -699,26 +699,25 @@
 		max-width: 100%;
 	}
 
-	.file-type {
+	.file-title {
 		font-family: 'GT Super Bold', serif;
 		font-size: 0.95rem;
 		color: #1e2f1e;
 		max-width: 100%;
+		overflow-wrap: anywhere;
+		word-break: break-word;
 	}
 
 	.file-download-link {
 		text-decoration: underline;
 		text-underline-offset: 0.12em;
-		overflow-wrap: anywhere;
 	}
 
-	.file-name {
+	.file-type {
 		font-family: 'GT Super Regular', serif;
 		font-size: 0.88rem;
 		color: #666;
 		max-width: 100%;
-		overflow-wrap: anywhere;
-		word-break: break-word;
 	}
 
 	.mobile-download-note {
@@ -731,7 +730,7 @@
 	.detail-actions {
 		margin-top: 0.5rem;
 		padding-top: 0.85rem;
-		border-top: 1px solid rgba(0, 0, 0, 0.1);
+		/* border-top: 1px solid rgba(0, 0, 0, 0.1); */
 	}
 
 	.manage-link {

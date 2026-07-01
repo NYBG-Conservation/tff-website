@@ -34,9 +34,10 @@
 		margin: 0 auto 1.25rem;
 		padding: 0 1rem;
 		font-family: 'NY Botanical Gothic', serif;
-		font-size: clamp(1.5rem, 3vw, 2.5rem);
+		font-size: clamp(1.3rem, 3vw, 2.3rem);
 		line-height: 1.1;
 		text-transform: uppercase;
+		text-align: center;
 		color: #1e2f1e;
 	}
 

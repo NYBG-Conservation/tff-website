@@ -1,220 +1,99 @@
-# Overdue Data Alert Spec (v1)
+# Overdue Data Alert Spec (v2)
 
 ## Goal
 
-Automatically flag projects and notify lead researchers when a project passes its end date by 30 days and still has no uploaded data.
+Automatically notify project leads when a **concluded** project (discrete `end_date`, not ongoing) still has no linked dataset files for its Figshare deposit — at **30, 60, and 90 days** after the end date. At **90 days**, flag the project for **manual NYBG outreach** if data is still missing.
 
-## Scope
+## Business rule
 
-- Add backend automation to detect overdue/no-data projects daily.
-- Add project-level alert state to avoid duplicate email spam.
-- Expose an overdue flag in project API payloads.
-- Highlight overdue rows in the project dashboard UI.
-
-Out of scope for v1:
-
-- SMS/Slack notifications
-- complex escalation chains
-- arbitrary per-project SLA windows
-
-## Business Rule
-
-A project is considered **overdue for data upload** when all conditions are true:
+A project enters the alert pipeline when:
 
 - `project.ongoing == false`
 - `project.end_date` is set
 - `today >= project.end_date + 30 days`
-- no qualifying data uploads exist (see definition below)
+- **no qualifying data deposit** exists (see below)
 
-### Qualifying Upload Definition (v1)
+### Qualifying data deposit
 
-For v1, a project is treated as having uploaded data if **either**:
+A project is treated as compliant when it has at least one **linked `DatasetFile`** under any project dataset, where either:
 
-- at least one `Dataset` exists linked to `Project`, or
-- at least one `DatasetFile` exists under any linked dataset
+- a file was uploaded directly, or
+- `external_url` points to the project's Figshare deposit (or another `figshare.com` / `doi.org` URL)
 
-Note:
+Researchers reserve `figshare_doi_url` at project registration, upload to Figshare when ready, then link files from Django admin.
 
-- This is intentionally permissive to reduce false alarms during initial rollout.
-- v2 can tighten to require `DatasetFile` only.
+## Milestone emails
 
-## Data Model Changes
+| Days after `end_date` | Action |
+|----------------------|--------|
+| **30** | First automated email to project lead |
+| **60** | Second reminder email |
+| **90** | Final automated email + **manual outreach flag** |
 
-Add an alert tracking model in `apps.datasets` (or a `notifications` app later):
+- One milestone email per daily command run (no duplicate sends).
+- If the cron was down, the next run sends the **oldest unsent** milestone (catch-up one at a time).
+- Ongoing projects and projects without `end_date` are **never** flagged.
 
-- `ProjectAlert`
-  - `project` FK -> `Project`
-  - `alert_type` (`missing_data_overdue`)
-  - `status` (`active`, `resolved`, `snoozed`)
-  - `first_triggered_at` datetime
-  - `last_evaluated_at` datetime
-  - `last_emailed_at` datetime nullable
-  - `resolved_at` datetime nullable
-  - `resolution_note` text blank
-  - unique constraint on (`project`, `alert_type`, `status='active'`) or equivalent enforcement
+## Manual outreach (90 days)
 
-Rationale:
+When `today >= end_date + 90 days` and data is still missing:
 
-- Tracks lifecycle and prevents repeated "first alert" sends.
-- Supports reminders and later admin actions.
+- `Project.manual_outreach_required = true`
+- `Project.manual_outreach_at` set
+- Active `ProjectAlert` with `alert_type = manual_outreach_required`
 
-## Scheduler + Command
+NYBG staff use Django admin:
 
-Implement a management command:
+- Filter projects by **Manual outreach required**
+- Review Alerts inline on the project
+- Contact the lead directly; clear the flag when resolved by linking dataset files (automatic) or manually unchecking after outreach
 
-- `python backend/manage.py check_overdue_project_uploads`
+## Scheduler + command
 
-Command behavior:
+```bash
+python backend/manage.py check_overdue_project_uploads
+```
 
-1. Query candidate projects by date/ongoing status.
-2. Determine if qualifying uploads exist.
-3. For overdue/no-data projects:
-  - create or update active `ProjectAlert`
-  - send email if first trigger or reminder interval met
-4. For projects no longer overdue/no-data:
-  - mark active alert as resolved with timestamp
+Run **daily** (cron on EC2). On production:
 
-Scheduling:
+```bash
+docker compose -f docker-compose.prod.yml exec backend python backend/manage.py check_overdue_project_uploads
+```
 
-- Run daily (cron, platform scheduler, or Celery Beat).
-- Recommended run window: early morning local time.
-
-## Reminder Cadence
-
-v1 notification cadence:
-
-- Send first email when project first becomes overdue/no-data.
-- Send reminder every 7 days while unresolved.
-- Stop sending when resolved.
-
-## Email Spec
-
-Recipient priority:
-
-1. `Project.lead_email`
-2. fallback to `Project.owner.email` (if present)
-
-Optional CC (feature flag):
-
-- delegated project managers with non-empty emails
-
-Email subject:
-
-- `[Action needed] Upload project data to Figshare: <short_title>`
-
-Email body includes:
-
-- project title
-- end date
-- **Figshare deposit URL** (`Project.figshare_doi_url`)
-- link to [How to reserve a DOI in Figshare](https://info.figshare.com/user-guide/how-to-reserve-a-doi/)
-- direct URL to Django admin project edit screen
-- steps: upload to Figshare, then link files or external URL in a dataset
-
-Reminder cadence unchanged (first email on trigger, then every 7 days).
-
-## Figshare DOI requirement (project creation)
-
-Every **new** project must include `figshare_doi_url` — the Figshare item URL or reserved DOI link.
-
-- Validated in API (`ProjectSerializer`) and Django admin (`ProjectAdminForm`)
-- Accepted hosts: `figshare.com` (including institutional subdomains), `doi.org`, `dx.doi.org`
-- Legacy seeded projects may have a blank value until backfilled
-- Guide URL configurable via `FIGSHARE_DOI_GUIDE_URL` (default: Figshare user guide)
-
-Researchers reserve the DOI **before** data collection, upload files to Figshare when ready, and link deposits from the project's dataset records on this site.
-
-## API Changes
-
-Extend project serializer response with computed fields:
-
-- `is_overdue_missing_data: boolean`
-- `overdue_days: number` (0 when not overdue)
-- `active_alert_id: number | null`
-- `last_alert_emailed_at: datetime | null`
-
-No breaking changes to request payloads.
-
-## UI Changes
-
-In `src/routes/projects/+page.svelte`:
-
-- highlight rows where `is_overdue_missing_data` is true (red-tinted background/border)
-- show badge text: `Data overdue`
-- optional tooltip/details:
-  - overdue days
-  - last email sent timestamp
-
-Upload governance text remains unchanged.
-
-## Permission Behavior
-
-- Existing role constraints remain.
-- Overdue flags are visible only for projects the user can already view.
-- Internal NYBG admins continue to see NYBG-scoped projects only.
-
-## Edge Cases
-
-- `ongoing=true`: never flagged, regardless of end date.
-- no `end_date`: never flagged.
-- timezone: use Django timezone-aware `now()` and compare by date.
-- no reachable recipient email: create alert but skip send; log warning.
-- project with external URL only and no dataset records: still flagged under v1 rule.
+When data is linked, active `missing_data_overdue` and `manual_outreach_required` alerts are **resolved** automatically.
 
 ## Configuration
 
-Add env-configurable settings:
+| Setting | Default | Purpose |
+|---------|---------|---------|
+| `PROJECT_ALERT_MILESTONE_DAYS` | `30,60,90` | Comma-separated reminder days after `end_date` |
+| `PROJECT_MANUAL_OUTREACH_DAY` | `90` | Day to flag manual outreach (should match last milestone) |
+| `DEFAULT_FROM_EMAIL` | — | Sender for milestone emails |
+| `DJANGO_API_PUBLIC_URL` | — | Admin links in email bodies |
 
-- `PROJECT_OVERDUE_DAYS=30`
-- `PROJECT_ALERT_REMINDER_DAYS=7`
-- email backend settings (`EMAIL_BACKEND`, SMTP host/user/pass, default from email)
+Legacy `PROJECT_OVERDUE_DAYS` / `PROJECT_ALERT_REMINDER_DAYS` are superseded by milestone days (no more every-7-day reminders).
 
-## Observability
+## API fields (`ProjectSerializer`)
 
-Command should log summary counts:
+- `is_overdue_missing_data`
+- `overdue_days` (days past first milestone)
+- `days_since_project_end`
+- `manual_outreach_required`
+- `manual_outreach_at`
+- `emailed_milestones` (e.g. `[30, 60]`)
+- `active_alert_id`, `last_alert_emailed_at`
 
-- checked projects
-- newly flagged
-- reminders sent
-- resolved alerts
-- skipped due to missing recipient
+## Data model
 
-Optional: persist run metrics later.
+- **`ProjectAlert`**: `missing_data_overdue`, `manual_outreach_required`; `emailed_milestones` JSON list
+- **`Project`**: `manual_outreach_required`, `manual_outreach_at`
 
-## Test Plan
+## Figshare DOI requirement
 
-Backend tests:
+Every new project requires `figshare_doi_url`. Guide: [How to reserve a DOI in Figshare](https://info.figshare.com/user-guide/how-to-reserve-a-doi/).
 
-- becomes overdue exactly on day 30 threshold
-- not flagged before threshold
-- ongoing project excluded
-- resolved when dataset added
-- first email sent once, reminders follow cadence
-- no duplicate active alerts
+---
 
-API tests:
+## v1 history (superseded)
 
-- project payload includes overdue fields
-- values reflect alert and upload state
-
-UI tests:
-
-- overdue row styling appears when flag true
-- non-overdue rows unaffected
-
-## Rollout Plan
-
-1. Add model + migration for `ProjectAlert`.
-2. Implement overdue evaluation service + management command.
-3. Configure scheduler in deployment environment.
-4. Add project API computed fields.
-5. Add UI row highlight + badge.
-6. Enable in staging with test dates/emails.
-7. Promote to production.
-
-## Future Extensions (Post-v1)
-
-- Admin snooze/acknowledge controls.
-- Configurable thresholds by project type.
-- Distinguish "metadata created" vs "actual file upload".
-- Multi-channel notifications (Slack/Teams).
+v1 used a single 30-day threshold and repeated emails every 7 days. v2 replaces that with fixed 30/60/90 milestones and the manual outreach flag.

@@ -123,8 +123,13 @@
   .app-container > *:not(.nav-header-band) a.apply-button,
   .app-container > *:not(.nav-header-band) a.hero-button,
   .app-container > *:not(.nav-header-band) a.project-card,
-  .app-container .partner-logo a {
+  .app-container .partner-logo a,
+  .app-container .site-footer a {
     text-decoration: none;
+  }
+
+  .app-container .site-footer a {
+    color: inherit;
   }
 
   .app-container > *:not(.nav-header-band) a.apply-button,

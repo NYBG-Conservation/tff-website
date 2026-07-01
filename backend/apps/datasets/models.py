@@ -46,6 +46,18 @@ class Project(models.Model):
     collection_frequency = models.CharField(max_length=120, blank=True)
     update_frequency = models.CharField(max_length=120, blank=True)
     last_updated_note = models.TextField(blank=True)
+    manual_outreach_required = models.BooleanField(
+        default=False,
+        help_text=(
+            "Set automatically when a concluded project reaches 90 days post-end "
+            "without linked dataset files for its Figshare deposit."
+        ),
+    )
+    manual_outreach_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When NYBG staff follow-up was flagged after the 90-day milestone.",
+    )
     organization = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="projects")
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="owned_projects")
     managers = models.ManyToManyField(
@@ -76,6 +88,7 @@ class Project(models.Model):
 class ProjectAlert(models.Model):
     class AlertType(models.TextChoices):
         MISSING_DATA_OVERDUE = "missing_data_overdue", "Missing Data Overdue"
+        MANUAL_OUTREACH_REQUIRED = "manual_outreach_required", "Manual Outreach Required"
 
     class Status(models.TextChoices):
         ACTIVE = "active", "Active"
@@ -85,6 +98,11 @@ class ProjectAlert(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="alerts")
     alert_type = models.CharField(max_length=40, choices=AlertType.choices)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
+    emailed_milestones = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Post-end reminder days already emailed for this alert (e.g. [30, 60, 90]).",
+    )
     first_triggered_at = models.DateTimeField()
     last_evaluated_at = models.DateTimeField()
     last_emailed_at = models.DateTimeField(null=True, blank=True)

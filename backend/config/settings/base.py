@@ -107,6 +107,12 @@ CORS_ALLOW_CREDENTIALS = True
 
 PROJECT_OVERDUE_DAYS = int(os.getenv("PROJECT_OVERDUE_DAYS", "30"))
 PROJECT_ALERT_REMINDER_DAYS = int(os.getenv("PROJECT_ALERT_REMINDER_DAYS", "7"))
+PROJECT_ALERT_MILESTONE_DAYS = [
+    int(day.strip())
+    for day in os.getenv("PROJECT_ALERT_MILESTONE_DAYS", "30,60,90").split(",")
+    if day.strip()
+]
+PROJECT_MANUAL_OUTREACH_DAY = int(os.getenv("PROJECT_MANUAL_OUTREACH_DAY", "90"))
 FIGSHARE_DOI_GUIDE_URL = os.getenv(
     "FIGSHARE_DOI_GUIDE_URL",
     "https://info.figshare.com/user-guide/how-to-reserve-a-doi/",

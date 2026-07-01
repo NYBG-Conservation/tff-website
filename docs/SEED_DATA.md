@@ -16,6 +16,8 @@ How to load research project metadata and `tff-sample-data` files without creati
 
 Canonical slugs and alias mappings live in [`backend/apps/datasets/seed_constants.py`](../backend/apps/datasets/seed_constants.py).
 
+**Command paths:** On EC2 use `docker compose -f docker-compose.prod.yml exec backend python backend/manage.py <command>` from the repo root. Locally use `python backend/manage.py <command>` with venv activated. See [manage.py path cheat sheet](NYBG_OPERATIONS_GUIDE.md#managepy-path-cheat-sheet).
+
 ---
 
 ## Before you change or re-run seeds

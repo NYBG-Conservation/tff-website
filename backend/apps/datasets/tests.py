@@ -534,11 +534,49 @@ class OverdueUploadTests(APITestCase):
         call_command("check_overdue_project_uploads")
 
         project.refresh_from_db()
-        alert = project.alerts.filter(status=ProjectAlert.Status.ACTIVE).first()
+        alert = project.alerts.filter(
+            alert_type=ProjectAlert.AlertType.MISSING_DATA_OVERDUE,
+            status=ProjectAlert.Status.ACTIVE,
+        ).first()
         self.assertIsNotNone(alert)
+        self.assertEqual(alert.emailed_milestones, [30])
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn("Figshare", mail.outbox[0].body)
         self.assertIn(project.figshare_doi_url, mail.outbox[0].body)
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_manual_outreach_flag_at_90_days(self):
+        from datetime import timedelta
+
+        from django.core.management import call_command
+
+        project = Project.objects.create(
+            short_title="Stale Study",
+            lead_name="Pat",
+            lead_email="pat@nybg.org",
+            organization=self.organization,
+            owner=self.owner,
+            ongoing=False,
+            end_date=timezone.localdate() - timedelta(days=95),
+            figshare_doi_url="https://figshare.com/articles/stale/777",
+        )
+
+        call_command("check_overdue_project_uploads")
+
+        project.refresh_from_db()
+        self.assertTrue(project.manual_outreach_required)
+        self.assertIsNotNone(project.manual_outreach_at)
+        self.assertTrue(
+            project.alerts.filter(
+                alert_type=ProjectAlert.AlertType.MANUAL_OUTREACH_REQUIRED,
+                status=ProjectAlert.Status.ACTIVE,
+            ).exists()
+        )
+        missing_alert = project.alerts.get(
+            alert_type=ProjectAlert.AlertType.MISSING_DATA_OVERDUE,
+            status=ProjectAlert.Status.ACTIVE,
+        )
+        self.assertEqual(missing_alert.emailed_milestones, [30])
 
     def test_overdue_resolves_when_dataset_file_added(self):
         from datetime import timedelta
@@ -572,3 +610,5 @@ class OverdueUploadTests(APITestCase):
 
         call_command("check_overdue_project_uploads")
         self.assertFalse(project.alerts.filter(status=ProjectAlert.Status.ACTIVE).exists())
+        project.refresh_from_db()
+        self.assertFalse(project.manual_outreach_required)

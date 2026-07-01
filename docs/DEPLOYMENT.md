@@ -356,6 +356,25 @@ docker compose -f docker-compose.prod.yml exec backend python backend/manage.py 
 | [`docker-compose.yml`](../docker-compose.yml) | Local dev: Postgres container + Django runserver |
 | [`docker-compose.prod.yml`](../docker-compose.prod.yml) | EC2: Django + Gunicorn → RDS |
 
+### `manage.py` path cheat sheet
+
+| Environment | Working directory | Example (`migrate`) |
+|-------------|-------------------|---------------------|
+| **EC2 production (Docker)** | Repo root (`~/tff-website`) | `docker compose -f docker-compose.prod.yml exec backend python backend/manage.py migrate` |
+| **Local laptop (venv)** | Repo root | `python backend/manage.py migrate` |
+| **Local laptop (inside `backend/`)** | `backend/` subdirectory only | `python manage.py migrate` |
+
+On EC2, **do not** run `python3 backend/manage.py` on the Ubuntu host — Django lives only inside the `backend` container. Wrong paths (`cd backend` + `python3 backend/manage.py`) resolve to `backend/backend/manage.py` and fail.
+
+Migrations run on container startup via [`backend/docker-entrypoint.sh`](../backend/docker-entrypoint.sh). Ensure the stack is up before `exec`:
+
+```bash
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml up --build -d
+```
+
+See also [NYBG_OPERATIONS_GUIDE.md §4](NYBG_OPERATIONS_GUIDE.md#managepy-path-cheat-sheet).
+
 ### Local backend (venv, no Docker)
 
 From the repo root on macOS / Linux:
