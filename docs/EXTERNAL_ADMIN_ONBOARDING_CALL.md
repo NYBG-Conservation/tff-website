@@ -11,6 +11,7 @@
 | Done? | Task |
 |-------|------|
 | ☐ | Account exists: Django user, `is_staff=True`, role `external_admin`, **Organization** linked |
+| ☐ | Role group permissions synced (`sync_role_groups`) so admin is not a blank “can’t view or edit anything” page |
 | ☐ | Password set; send **username + admin URL** and **password** on **separate** channels (email + call/text) |
 | ☐ | Organization record already exists with correct name |
 | ☐ | Confirm they have (or can get) a Figshare account; share [Reserve a DOI](https://info.figshare.com/user-guide/how-to-reserve-a-doi/) |

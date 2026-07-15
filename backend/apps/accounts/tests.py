@@ -103,3 +103,28 @@ class SeedNybgInternalSuperadminsTests(APITestCase):
         self.assertEqual(existing.email, "jzeiger@nybg.org")
         self.assertEqual(existing.first_name, "John")
         self.assertEqual(existing.profile.role, UserProfile.Role.INTERNAL_SUPERADMIN)
+
+
+class SyncRoleGroupPermissionsTests(APITestCase):
+    def test_external_admin_group_gets_project_permissions(self):
+        from django.contrib.auth.models import Group
+
+        from apps.organizations.models import Organization
+
+        org = Organization.objects.create(name="Partner Org")
+        user = User.objects.create_user(username="partner1", password="pass12345")
+        user.is_staff = True
+        user.save()
+        user.profile.role = UserProfile.Role.EXTERNAL_ADMIN
+        user.profile.organization = org
+        user.profile.save()
+
+        call_command("sync_role_groups")
+
+        group = Group.objects.get(name="external_admin")
+        self.assertTrue(user.groups.filter(name="external_admin").exists())
+        self.assertTrue(group.permissions.filter(codename="view_project").exists())
+        self.assertTrue(group.permissions.filter(codename="add_project").exists())
+        self.assertTrue(group.permissions.filter(codename="change_dataset").exists())
+        self.assertTrue(user.has_perm("datasets.view_project"))
+        self.assertTrue(user.has_perm("datasets.add_dataset"))
