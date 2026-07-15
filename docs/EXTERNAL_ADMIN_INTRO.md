@@ -116,6 +116,14 @@ So: reserve Figshare early, upload when you can, then link it in the portal.
 
 ---
 
+## Feedback I'd love to have
+- Do the processes of initializing a project and an associated dataset feel intuitive?
+- Are there any other fields that you feel should be included, either required or optional, for project or dataset entries?
+- If you had any questions, was it easy to find out the answer using the documentation?
+- Overall compatibility with the research process, having to do with the practicality of using the portal
+
+---
+
 ## Who to contact
 
 **Forest program / portal help:** [afu@nybg.org](mailto:afu@nybg.org)
