@@ -22,7 +22,7 @@ It is **not** the Living Collections / on-site research application. Approval to
 | **Username** | The username NYBG created — **not** your email address |
 | **Password** | Sent separately from the login URL (or set with you on the call) |
 
-If login fails: check username (not email), correct URL, and Caps Lock. Contact [forest@nybg.org](mailto:forest@nybg.org).
+If login fails: check username (not email), correct URL, and Caps Lock. Contact [afu@nybg.org](mailto:afu@nybg.org).
 
 ---
 
