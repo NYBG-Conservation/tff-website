@@ -34,7 +34,7 @@ You are an **external admin**. You can create and edit:
 - Projects where you are listed as a **manager**
 - Datasets tied to those projects
 
-You **cannot** see other institutions’ private records. That is by design.
+You cannot see the rest of your institution's private records -- if you'd like the ability to view/manage all your organization's projects, you can requeste **superadmin** status.
 
 ---
 
