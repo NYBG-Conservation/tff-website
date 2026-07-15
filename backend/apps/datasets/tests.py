@@ -511,6 +511,31 @@ class OverdueUploadTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("figshare_doi_url", response.data)
 
+    def test_project_create_allows_own_doi_opt_out(self):
+        payload = {
+            "short_title": "Own DOI Path",
+            "lead_name": "Pat",
+            "lead_email": "pat@nybg.org",
+            "organization": self.organization.id,
+            "plans_own_doi": True,
+        }
+        response = self.client.post(reverse("project-list-create"), payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(response.data["plans_own_doi"])
+        self.assertEqual(response.data["figshare_doi_url"], "")
+
+    def test_project_create_still_requires_figshare_when_not_opting_out(self):
+        payload = {
+            "short_title": "Needs Figshare",
+            "lead_name": "Pat",
+            "lead_email": "pat@nybg.org",
+            "organization": self.organization.id,
+            "plans_own_doi": False,
+        }
+        response = self.client.post(reverse("project-list-create"), payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("figshare_doi_url", response.data)
+
     @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
     def test_overdue_command_flags_project_and_sends_email(self):
         from datetime import timedelta

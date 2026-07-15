@@ -23,6 +23,7 @@ export type Project = {
 	end_date?: string;
 	ongoing: boolean;
 	external_url?: string;
+	plans_own_doi?: boolean;
 	figshare_doi_url?: string;
 	institutional_partners?: string[];
 	collection_frequency?: string;

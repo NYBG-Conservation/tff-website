@@ -63,6 +63,7 @@
 		end_date: '',
 		ongoing: false,
 		external_url: '',
+		plans_own_doi: false,
 		figshare_doi_url: '',
 		institutional_partners: [],
 		collection_frequency: '',
@@ -175,6 +176,7 @@
 			end_date: '',
 			ongoing: false,
 			external_url: '',
+			plans_own_doi: false,
 			figshare_doi_url: '',
 			institutional_partners: [],
 			collection_frequency: '',
@@ -401,20 +403,32 @@
 					<label>Start date<input type="date" bind:value={projectForm.start_date} /></label>
 					<label>End date<input type="date" bind:value={projectForm.end_date} /></label>
 					<label>External URL<input type="url" bind:value={projectForm.external_url} /></label>
+					<label class="checkbox">
+						<input type="checkbox" bind:checked={projectForm.plans_own_doi} />
+						I plan to publish this data with my own DOI
+					</label>
+					<p class="field-note">
+						Check this to create the project without a Figshare reservation (e.g. journal, Dryad, Zenodo DOI).
+						You can still paste a doi.org or Figshare URL below when you have it.
+					</p>
 					<label>
 						Figshare item URL or reserved DOI
 						<input
 							type="url"
 							bind:value={projectForm.figshare_doi_url}
 							placeholder="https://figshare.com/articles/..."
-							required={!selectedProject}
+							required={!selectedProject && !projectForm.plans_own_doi}
 						/>
 					</label>
 					<p class="field-note">
-						Required for new projects. Reserve a DOI first —
-						<a href={FIGSHARE_DOI_GUIDE_URL} target="_blank" rel="noopener noreferrer">
-							How to reserve a DOI in Figshare
-						</a>.
+						{#if projectForm.plans_own_doi}
+							Optional while using your own DOI. Prefer a doi.org link when available.
+						{:else}
+							Required for new projects unless you opt out above. Reserve a DOI first —
+							<a href={FIGSHARE_DOI_GUIDE_URL} target="_blank" rel="noopener noreferrer">
+								How to reserve a DOI in Figshare
+							</a>.
+						{/if}
 					</p>
 					<label>Collection frequency<input bind:value={projectForm.collection_frequency} /></label>
 					<label>Update frequency<input bind:value={projectForm.update_frequency} /></label>
@@ -518,7 +532,7 @@
 					<button
 						type="button"
 						on:click={saveProject}
-						disabled={savingProject || !projectForm.short_title || !projectForm.lead_name?.trim() || !projectForm.lead_email?.trim() || !projectForm.organization || (!selectedProject && !projectForm.figshare_doi_url?.trim())}
+						disabled={savingProject || !projectForm.short_title || !projectForm.lead_name?.trim() || !projectForm.lead_email?.trim() || !projectForm.organization || (!selectedProject && !projectForm.plans_own_doi && !projectForm.figshare_doi_url?.trim())}
 					>
 						{savingProject ? 'Saving...' : selectedProject ? 'Save changes' : 'Create project'}
 					</button>

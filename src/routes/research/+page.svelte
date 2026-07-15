@@ -268,9 +268,10 @@
 			</p>
 
 			<p class="body-paragraph">
-				All Forest research projects must reserve a DOI in Figshare for associated datasets before field
-				work begins. Upload data to that deposit as it becomes available, then link files or the Figshare
-				URL from your project record in Django admin.
+				All Forest research projects should reserve a data DOI before field work begins—usually via
+				Figshare. If you will publish under your own DOI instead, note that when creating your project in
+				admin. Upload data to the deposit as it becomes available, then link files or the deposit URL from
+				your project record.
 				<a href={FIGSHARE_DOI_GUIDE_URL} target="_blank" rel="noopener noreferrer">
 					How to reserve a DOI in Figshare
 				</a>.

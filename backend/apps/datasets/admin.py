@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib import admin
+from django.core.exceptions import ValidationError as DjangoValidationError
 
 from apps.accounts.models import UserProfile
 from apps.accounts.roles import is_internal_staff, is_internal_superadmin, scoped_datasets_filter, scoped_projects_filter
@@ -70,10 +71,17 @@ class ProjectAdminForm(forms.ModelForm):
         model = Project
         fields = "__all__"
 
-    def clean_figshare_doi_url(self):
-        value = self.cleaned_data.get("figshare_doi_url", "")
+    def clean(self):
+        cleaned = super().clean()
+        plans_own_doi = cleaned.get("plans_own_doi", getattr(self.instance, "plans_own_doi", False))
         is_new = not self.instance.pk
-        return validate_figshare_doi_url(value, required=is_new)
+        value = cleaned.get("figshare_doi_url", "")
+        required = is_new and not plans_own_doi
+        try:
+            cleaned["figshare_doi_url"] = validate_figshare_doi_url(value, required=required)
+        except DjangoValidationError as exc:
+            self.add_error("figshare_doi_url", exc)
+        return cleaned
 
 
 @admin.register(Project)
@@ -107,10 +115,11 @@ class ProjectAdmin(admin.ModelAdmin):
         (
             "Data deposit (Figshare)",
             {
-                "fields": ("figshare_doi_url",),
+                "fields": ("plans_own_doi", "figshare_doi_url"),
                 "description": (
-                    "Every project must reserve a DOI in Figshare before data collection. "
-                    f"Instructions: {figshare_doi_guide_url()}"
+                    "By default, reserve a DOI in Figshare before data collection "
+                    f"({figshare_doi_guide_url()}). Check “plans own DOI” only if you will "
+                    "publish the data under your own DOI instead."
                 ),
             },
         ),

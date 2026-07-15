@@ -66,7 +66,7 @@ When you click **Datasets → Projects → Add**:
 | **Lead name** | Primary contact shown for the project |
 | **Lead email** | Receives automated data-upload reminders |
 | **Organization** | Your home institution (must match your account) |
-| **Figshare item URL / reserved DOI** | Required for every new project — your data deposit home |
+| **Figshare item URL / reserved DOI** | Required when creating a project, unless you check **I plan to publish this data with my own DOI** |
 
 **Strongly recommended:** Summary, Description, Start date; End date when the project will conclude (and then uncheck **Ongoing**).
 

@@ -97,7 +97,7 @@ In Django admin: **Datasets → Projects → Add**.
 | **Lead name** | Primary project lead (display name). |
 | **Lead email** | Receives automated data-upload reminders. Use a monitored address. |
 | **Organization** | Your home institution. Must match the org on your user profile for external roles. |
-| **Figshare item URL / reserved DOI** | URL from Figshare or `doi.org` for this project’s data deposit. **Required on every new project.** |
+| **Figshare item URL / reserved DOI** | URL from Figshare or `doi.org` for this project’s data deposit. **Required on every new project** unless you check **Plans own DOI**. |
 
 ### Strongly recommended
 
@@ -108,6 +108,7 @@ In Django admin: **Datasets → Projects → Add**.
 | **Start date** | When field work or data collection began. |
 | **End date** | Set when the project has a **discrete conclusion**. Required for the 30/60/90-day upload reminder schedule (see §10). |
 | **Ongoing** | Check only if the project has **no fixed end date**. If ongoing, leave **End date** empty. |
+| **Plans own DOI** | Check if you will publish data under your own DOI (journal / Dryad / Zenodo, etc.) instead of reserving Figshare first. Figshare URL then becomes optional. |
 | **Institutional partners** | List of partner org names (shown on the public site if published). |
 
 ### Optional
@@ -134,7 +135,7 @@ In Django admin: **Datasets → Projects → Add**.
 
 - **End date** cannot be before **start date**.
 - If **Ongoing** is checked, **End date** must be empty.
-- **Figshare URL** must be a valid `figshare.com` or `doi.org` link.
+- **Figshare URL** must be a valid `figshare.com` or `doi.org` link when provided. On create it is required unless **Plans own DOI** is checked.
 
 ---
 
