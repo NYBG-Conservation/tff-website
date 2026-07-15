@@ -56,7 +56,7 @@ When ready: turn on public visibility flags (with NYBG if unsure)
 
 ---
 
-## Project fields you must get right
+## Important project fields
 
 When you click **Datasets → Projects → Add**:
 
