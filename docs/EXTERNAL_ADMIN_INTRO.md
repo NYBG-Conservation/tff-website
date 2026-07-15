@@ -1,7 +1,7 @@
 # Welcome — Thain Family Forest Research Portal
 
 **For:** External researchers with an NYBG portal account (`external_admin`)  
-**Length:** ~2 pages — read before your onboarding call  
+**Length:** ~2 pages, ~8 minutes
 **Full reference:** [EXTERNAL_PARTNER_GUIDE.md](EXTERNAL_PARTNER_GUIDE.md)
 
 ---
