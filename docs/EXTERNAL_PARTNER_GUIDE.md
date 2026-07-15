@@ -2,7 +2,7 @@
 
 **Audience:** Partner institutions and visiting researchers who have been given an account to register and manage research projects and datasets for work in the Thain Family Forest.
 
-**Management URL:** Django admin on the NYBG API host (e.g. `https://api.<your-domain>/admin/`). NYBG staff will provide your login URL and credentials.
+**Management URL:** Django admin on the NYBG API host (e.g. `http://54.224.235.107:8000/admin/login/?next=/admin/`). NYBG staff will provide your login URL and credentials.
 
 **Short intro (1–2 pages):** [EXTERNAL_ADMIN_INTRO.md](EXTERNAL_ADMIN_INTRO.md)  
 **NYBG facilitator — 30‑min first onboarding call:** [EXTERNAL_ADMIN_ONBOARDING_CALL.md](EXTERNAL_ADMIN_ONBOARDING_CALL.md)
