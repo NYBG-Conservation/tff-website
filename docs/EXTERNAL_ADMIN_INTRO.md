@@ -111,8 +111,8 @@ So: reserve Figshare early, upload when you can, then link it in the portal.
 - [ ] Reserve a Figshare DOI for your Forest project
 - [ ] Create or finish your **Project** (required fields above)
 - [ ] Add a **Dataset** shell linked to that project (even before files are ready)
-- [ ] Read the full [External Partner Guide](EXTERNAL_PARTNER_GUIDE.md) when you have 15 quiet minutes
-- [ ] Email [forest@nybg.org](mailto:forest@nybg.org) with blockers (login, org name, Figshare, publishing)
+- [ ] Read the full [External Partner Guide](EXTERNAL_PARTNER_GUIDE.md) if you feel you need more context (~15 minutes)
+- [ ] Email [afu@nybg.org](mailto:afu@nybg.org with blockers (login, org name, Figshare, publishing)
 
 ---
 
