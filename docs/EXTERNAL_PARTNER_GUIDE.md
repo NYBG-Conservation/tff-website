@@ -4,11 +4,6 @@
 
 **Management URL:** Django admin on the NYBG API host (e.g. `http://54.224.235.107:8000/admin/login/?next=/admin/`). NYBG staff will provide your login URL and credentials.
 
-**Short intro (1–2 pages):** [EXTERNAL_ADMIN_INTRO.md](EXTERNAL_ADMIN_INTRO.md)  
-**NYBG facilitator — 30‑min first onboarding call:** [EXTERNAL_ADMIN_ONBOARDING_CALL.md](EXTERNAL_ADMIN_ONBOARDING_CALL.md)
-
-For NYBG internal operations, see [NYBG_OPERATIONS_GUIDE.md](NYBG_OPERATIONS_GUIDE.md).
-
 ---
 
 ## Table of contents
