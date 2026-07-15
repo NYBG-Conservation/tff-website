@@ -16,6 +16,7 @@
 				title={highlight.title}
 				summary={highlight.summary}
 				ongoing={highlight.ongoing}
+				leadName={highlight.leadName}
 				href={`/research?project=${encodeURIComponent(highlight.slug)}`}
 			/>
 		{/each}

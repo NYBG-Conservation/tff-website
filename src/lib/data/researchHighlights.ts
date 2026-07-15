@@ -3,6 +3,7 @@ export type ResearchHighlight = {
 	summary: string;
 	slug: string;
 	ongoing: boolean;
+	leadName?: string;
 };
 
 export const researchHighlights: ResearchHighlight[] = [
@@ -11,20 +12,23 @@ export const researchHighlights: ResearchHighlight[] = [
 		summary:
 			'Long-running transect sampling of trees, shrubs, and herbaceous cover across the forest.',
 		slug: 'forest-inventory-transect-study',
-		ongoing: true
+		ongoing: true,
+		leadName: 'NYBG Forest staff'
 	},
 	{
 		title: 'Knotweed Management Study',
 		summary:
 			'Collaborative invasive species management trial for Japanese knotweed control along the Bronx River.',
 		slug: 'knotweed-management-study',
-		ongoing: true
+		ongoing: true,
+		leadName: 'NYBG Forest staff'
 	},
 	{
 		title: 'Forest Soil Monitoring',
 		summary:
 			'Soil sampling and nutrient analysis in partnership with the Forest Ecosystem Monitoring Cooperative.',
 		slug: 'soil-monitoring',
-		ongoing: true
+		ongoing: true,
+		leadName: 'NYBG Forest staff'
 	}
 ];

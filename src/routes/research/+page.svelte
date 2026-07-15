@@ -132,6 +132,7 @@
 				title={project.title}
 				summary={project.summary || project.full_title || ''}
 				ongoing={project.ongoing}
+				leadName={project.lead_name}
 				onSelect={() => openProject(project.slug)}
 			/>
 		{/each}

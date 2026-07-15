@@ -2,6 +2,7 @@
 	export let title: string;
 	export let summary: string;
 	export let ongoing = true;
+	export let leadName: string | undefined = undefined;
 	export let href: string | undefined = undefined;
 	export let onSelect: (() => void) | undefined = undefined;
 </script>
@@ -13,6 +14,9 @@
 				{ongoing ? 'Ongoing' : 'Concluded'}
 			</span>
 			<h2 class="project-title">{title}</h2>
+			{#if leadName}
+				<p class="project-lead">{leadName}</p>
+			{/if}
 			<p class="project-summary">{summary}</p>
 			<span class="read-more-link">
 				Read more
@@ -27,6 +31,9 @@
 				{ongoing ? 'Ongoing' : 'Concluded'}
 			</span>
 			<h2 class="project-title">{title}</h2>
+			{#if leadName}
+				<p class="project-lead">{leadName}</p>
+			{/if}
 			<p class="project-summary">{summary}</p>
 			<span class="read-more-link">
 				Read more
@@ -103,6 +110,15 @@
 		font-size: clamp(1.15rem, 1.9vw, 1.6rem);
 		line-height: 1.2;
 		color: #111;
+	}
+
+	.project-lead {
+		margin: 0;
+		padding: 0;
+		font-family: 'GT Super Regular', serif;
+		font-size: 0.9rem;
+		line-height: 1.3;
+		color: #555;
 	}
 
 	.project-summary {
