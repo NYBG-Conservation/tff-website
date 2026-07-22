@@ -19,7 +19,7 @@ It is **not** the Living Collections / on-site research application. Approval to
 | Item | Notes |
 |------|--------|
 | **URL** | [Django admin on the NYBG API host](http://54.224.235.107:8000/admin/login/?next=/admin/)|
-| **Username** | amittiga |
+| **Username** | areinmann |
 | **Password** | Provided over call |
 
 If login fails: check username (not email), correct URL, and Caps Lock. Contact [afu@nybg.org](mailto:afu@nybg.org).
