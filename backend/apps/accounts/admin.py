@@ -111,7 +111,9 @@ class UserProfileAdmin(admin.ModelAdmin):
         formfield = super().formfield_for_choice_field(db_field, request, **kwargs)
         if db_field.name == "role" and formfield is not None:
             formfield.help_text = (
-                "Platform role controls project/dataset visibility. "
+                "Platform role controls project/dataset visibility and syncs the matching auth group. "
+                "Saving also sets Staff status so the user can open /admin/, and attaches "
+                "Project/Dataset permissions on that group. "
                 "See Authentication → Groups for a full permissions summary of each role."
             )
         return formfield

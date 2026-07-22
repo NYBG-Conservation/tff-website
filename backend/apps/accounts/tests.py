@@ -128,3 +128,30 @@ class SyncRoleGroupPermissionsTests(APITestCase):
         self.assertTrue(group.permissions.filter(codename="change_dataset").exists())
         self.assertTrue(user.has_perm("datasets.view_project"))
         self.assertTrue(user.has_perm("datasets.add_dataset"))
+
+    def test_saving_external_admin_profile_sets_staff_and_permissions(self):
+        """Creating a user (default external_admin profile) auto-sets staff + group perms."""
+        from django.contrib.auth.models import Group
+
+        org = Organization.objects.create(name="Partner Lab")
+        user = User.objects.create_user(username="newpartner", password="pass12345")
+        user.refresh_from_db()
+
+        # Default profile role is external_admin — staff and group perms attach on create.
+        self.assertTrue(user.is_staff)
+        self.assertEqual(user.profile.role, UserProfile.Role.EXTERNAL_ADMIN)
+        self.assertTrue(user.groups.filter(name="external_admin").exists())
+        group = Group.objects.get(name="external_admin")
+        self.assertTrue(group.permissions.filter(codename="add_project").exists())
+        self.assertTrue(user.has_perm("datasets.view_project"))
+        self.assertTrue(user.has_perm("datasets.add_project"))
+        self.assertTrue(user.has_perm("datasets.change_dataset"))
+
+        # Org can be set afterward without losing staff/permissions.
+        profile = user.profile
+        profile.organization = org
+        profile.save()
+        user.refresh_from_db()
+        self.assertTrue(user.is_staff)
+        self.assertEqual(user.profile.organization_id, org.id)
+        self.assertTrue(user.has_perm("datasets.add_project"))
