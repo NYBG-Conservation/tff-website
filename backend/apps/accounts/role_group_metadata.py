@@ -57,16 +57,6 @@ ROLE_GROUP_META: dict[str, RoleGroupMeta] = {
         "assign_roles": False,
         "deprecated": False,
     },
-    "external_partner_admin": {
-        "title": "External Partner Admin (legacy)",
-        "audience": "Deprecated — do not assign to new users",
-        "summary": "Legacy group name from an older role model. Treat as external_admin.",
-        "view_scope": "Same as external_admin if any users remain on this group.",
-        "edit_scope": "Same as external_admin.",
-        "organization": "Required if used.",
-        "assign_roles": False,
-        "deprecated": True,
-    },
 }
 
 LIST_BLURB_MAX = 72

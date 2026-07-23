@@ -13,7 +13,6 @@ from django.contrib.auth.models import Group, Permission
 
 from .constants import (
     EXTERNAL_ADMIN_GROUP,
-    EXTERNAL_PARTNER_ADMIN_GROUP,
     EXTERNAL_SUPERADMIN_GROUP,
     INTERNAL_ADMIN_GROUP,
     INTERNAL_SUPERADMIN_GROUP,
@@ -95,12 +94,10 @@ def ensure_role_group_permissions() -> dict[str, int]:
         INTERNAL_ADMIN_GROUP,
         EXTERNAL_SUPERADMIN_GROUP,
         EXTERNAL_ADMIN_GROUP,
-        EXTERNAL_PARTNER_ADMIN_GROUP,
     )
     for name in group_names:
         group, _ = Group.objects.get_or_create(name=name)
-        effective = EXTERNAL_ADMIN_GROUP if name == EXTERNAL_PARTNER_ADMIN_GROUP else name
-        perms = permissions_for_role_group(effective)
+        perms = permissions_for_role_group(name)
         group.permissions.set(perms)
         counts[name] = len(perms)
     return counts

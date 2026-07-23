@@ -109,8 +109,6 @@ class SyncRoleGroupPermissionsTests(APITestCase):
     def test_external_admin_group_gets_project_permissions(self):
         from django.contrib.auth.models import Group
 
-        from apps.organizations.models import Organization
-
         org = Organization.objects.create(name="Partner Org")
         user = User.objects.create_user(username="partner1", password="pass12345")
         user.is_staff = True
@@ -128,6 +126,15 @@ class SyncRoleGroupPermissionsTests(APITestCase):
         self.assertTrue(group.permissions.filter(codename="change_dataset").exists())
         self.assertTrue(user.has_perm("datasets.view_project"))
         self.assertTrue(user.has_perm("datasets.add_dataset"))
+        self.assertFalse(Group.objects.filter(name="external_partner_admin").exists())
+
+    def test_sync_deletes_legacy_external_partner_admin_group(self):
+        from django.contrib.auth.models import Group
+
+        Group.objects.get_or_create(name="external_partner_admin")
+        self.assertTrue(Group.objects.filter(name="external_partner_admin").exists())
+        call_command("sync_role_groups")
+        self.assertFalse(Group.objects.filter(name="external_partner_admin").exists())
 
     def test_saving_external_admin_profile_sets_staff_and_permissions(self):
         """Creating a user (default external_admin profile) auto-sets staff + group perms."""
