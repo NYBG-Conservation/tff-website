@@ -67,6 +67,7 @@ python backend/manage.py runserver 0.0.0.0:8000
 - `apps.accounts`: four platform roles — see [API_CONTRACT.md](API_CONTRACT.md#roles)
 - `apps.organizations`: organizations and partners
 - `apps.datasets`: dataset records, metadata definitions, metadata values, and file versions
+- `apps.applications`: public Living Collections research applications + admin review queue
 
 ## Apply database migrations
 
@@ -87,6 +88,7 @@ Latest migration (`0005`) adds:
 - `/api/datasets/`
 - `/api/metadata/field-types/`
 - `/api/accounts/me/`
+- `/api/public/research-applications/` (POST, anonymous)
 - `/api/organizations/`
 
 ## Docker Compose (Django + Postgres)

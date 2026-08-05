@@ -27,7 +27,7 @@
 
 Conducting research in the Thain Family Forest requires NYBG approval. If you have not already applied:
 
-- Complete the [NYBG Living Collections Research Application](https://survey123.arcgis.com/share/512cee2ac8f444008ec5f5ddeae69072) (submit at least two weeks before your start date).
+- Complete the [Living Collections Research Application](/research/apply) on this site (submit at least two weeks before your start date).
 - Review on-site agreements and resources on the public [Research](/research) page.
 
 This portal is for **cataloging approved projects and linking data** after you are set up with an account. It does not replace the formal research application process.
@@ -66,7 +66,7 @@ You cannot see or edit other institutions’ records. NYBG internal staff manage
 ## 4. Workflow overview
 
 ```text
-1. Apply for on-site research (Survey123) → NYBG approval
+1. Apply for on-site research ([/research/apply](/research/apply)) → NYBG approval
 2. Receive portal account from NYBG
 3. Reserve a Figshare DOI for your project (before field work)
 4. Create Project in Django admin (include Figshare URL)
@@ -275,7 +275,7 @@ Reminders stop when at least one **dataset file** is linked (upload or Figshare/
 | Resource | Link |
 |----------|------|
 | Forest program contact | [forest@nybg.org](mailto:forest@nybg.org) |
-| Research application | [Survey123 application](https://survey123.arcgis.com/share/512cee2ac8f444008ec5f5ddeae69072) |
+| Research application | [/research/apply](/research/apply) on this site |
 | Public research page | `/research` on the TFF website |
 | Public data catalog | `/data` on the TFF website |
 | Figshare DOI guide | [info.figshare.com — Reserve a DOI](https://info.figshare.com/user-guide/how-to-reserve-a-doi/) |

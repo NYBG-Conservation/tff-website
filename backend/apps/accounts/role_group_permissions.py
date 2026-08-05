@@ -35,9 +35,10 @@ _VIEW_ONLY_MODELS: tuple[tuple[str, str], ...] = (
     ("organizations", "organization"),
 )
 
-# NYBG internal editors also manage overdue alerts in admin.
+# NYBG internal editors also manage overdue alerts and research applications in admin.
 _INTERNAL_EXTRA_MODELS: tuple[tuple[str, str], ...] = (
     ("datasets", "projectalert"),
+    ("applications", "researchapplication"),
 )
 
 _CRUD = ("add", "change", "delete", "view")

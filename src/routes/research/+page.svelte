@@ -63,9 +63,6 @@
 		return publicPublications.filter((record) => record.project_slug === project.slug);
 	}
 
-	const livingCollectionsApplicationUrl =
-		'https://survey123.arcgis.com/share/512cee2ac8f444008ec5f5ddeae69072';
-
 	const visitingResearchResources = [
 		{
 			label: 'On-site Research Agreement Form and Release',
@@ -291,12 +288,7 @@
 					Please note, applications must be submitted two weeks prior to the anticipated start date of
 					the project. If your application is accepted, you will be asked to complete an agreement form.
 				</p>
-				<a
-					class="apply-button"
-					href={livingCollectionsApplicationUrl}
-					target="_blank"
-					rel="noopener noreferrer"
-				>
+				<a class="apply-button" href="/research/apply">
 					Apply for on-site research
 				</a>
 

@@ -127,6 +127,16 @@ class SyncRoleGroupPermissionsTests(APITestCase):
         self.assertTrue(user.has_perm("datasets.view_project"))
         self.assertTrue(user.has_perm("datasets.add_dataset"))
         self.assertFalse(Group.objects.filter(name="external_partner_admin").exists())
+        # Research applications are NYBG-internal only.
+        self.assertFalse(group.permissions.filter(codename="view_researchapplication").exists())
+
+    def test_internal_admin_group_gets_research_application_permissions(self):
+        from django.contrib.auth.models import Group
+
+        call_command("sync_role_groups")
+        group = Group.objects.get(name="internal_admin")
+        self.assertTrue(group.permissions.filter(codename="view_researchapplication").exists())
+        self.assertTrue(group.permissions.filter(codename="change_researchapplication").exists())
 
     def test_sync_deletes_legacy_external_partner_admin_group(self):
         from django.contrib.auth.models import Group

@@ -10,7 +10,7 @@
 
 NYBG’s Thain Family Forest research portal is where approved researchers **register projects**, **link datasets**, and (when ready) surface them on the public **Research** and **Data** pages.
 
-It is **not** the Living Collections / on-site research application. Approval to work in the Forest still goes through NYBG’s research process first.
+It is **not** the Living Collections / on-site research application ([/research/apply](/research/apply)). Approval to work in the Forest still goes through NYBG’s research process first.
 
 ---
 

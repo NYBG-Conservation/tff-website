@@ -18,7 +18,7 @@
 | ☐ | Send [EXTERNAL_ADMIN_INTRO.md](EXTERNAL_ADMIN_INTRO.md) + [EXTERNAL_PARTNER_GUIDE.md](EXTERNAL_PARTNER_GUIDE.md) link |
 | ☐ | Optional: draft / demo project template (short title, lead email) ready so you don’t invent fields live |
 | ☐ | Have admin open in a second window (you logged in as NYBG staff) in case you need to fix org/role |
-| ☐ | Confirm research approval status (Survey123 / Forest approval) so the session isn’t blocked on process |
+| ☐ | Confirm research approval status (in-site application / Forest approval) so the session isn’t blocked on process |
 
 **Do not try to cover the full partner guide in 30 minutes.** Point to it; live practice beats reading.
 

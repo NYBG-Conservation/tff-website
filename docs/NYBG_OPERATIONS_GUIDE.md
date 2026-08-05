@@ -247,6 +247,9 @@ Used by server-side loaders on `/research`, `/data`, and the home page (indirect
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:5173,...` | Browser origins for API |
 | `CSRF_TRUSTED_ORIGINS` | same as CORS | CSRF for admin + API |
 | `FRONTEND_URL` | `http://127.0.0.1:5173` | Root URL redirect target |
+| `DEFAULT_FROM_EMAIL` | `noreply@…` | Sender for overdue alerts + research application mail |
+| `DJANGO_API_PUBLIC_URL` | `http://127.0.0.1:8000` | Admin deep links in emails |
+| `RESEARCH_APPLICATION_NOTIFY` | `forest@nybg.org` | Recipients for new research applications |
 
 Production adds RDS, `USE_HTTPS=true`, S3, etc. — see [DEPLOYMENT.md](DEPLOYMENT.md).
 
@@ -413,7 +416,8 @@ Each expanded dataset has **Manage dataset entry →** linking directly to that 
 |-------|-------------|-------|
 | `/` | Static + `announcements.csv` hero image | Research highlights cards → `/research?project=` |
 | `/about`, `/visit`, `/education`, `/contact` | Mostly static Svelte content | Education is placeholder |
-| `/research` | Public API | 3 sections: overview, conducting research, project directory + publications |
+| `/research` | Public API | Overview, conducting research, project directory + publications |
+| `/research/apply` | Public POST API | Living Collections research application form |
 | `/data` | Public API | Filterable/sortable table; expandable rows |
 | `/projects` | Redirect | → Django admin (project search if `?project=` set) |
 | `/blue-zones` | Separate map app | Custom layout |
@@ -421,10 +425,23 @@ Each expanded dataset has **Manage dataset entry →** linking directly to that 
 ### `/research` structure
 
 1. **Overview** — static intro copy
-2. **Conducting research** — application button (Survey123), resources accordion, link to Django admin for staff
+2. **Conducting research** — link to `/research/apply`, resources accordion, link to Django admin for staff
 3. **Project directory** — cards from API; click opens modal with metadata, related datasets, publications
 
 Anchor link `#conducting-research-heading` scrolls below the fixed nav (via `scroll-padding-top`).
+
+### Research applications
+
+Public applicants submit at `/research/apply` → `POST /api/public/research-applications/`. Rows appear in Django admin under **Research applications**.
+
+| Item | Detail |
+|------|--------|
+| Notify email | `RESEARCH_APPLICATION_NOTIFY` (default `forest@nybg.org`; comma-separated OK) |
+| SMTP | Same `DEFAULT_FROM_EMAIL` / email backend as overdue upload alerts |
+| Admin review | Status: submitted → under_review → approved / declined / withdrawn; optional link to a Project |
+| Legacy import | `import_survey123_applications /path/to/export.csv` (idempotent on Survey123 `GlobalID`) |
+
+Smoke test after deploy: submit a test application on staging, confirm admin row + notify inbox, then mark declined/withdrawn.
 
 ### `/data` features
 
