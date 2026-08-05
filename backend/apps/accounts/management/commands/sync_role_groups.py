@@ -8,8 +8,10 @@ from apps.accounts.role_group_permissions import ensure_role_group_permissions
 
 class Command(BaseCommand):
     help = (
-        "Ensure role groups exist, attach Django admin permissions, "
-        "assign users based on profile.role, and remove legacy groups."
+        "Ensure role groups exist, attach Django admin permissions (full reset), "
+        "assign users based on profile.role, and remove legacy groups. "
+        "Note: this overwrites Group permission checkboxes in admin; "
+        "routine user/profile saves no longer do that."
     )
 
     def handle(self, *args, **options):
