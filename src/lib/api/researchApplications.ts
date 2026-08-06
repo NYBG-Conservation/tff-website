@@ -11,9 +11,11 @@ export type ResearchCollectionType =
 
 export type ResearchApplicationPayload = {
 	website?: string;
+	organization_id?: number | null;
+	organization_name?: string;
 	applicant_name: string;
 	title_position?: string;
-	institution: string;
+	institution?: string;
 	email: string;
 	phone?: string;
 	address?: string;

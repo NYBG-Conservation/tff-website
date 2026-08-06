@@ -146,6 +146,12 @@
   .app-container > *:not(.nav-header-band) a.hero-button:focus-visible {
     color: #111;
   }
+
+  .app-container > *:not(.nav-header-band) a.apply-button:hover,
+  .app-container > *:not(.nav-header-band) a.apply-button:focus-visible {
+    color: #1e2f1e;
+    background: #fff;
+  }
   
   /*
     10. Create a root stacking context

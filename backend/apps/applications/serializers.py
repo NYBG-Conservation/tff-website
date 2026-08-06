@@ -1,6 +1,10 @@
 from rest_framework import serializers
 
+from apps.organizations.models import Organization
+
+from .invite import InviteError, claim_invite
 from .models import ResearchApplication
+from .notifications import django_admin_login_url
 
 _DATE_FIELDS = (
     "start_date",
@@ -11,15 +15,47 @@ _DATE_FIELDS = (
 )
 
 
+def resolve_organization(*, organization_id, organization_name: str) -> Organization:
+    """Select existing org by id, or get_or_create by name (case-insensitive)."""
+    if organization_id is not None:
+        try:
+            return Organization.objects.get(pk=organization_id)
+        except Organization.DoesNotExist as exc:
+            raise serializers.ValidationError(
+                {"organization_id": "Organization not found."}
+            ) from exc
+
+    name = (organization_name or "").strip()
+    if not name:
+        raise serializers.ValidationError(
+            {
+                "organization_name": (
+                    "Select an organization or enter a new organization name."
+                )
+            }
+        )
+
+    existing = Organization.objects.filter(name__iexact=name).first()
+    if existing:
+        return existing
+    return Organization.objects.create(name=name)
+
+
 class PublicResearchApplicationSerializer(serializers.ModelSerializer):
     """Public create payload. `website` is a honeypot (must stay empty)."""
 
     website = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    organization_id = serializers.IntegerField(required=False, allow_null=True, write_only=True)
+    organization_name = serializers.CharField(
+        required=False, allow_blank=True, write_only=True, max_length=255
+    )
 
     class Meta:
         model = ResearchApplication
         fields = (
             "website",
+            "organization_id",
+            "organization_name",
             "applicant_name",
             "title_position",
             "institution",
@@ -53,6 +89,7 @@ class PublicResearchApplicationSerializer(serializers.ModelSerializer):
             "attestation_date",
         )
         extra_kwargs = {
+            "institution": {"required": False, "allow_blank": True},
             "start_date": {"required": False, "allow_null": True},
             "end_date": {"required": False, "allow_null": True},
             "anticipated_start_date": {"required": False, "allow_null": True},
@@ -68,6 +105,8 @@ class PublicResearchApplicationSerializer(serializers.ModelSerializer):
         for field in _DATE_FIELDS:
             if data.get(field) == "":
                 data[field] = None
+        if data.get("organization_id") == "" or data.get("organization_id") == "new":
+            data["organization_id"] = None
         return super().to_internal_value(data)
 
     def validate_website(self, value: str) -> str:
@@ -77,6 +116,15 @@ class PublicResearchApplicationSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         attrs.pop("website", None)
+        organization_id = attrs.pop("organization_id", None)
+        organization_name = attrs.pop("organization_name", "")
+        attrs["organization"] = resolve_organization(
+            organization_id=organization_id,
+            organization_name=organization_name,
+        )
+        if not (attrs.get("institution") or "").strip():
+            attrs["institution"] = attrs["organization"].name
+
         project_type = attrs.get("project_type")
         if project_type == ResearchApplication.ProjectType.PLANT_MATERIAL:
             if not (attrs.get("desired_species") or "").strip():
@@ -100,3 +148,31 @@ class PublicResearchApplicationSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         return ResearchApplication.objects.create(**validated_data)
+
+
+class ClaimResearchApplicationInviteSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    username = serializers.CharField(max_length=150)
+    password = serializers.CharField(write_only=True)
+    password_confirm = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        if attrs["password"] != attrs["password_confirm"]:
+            raise serializers.ValidationError({"password_confirm": "Passwords do not match."})
+        return attrs
+
+    def create(self, validated_data):
+        try:
+            result = claim_invite(
+                token=validated_data["token"],
+                username=validated_data["username"],
+                password=validated_data["password"],
+            )
+        except InviteError as exc:
+            raise serializers.ValidationError({"detail": str(exc)}) from exc
+        result["admin_login_url"] = django_admin_login_url()
+        result["detail"] = (
+            "Account created. Your project has been set up. "
+            "Sign in to Django admin with your username."
+        )
+        return result

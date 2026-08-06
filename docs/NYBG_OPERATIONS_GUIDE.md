@@ -249,6 +249,7 @@ Used by server-side loaders on `/research`, `/data`, and the home page (indirect
 | `FRONTEND_URL` | `http://127.0.0.1:5173` | Root URL redirect target |
 | `DEFAULT_FROM_EMAIL` | `noreply@…` | Sender for overdue alerts + research application mail |
 | `DJANGO_API_PUBLIC_URL` | `http://127.0.0.1:8000` | Admin deep links in emails |
+| `FRONTEND_URL` | `http://127.0.0.1:5173` | Public site + invite claim links |
 | `RESEARCH_APPLICATION_NOTIFY` | `forest@nybg.org` | Recipients for new research applications |
 
 Production adds RDS, `USE_HTTPS=true`, S3, etc. — see [DEPLOYMENT.md](DEPLOYMENT.md).
@@ -380,7 +381,7 @@ Path: **Datasets → Datasets**
 
 Each file can be:
 
-- **Uploaded file** (stored under `backend/media/`), or
+- **Uploaded file** (stored under `backend/media/` on the EC2 `media_data` volume), or
 - **External URL** (required for files > 1 GB per governance policy)
 
 | Field | Public impact |
@@ -388,6 +389,8 @@ Each file can be:
 | **Expose on public API** | Listed on `/data` expanded row |
 | File name | Shown as file type label + filename |
 | File kind | Documentation, primary data, etc. |
+
+**Viewing uploads in admin:** the “Currently: …” file link uses `/media/...`. Gunicorn serves that path for **logged-in** staff (login required). If you see Django’s HTML “Not Found” page, redeploy so `urls.py` includes media serving, and confirm the file still exists on the volume (`docker compose … exec backend ls /app/backend/media/datasets`).
 
 Public download URL: `/api/public/datasets/<dataset_id>/files/<file_id>/download/`
 
@@ -438,10 +441,20 @@ Public applicants submit at `/research/apply` → `POST /api/public/research-app
 |------|--------|
 | Notify email | `RESEARCH_APPLICATION_NOTIFY` (default `forest@nybg.org`; comma-separated OK) |
 | SMTP | Same `DEFAULT_FROM_EMAIL` / email backend as overdue upload alerts |
-| Admin review | Status: submitted → under_review → approved / declined / withdrawn; optional link to a Project |
+| `FRONTEND_URL` | Base for invite claim links (`/research/claim/{token}`) |
+| Admin review | Status: submitted → under_review → approved / declined / withdrawn |
+| Approve & invite | Confirm Organization (set on apply form), then **Approve & send portal invite** |
+| Org on apply | Applicant selects existing or enters a new name (`get_or_create`); staff can still change Organization in admin |
+| Status-only approve | **Mark approved** sets status without invite (short visits, no portal) |
+| Claim | Applicant creates username/password → `external_admin` user + Project shell (`plans_own_doi=True`) |
 | Legacy import | `import_survey123_applications /path/to/export.csv` (idempotent on Survey123 `GlobalID`) |
 
-Smoke test after deploy: submit a test application on staging, confirm admin row + notify inbox, then mark declined/withdrawn.
+Smoke test after deploy:
+
+1. Submit a test application on staging (select or add an organization); confirm admin row + notify inbox.
+2. Confirm Organization is set; run **Approve & send portal invite**; confirm invite email.
+3. Open claim link; create username/password; confirm Project appears owned by the new user.
+4. Optional: mark another test row declined/withdrawn.
 
 ### `/data` features
 

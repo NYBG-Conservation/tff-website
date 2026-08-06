@@ -27,7 +27,7 @@
 
 Conducting research in the Thain Family Forest requires NYBG approval. If you have not already applied:
 
-- Complete the [Living Collections Research Application](/research/apply) on this site (submit at least two weeks before your start date).
+- Complete the [Living Collections Research Application](/research/apply) on this site (submit at least two weeks before your start date). Select your organization from the list, or add it if it is not listed yet.
 - Review on-site agreements and resources on the public [Research](/research) page.
 
 This portal is for **cataloging approved projects and linking data** after you are set up with an account. It does not replace the formal research application process.
@@ -36,17 +36,19 @@ This portal is for **cataloging approved projects and linking data** after you a
 
 ## 2. Getting an account
 
-Accounts are **created by NYBG staff** — there is no public self-registration.
+After NYBG **approves** your Living Collections research application, you typically receive an email with a link to **create your own username and password**. Completing that form also creates your project record in the portal from your application.
 
-NYBG will:
+NYBG may still create accounts manually when needed. There is no open public self-registration without approval.
 
-1. Create a Django user (username + password) for you or your team lead.
-2. Assign your **organization** (your home institution in the system).
-3. Assign a **role** (see below).
+When you receive an invite email:
 
-You will log in at the Django admin URL provided by NYBG. Use your **username** (not email) to sign in.
+1. Open the claim link (valid for a limited time).
+2. Choose a **username** and password.
+3. Sign in at the Django admin URL with your **username** (not email).
 
-If you need a colleague to edit your projects, the project **owner** can add them as a **project manager** (by username), or ask NYBG to create an account for them.
+Your home **organization** and **role** (`external_admin` by default) are set from the approval.
+
+If you need a colleague to edit your projects, the project **owner** can add them as a **team member** (by username), or ask NYBG to create an account for them.
 
 **Contact:** [forest@nybg.org](mailto:forest@nybg.org)
 
@@ -56,7 +58,7 @@ If you need a colleague to edit your projects, the project **owner** can add the
 
 | Role | Typical partner use | What you see | What you can edit |
 |------|---------------------|--------------|-------------------|
-| `external_admin` | Individual researcher | Projects and datasets you **own**, plus projects where you are a **delegated manager** | Those records only |
+| `external_admin` | Individual researcher | Projects and datasets you **own**, plus projects where you are a **team member** | Those records only |
 | `external_superadmin` | Partner institution lead | All projects and datasets for your **organization** | All records in your organization |
 
 You cannot see or edit other institutions’ records. NYBG internal staff manage cross-institution oversight.
@@ -67,13 +69,12 @@ You cannot see or edit other institutions’ records. NYBG internal staff manage
 
 ```text
 1. Apply for on-site research ([/research/apply](/research/apply)) → NYBG approval
-2. Receive portal account from NYBG
-3. Reserve a Figshare DOI for your project (before field work)
-4. Create Project in Django admin (include Figshare URL)
-5. Add Dataset(s) under the project
-6. Upload data to Figshare; link files in the dataset (upload or external URL)
-7. When ready for the public site: enable visibility flags (see §9)
-8. When project concludes: set end date, uncheck Ongoing → automated reminders if data not linked
+2. Create portal username/password via invite email (project shell created automatically)
+3. Reserve a Figshare DOI for your project (before field work) and add it on the Project
+4. Add Dataset(s) under the project
+5. Upload data to Figshare; link files in the dataset (upload or external URL)
+6. When ready for the public site: enable visibility flags (see §9)
+7. When project concludes: set end date, uncheck Ongoing → automated reminders if data not linked
 ```
 
 **Figshare DOI guide:** [How to reserve a DOI in Figshare](https://info.figshare.com/user-guide/how-to-reserve-a-doi/)

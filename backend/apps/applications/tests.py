@@ -1,6 +1,7 @@
 from datetime import date
 from pathlib import Path
 
+from django.contrib.auth.models import User
 from django.core import mail
 from django.core.management import call_command
 from django.test import TestCase, override_settings
@@ -8,12 +9,16 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from apps.applications.invite import InviteError, approve_and_invite, claim_invite
 from apps.applications.models import ResearchApplication
+from apps.datasets.models import Project
+from apps.organizations.models import Organization
 
 
 def _valid_payload(**overrides):
     payload = {
         "website": "",
+        "organization_name": "Example University",
         "applicant_name": "Ada Researcher",
         "title_position": "Postdoc",
         "institution": "Example University",
@@ -35,6 +40,22 @@ def _valid_payload(**overrides):
     return payload
 
 
+def _make_application(**overrides) -> ResearchApplication:
+    defaults = {
+        "applicant_name": "Ada Researcher",
+        "institution": "Example University",
+        "email": "ada@example.edu",
+        "project_title": "Canopy study",
+        "project_type": ResearchApplication.ProjectType.ONSITE_RESEARCH,
+        "description": "Study of canopy gaps.",
+        "research_location": "Plot A",
+        "attestation_name": "Ada Researcher",
+        "attestation_date": date(2026, 8, 1),
+    }
+    defaults.update(overrides)
+    return ResearchApplication.objects.create(**defaults)
+
+
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 class PublicResearchApplicationApiTests(APITestCase):
     def test_creates_application_and_notifies(self):
@@ -49,10 +70,32 @@ class PublicResearchApplicationApiTests(APITestCase):
         app = ResearchApplication.objects.get()
         self.assertEqual(app.status, ResearchApplication.Status.SUBMITTED)
         self.assertEqual(app.project_title, "Canopy study")
-        # Staff notify + applicant confirmation
+        self.assertIsNotNone(app.organization_id)
+        self.assertEqual(app.organization.name, "Example University")
         self.assertGreaterEqual(len(mail.outbox), 1)
         self.assertTrue(any("New research application" in m.subject for m in mail.outbox))
         self.assertTrue(any(app.email in m.to for m in mail.outbox))
+
+    def test_requires_organization(self):
+        response = self.client.post(
+            reverse("public-research-application-create"),
+            _valid_payload(organization_name="", organization_id=None),
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(ResearchApplication.objects.count(), 0)
+
+    def test_selects_existing_organization_by_id(self):
+        org = Organization.objects.create(name="Existing College")
+        response = self.client.post(
+            reverse("public-research-application-create"),
+            _valid_payload(organization_id=org.id, organization_name=""),
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        app = ResearchApplication.objects.get()
+        self.assertEqual(app.organization_id, org.id)
+        self.assertEqual(Organization.objects.filter(name="Existing College").count(), 1)
 
     def test_honeypot_rejects_bots(self):
         response = self.client.post(
@@ -76,6 +119,98 @@ class PublicResearchApplicationApiTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("desired_species", response.data)
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    FRONTEND_URL="http://testserver",
+)
+class ApproveInviteClaimTests(APITestCase):
+    def setUp(self):
+        self.org = Organization.objects.create(name="Example University")
+        self.staff = User.objects.create_user(username="nybgstaff", password="StaffPass123!")
+        self.application = _make_application()
+
+    def test_approve_without_org_errors(self):
+        with self.assertRaises(InviteError):
+            approve_and_invite(self.application, self.staff)
+        self.application.refresh_from_db()
+        self.assertIsNone(self.application.invite_token)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_approve_and_invite_sends_email(self):
+        mail.outbox.clear()
+        self.application.organization = self.org
+        self.application.save(update_fields=["organization"])
+        approve_and_invite(self.application, self.staff)
+        self.application.refresh_from_db()
+        self.assertEqual(self.application.status, ResearchApplication.Status.APPROVED)
+        self.assertTrue(self.application.invite_token)
+        self.assertIsNotNone(self.application.invite_sent_at)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("approved", mail.outbox[0].subject.lower())
+        self.assertIn(self.application.invite_token, mail.outbox[0].body)
+
+    def test_status_only_approve_does_not_invite(self):
+        mail.outbox.clear()
+        self.application.status = ResearchApplication.Status.APPROVED
+        self.application.reviewed_by = self.staff
+        self.application.save()
+        self.assertIsNone(self.application.invite_token)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_claim_creates_user_and_project(self):
+        self.application.organization = self.org
+        self.application.save(update_fields=["organization"])
+        approve_and_invite(self.application, self.staff)
+        token = self.application.invite_token
+
+        response = self.client.post(
+            reverse("public-research-application-invite-claim"),
+            {
+                "token": token,
+                "username": "ada_researcher",
+                "password": "SecurePass123!",
+                "password_confirm": "SecurePass123!",
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["username"], "ada_researcher")
+
+        user = User.objects.get(username="ada_researcher")
+        self.assertEqual(user.profile.organization_id, self.org.id)
+        self.assertTrue(user.is_staff)
+
+        self.application.refresh_from_db()
+        self.assertIsNotNone(self.application.invite_accepted_at)
+        self.assertIsNotNone(self.application.project_id)
+        project = Project.objects.get(pk=self.application.project_id)
+        self.assertEqual(project.owner_id, user.id)
+        self.assertEqual(project.organization_id, self.org.id)
+        self.assertTrue(project.plans_own_doi)
+        self.assertEqual(project.lead_email, "ada@example.edu")
+
+        response2 = self.client.post(
+            reverse("public-research-application-invite-claim"),
+            {
+                "token": token,
+                "username": "ada_other",
+                "password": "SecurePass123!",
+                "password_confirm": "SecurePass123!",
+            },
+            format="json",
+        )
+        self.assertEqual(response2.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(User.objects.filter(username="ada_other").count(), 0)
+
+    def test_claim_invite_helper_idempotent_guard(self):
+        self.application.organization = self.org
+        self.application.save(update_fields=["organization"])
+        approve_and_invite(self.application, self.staff)
+        claim_invite(self.application.invite_token, "ada1", "SecurePass123!")
+        with self.assertRaises(InviteError):
+            claim_invite(self.application.invite_token, "ada2", "SecurePass123!")
 
 
 class ImportSurvey123ApplicationsTests(TestCase):

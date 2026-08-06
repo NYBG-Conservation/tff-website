@@ -120,6 +120,7 @@ FIGSHARE_DOI_GUIDE_URL = os.getenv(
 )
 DJANGO_API_PUBLIC_URL = os.getenv("DJANGO_API_PUBLIC_URL", "http://127.0.0.1:8000")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@localhost")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://127.0.0.1:5173")
 # Comma-separated; staff notify on each public research application (default forest@nybg.org).
 RESEARCH_APPLICATION_NOTIFY = os.getenv("RESEARCH_APPLICATION_NOTIFY", "forest@nybg.org")
 

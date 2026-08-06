@@ -23,6 +23,7 @@ from .models import (
 class DatasetFileInline(admin.TabularInline):
     model = DatasetFile
     extra = 0
+    exclude = ("uploaded_by",)
     readonly_fields = ("uploaded_at", "version")
 
 
@@ -50,6 +51,8 @@ class ProjectPublicationInline(admin.TabularInline):
 class ProjectManagerInline(admin.TabularInline):
     model = ProjectManager
     extra = 0
+    verbose_name = "Team member"
+    verbose_name_plural = "Team members"
 
 
 class ProjectAlertInline(admin.TabularInline):
@@ -203,11 +206,29 @@ class DatasetAdmin(admin.ModelAdmin):
         return qs.filter(scoped_datasets_filter(request.user))
 
     def get_readonly_fields(self, request, obj=None):
+        # Owner is always the creating user for non-staff; staff see it but new rows still auto-set.
         if is_internal_superadmin(request.user) or is_internal_staff(request.user):
+            if obj is None:
+                return ("owner",)
             return ()
         return ("owner",)
 
     def save_model(self, request, obj, form, change):
-        if not (is_internal_superadmin(request.user) or is_internal_staff(request.user)):
+        if not change or not obj.owner_id:
+            obj.owner = request.user
+        elif not (is_internal_superadmin(request.user) or is_internal_staff(request.user)):
             obj.owner = request.user
         super().save_model(request, obj, form, change)
+
+    def save_formset(self, request, form, formset, change):
+        if formset.model is DatasetFile:
+            instances = formset.save(commit=False)
+            for obj in instances:
+                if not obj.uploaded_by_id:
+                    obj.uploaded_by = request.user
+                obj.save()
+            formset.save_m2m()
+            for obj in formset.deleted_objects:
+                obj.delete()
+            return
+        super().save_formset(request, form, formset, change)

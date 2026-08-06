@@ -186,14 +186,20 @@ class DatasetSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("created_at", "updated_at")
-        extra_kwargs = {"owner": {"required": False}}
+        read_only_fields = ("created_at", "updated_at", "owner", "owner_username")
+        extra_kwargs = {
+            "project": {"required": True, "allow_null": False},
+        }
 
     def validate(self, attrs):
         start = attrs.get("data_collection_start", getattr(self.instance, "data_collection_start", None))
         end = attrs.get("data_collection_end", getattr(self.instance, "data_collection_end", None))
         if start and end and end < start:
             raise serializers.ValidationError("data_collection_end cannot be earlier than data_collection_start")
+
+        project = attrs.get("project", getattr(self.instance, "project", None))
+        if not project:
+            raise serializers.ValidationError({"project": "A project is required for every dataset."})
         return attrs
 
     @transaction.atomic
@@ -203,8 +209,10 @@ class DatasetSerializer(serializers.ModelSerializer):
         publications = validated_data.pop("publications", [])
 
         request = self.context.get("request")
-        if request and not validated_data.get("owner"):
-            validated_data["owner"] = request.user
+        if not request or not request.user or not request.user.is_authenticated:
+            raise serializers.ValidationError({"owner": "Authentication required."})
+        # Always attribute ownership to the signed-in creator.
+        validated_data["owner"] = request.user
 
         dataset = Dataset.objects.create(**validated_data)
         field_map: dict[str, MetadataFieldDefinition] = {}

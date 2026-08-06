@@ -114,7 +114,7 @@ class ProjectManagerAddView(APIView):
             project=project, user=user, defaults={"added_by": request.user}
         )
         if not created:
-            return Response({"detail": "User is already a project manager."}, status=status.HTTP_200_OK)
+            return Response({"detail": "User is already a team member."}, status=status.HTTP_200_OK)
         return Response({"id": link.id, "username": link.user.username}, status=status.HTTP_201_CREATED)
 
 
@@ -126,7 +126,7 @@ class ProjectManagerRemoveView(APIView):
         self.check_object_permissions(request, project)
         link = ProjectManager.objects.filter(project=project, user_id=user_id).first()
         if not link:
-            return Response({"detail": "Project manager relationship not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": "Team member relationship not found."}, status=status.HTTP_404_NOT_FOUND)
         link.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -175,13 +175,8 @@ class DatasetListCreateView(generics.ListCreateAPIView):
         organization = _organization_from_validated(serializer)
         if organization:
             _assert_can_create_in_organization(user, organization)
-        if is_internal_superadmin(user) or is_internal_staff(user):
-            serializer.save()
-            return
-        if user.profile.role == UserProfile.Role.EXTERNAL_SUPERADMIN:
-            serializer.save()
-            return
-        serializer.save(owner=user)
+        # Owner is always set from request.user inside DatasetSerializer.create.
+        serializer.save()
 
 
 class DatasetRetrieveUpdateView(generics.RetrieveUpdateAPIView):

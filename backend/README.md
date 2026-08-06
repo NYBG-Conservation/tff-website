@@ -89,6 +89,7 @@ Latest migration (`0005`) adds:
 - `/api/metadata/field-types/`
 - `/api/accounts/me/`
 - `/api/public/research-applications/` (POST, anonymous)
+- `/api/public/research-application-invites/claim/` (POST, anonymous invite claim)
 - `/api/organizations/`
 
 ## Docker Compose (Django + Postgres)

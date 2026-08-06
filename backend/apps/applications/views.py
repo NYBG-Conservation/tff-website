@@ -5,7 +5,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .notifications import notify_applicant_confirmation, notify_staff_of_application
-from .serializers import PublicResearchApplicationSerializer
+from .serializers import (
+    ClaimResearchApplicationInviteSerializer,
+    PublicResearchApplicationSerializer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -39,3 +42,16 @@ class PublicResearchApplicationCreateView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+class PublicResearchApplicationInviteClaimView(APIView):
+    """Anonymous claim of an approval invite: create username/password + Project."""
+
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        serializer = ClaimResearchApplicationInviteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        result = serializer.save()
+        return Response(result, status=status.HTTP_201_CREATED)

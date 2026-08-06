@@ -442,7 +442,7 @@
 											{#if !isAuthenticated}
 												<p class="detail-note">
 													Sign in with your researcher account to edit this dataset. Access is
-													limited to project owners and delegated managers.
+													limited to project owners and team members.
 												</p>
 											{/if}
 										</div>

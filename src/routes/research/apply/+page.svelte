@@ -1,12 +1,19 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import {
 		submitResearchApplication,
 		type ResearchCollectionType,
 		type ResearchProjectType
 	} from '$lib/api/researchApplications';
+	import {
+		fetchPublicOrganizations,
+		type PublicOrganization
+	} from '$lib/api/publicOrganizations';
 
 	type FormState = {
 		website: string;
+		organization_choice: string;
+		new_organization_name: string;
 		applicant_name: string;
 		title_position: string;
 		institution: string;
@@ -40,6 +47,8 @@
 
 	const emptyForm = (): FormState => ({
 		website: '',
+		organization_choice: '',
+		new_organization_name: '',
 		applicant_name: '',
 		title_position: '',
 		institution: '',
@@ -72,6 +81,8 @@
 	});
 
 	let form = emptyForm();
+	let organizations: PublicOrganization[] = [];
+	let orgsError = '';
 	let submitting = false;
 	let submittedId: number | null = null;
 	let errorMessage = '';
@@ -79,6 +90,15 @@
 
 	$: isPlant = form.project_type === 'Plant_material_collections';
 	$: isOnsite = form.project_type === 'onsite_research';
+	$: isNewOrg = form.organization_choice === 'new';
+
+	onMount(async () => {
+		try {
+			organizations = await fetchPublicOrganizations();
+		} catch {
+			orgsError = 'Could not load organizations. You can still add a new one below.';
+		}
+	});
 
 	function formatApiErrors(body: unknown): { message: string; fields: Record<string, string> } {
 		const fields: Record<string, string> = {};
@@ -109,10 +129,29 @@
 			errorMessage = 'Please select a project type.';
 			return;
 		}
+		if (!form.organization_choice) {
+			errorMessage = 'Please select or add your organization.';
+			return;
+		}
+		if (isNewOrg && !form.new_organization_name.trim()) {
+			errorMessage = 'Enter the name of your organization.';
+			return;
+		}
 		submitting = true;
 		try {
+			const selectedOrg =
+				!isNewOrg && form.organization_choice
+					? organizations.find((o) => String(o.id) === form.organization_choice)
+					: null;
+			const institution =
+				form.institution.trim() ||
+				(isNewOrg ? form.new_organization_name.trim() : selectedOrg?.name || '');
+
 			const payload = {
 				...form,
+				institution,
+				organization_id: isNewOrg ? null : Number(form.organization_choice),
+				organization_name: isNewOrg ? form.new_organization_name.trim() : '',
 				project_type: form.project_type as ResearchProjectType,
 				collection_type: form.collection_type || undefined,
 				start_date: form.anticipated_start_date || undefined,
@@ -182,8 +221,39 @@
 						<input bind:value={form.title_position} />
 					</label>
 					<label class="full">
-						<span>Affiliated institution *</span>
-						<input required bind:value={form.institution} class:invalid={!!fieldErrors.institution} />
+						<span>Organization *</span>
+						<select
+							required
+							bind:value={form.organization_choice}
+							class:invalid={!!fieldErrors.organization_id || !!fieldErrors.organization_name}
+						>
+							<option value="">Select…</option>
+							{#each organizations as org}
+								<option value={String(org.id)}>{org.name}</option>
+							{/each}
+							<option value="new">Add a new organization…</option>
+						</select>
+						{#if orgsError}
+							<span class="field-hint">{orgsError}</span>
+						{/if}
+					</label>
+					{#if isNewOrg}
+						<label class="full">
+							<span>New organization name *</span>
+							<input
+								required
+								bind:value={form.new_organization_name}
+								class:invalid={!!fieldErrors.organization_name}
+								placeholder="e.g. Example University"
+							/>
+						</label>
+					{/if}
+					<label class="full">
+						<span>Department / lab (optional)</span>
+						<input
+							bind:value={form.institution}
+							placeholder="Defaults to organization name if left blank"
+						/>
 					</label>
 					<label>
 						<span>Email *</span>
@@ -443,6 +513,11 @@
 		font-size: 0.95rem;
 		margin: -0.35rem 0 1rem;
 		color: #333;
+	}
+
+	.field-hint {
+		font-size: 0.85rem;
+		color: #555;
 	}
 
 	.grid {

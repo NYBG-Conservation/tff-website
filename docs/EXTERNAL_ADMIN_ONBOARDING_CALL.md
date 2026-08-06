@@ -138,7 +138,7 @@ Questions → forest@nybg.org
 
 ## Optional stretch (only if call finishes early)
 
-- Add project manager by username  
+- Add team member by username  
 - Create empty dataset linked to project  
 - Show `/research` and `/data` public pages so they see end-user destination  
 

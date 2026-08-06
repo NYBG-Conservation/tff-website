@@ -155,6 +155,8 @@ class ProjectManager(models.Model):
     class Meta:
         unique_together = ("project", "user")
         ordering = ("-created_at",)
+        verbose_name = "Team member"
+        verbose_name_plural = "Team members"
 
     def __str__(self) -> str:
         return f"{self.project.short_title} :: {self.user.username}"
@@ -227,8 +229,18 @@ class Dataset(models.Model):
         db_index=False,
         help_text="Optional frontend/backoffice project identifier for linking research cards and datasets.",
     )
-    project = models.ForeignKey(Project, on_delete=models.SET_NULL, null=True, blank=True, related_name="datasets")
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="owned_datasets")
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.PROTECT,
+        related_name="datasets",
+        help_text="Required. Every dataset belongs to a research project.",
+    )
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="owned_datasets",
+        help_text="Set automatically to the user who creates the dataset.",
+    )
     organization = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="datasets")
     additional_research_partners = models.JSONField(default=list, blank=True)
     paper_links = models.JSONField(default=list, blank=True)
@@ -324,7 +336,12 @@ class DatasetFile(models.Model):
     file_kind = models.CharField(max_length=30, choices=FileKind.choices, default=FileKind.PRIMARY_DATA)
     content_type = models.CharField(max_length=120, blank=True)
     version = models.PositiveIntegerField(default=1)
-    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="uploaded_files")
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="uploaded_files",
+        help_text="Set automatically to the user who uploads the file.",
+    )
     uploaded_at = models.DateTimeField(auto_now_add=True)
     notes = models.TextField(blank=True)
     expose_on_public_api = models.BooleanField(

@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from datetime import timedelta
 
 
 class ResearchApplication(models.Model):
@@ -87,13 +88,21 @@ class ResearchApplication(models.Model):
     attestation_date = models.DateField()
 
     # Review / links
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="research_applications",
+        help_text="Portal organization for the researcher. Required before Approve & invite.",
+    )
     project = models.ForeignKey(
         "datasets.Project",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="research_applications",
-        help_text="Optional portal project linked after approval.",
+        help_text="Portal project created when the applicant claims their invite.",
     )
     reviewed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -103,9 +112,25 @@ class ResearchApplication(models.Model):
         related_name="reviewed_research_applications",
     )
     review_notes = models.TextField(blank=True)
+
+    # Portal invite (set by Approve & send portal invite)
+    invite_token = models.CharField(max_length=64, blank=True, null=True, unique=True)
+    invite_sent_at = models.DateTimeField(null=True, blank=True)
+    invite_accepted_at = models.DateTimeField(null=True, blank=True)
+
     submitted_at = models.DateTimeField(default=timezone.now, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    INVITE_VALID_DAYS = 14
+
+    def invite_is_pending(self) -> bool:
+        return bool(self.invite_token) and self.invite_accepted_at is None
+
+    def invite_is_expired(self) -> bool:
+        if not self.invite_sent_at or self.invite_accepted_at:
+            return False
+        return timezone.now() > self.invite_sent_at + timedelta(days=self.INVITE_VALID_DAYS)
 
     class Meta:
         ordering = ("-submitted_at", "-id")

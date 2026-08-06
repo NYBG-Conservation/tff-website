@@ -19,6 +19,7 @@ class DatasetApiPermissionTests(APITestCase):
         self.internal_user = User.objects.create_user(username="internal", password="pass12345")
         self.external_user = User.objects.create_user(username="external", password="pass12345")
         self.other_external = User.objects.create_user(username="other", password="pass12345")
+        self.team_member = User.objects.create_user(username="teammate", password="pass12345")
 
         self.internal_user.profile.role = UserProfile.Role.INTERNAL_ADMIN
         self.internal_user.profile.save()
@@ -26,22 +27,53 @@ class DatasetApiPermissionTests(APITestCase):
         self.external_user.profile.save()
         self.other_external.profile.role = UserProfile.Role.EXTERNAL_ADMIN
         self.other_external.profile.save()
+        self.team_member.profile.role = UserProfile.Role.EXTERNAL_ADMIN
+        self.team_member.profile.save()
+
+        self.project_external = Project.objects.create(
+            short_title="External Project",
+            lead_name="Ext",
+            lead_email="ext@example.org",
+            organization=self.organization,
+            owner=self.external_user,
+        )
+        self.project_other = Project.objects.create(
+            short_title="Other Project",
+            lead_name="Oth",
+            lead_email="oth@example.org",
+            organization=self.organization,
+            owner=self.other_external,
+        )
+        ProjectManager.objects.create(
+            project=self.project_external,
+            user=self.team_member,
+            added_by=self.external_user,
+        )
 
         self.dataset_external = Dataset.objects.create(
             title="External Dataset",
             cadence=Dataset.Cadence.ANNUAL,
             owner=self.external_user,
             organization=self.organization,
+            project=self.project_external,
         )
         self.dataset_other = Dataset.objects.create(
             title="Other Dataset",
             cadence=Dataset.Cadence.CONTINUOUS,
             owner=self.other_external,
             organization=self.organization,
+            project=self.project_other,
         )
 
     def test_external_user_only_sees_owned_datasets(self):
         self.client.force_authenticate(self.external_user)
+        response = self.client.get(reverse("dataset-list-create"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["id"], self.dataset_external.id)
+
+    def test_team_member_sees_project_datasets(self):
+        self.client.force_authenticate(self.team_member)
         response = self.client.get(reverse("dataset-list-create"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
@@ -70,6 +102,13 @@ class DatasetMetadataValidationTests(APITestCase):
     def setUp(self):
         self.organization = Organization.objects.create(name="Partner Org")
         self.user = User.objects.create_user(username="partner", password="pass12345")
+        self.project = Project.objects.create(
+            short_title="Partner Project",
+            lead_name="Partner",
+            lead_email="partner@example.org",
+            organization=self.organization,
+            owner=self.user,
+        )
         self.client.force_authenticate(self.user)
 
     def test_rejects_invalid_metadata_value_type(self):
@@ -79,6 +118,7 @@ class DatasetMetadataValidationTests(APITestCase):
             "cadence": Dataset.Cadence.ANNUAL,
             "status": Dataset.Status.DRAFT,
             "organization": self.organization.id,
+            "project": self.project.id,
             "metadata_fields": [
                 {
                     "key": "canopy_percent",
@@ -95,6 +135,30 @@ class DatasetMetadataValidationTests(APITestCase):
         response = self.client.post(reverse("dataset-list-create"), payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("metadata_values", response.data)
+
+    def test_create_sets_owner_from_authenticated_user(self):
+        payload = {
+            "title": "Owned Dataset",
+            "cadence": Dataset.Cadence.ANNUAL,
+            "status": Dataset.Status.DRAFT,
+            "organization": self.organization.id,
+            "project": self.project.id,
+        }
+        response = self.client.post(reverse("dataset-list-create"), payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        dataset = Dataset.objects.get(pk=response.data["id"])
+        self.assertEqual(dataset.owner_id, self.user.id)
+        self.assertEqual(dataset.project_id, self.project.id)
+
+    def test_create_requires_project(self):
+        payload = {
+            "title": "No Project",
+            "cadence": Dataset.Cadence.ANNUAL,
+            "organization": self.organization.id,
+        }
+        response = self.client.post(reverse("dataset-list-create"), payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("project", response.data)
 
 
 class ProjectApiPermissionTests(APITestCase):
@@ -285,11 +349,19 @@ class DatasetFileModelTests(TestCase):
     def setUp(self):
         self.organization = Organization.objects.create(name="NYBG")
         self.owner = User.objects.create_user(username="owner", password="pass12345")
+        self.project = Project.objects.create(
+            short_title="Lidar Project",
+            lead_name="Owner",
+            lead_email="owner@example.org",
+            organization=self.organization,
+            owner=self.owner,
+        )
         self.dataset = Dataset.objects.create(
             title="Lidar",
             cadence=Dataset.Cadence.ONE_OFF,
             owner=self.owner,
             organization=self.organization,
+            project=self.project,
         )
 
     def test_requires_file_or_external_url(self):

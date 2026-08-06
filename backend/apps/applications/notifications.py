@@ -66,3 +66,46 @@ def notify_applicant_confirmation(application) -> None:
         [application.email],
         fail_silently=True,
     )
+
+
+def frontend_base_url() -> str:
+    return getattr(settings, "FRONTEND_URL", None) or os.getenv(
+        "FRONTEND_URL", "http://127.0.0.1:5173"
+    )
+
+
+def portal_invite_claim_url(token: str) -> str:
+    base = frontend_base_url().rstrip("/")
+    return f"{base}/research/claim/{token}"
+
+
+def django_admin_login_url() -> str:
+    base = getattr(settings, "DJANGO_API_PUBLIC_URL", "http://127.0.0.1:8000").rstrip("/")
+    return f"{base}/admin/login/"
+
+
+def notify_applicant_portal_invite(application) -> None:
+    if not application.email or not application.invite_token:
+        return
+    from .models import ResearchApplication as RA
+
+    claim_url = portal_invite_claim_url(application.invite_token)
+    days = RA.INVITE_VALID_DAYS
+    subject = "Thain Family Forest — research approved; create your portal account"
+    body = (
+        f"Dear {application.applicant_name},\n\n"
+        f"Your research application “{application.project_title}” has been approved.\n\n"
+        f"Create your Thain Family Forest research portal username and password here:\n"
+        f"{claim_url}\n\n"
+        f"This link expires in {days} days. After you finish, your project record will be "
+        f"created automatically and you can sign in at the Django admin with your username.\n\n"
+        f"Questions: forest@nybg.org\n\n"
+        f"— Thain Family Forest / NYBG\n"
+    )
+    send_mail(
+        subject,
+        body,
+        getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@localhost"),
+        [application.email],
+        fail_silently=False,
+    )

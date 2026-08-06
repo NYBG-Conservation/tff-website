@@ -390,25 +390,20 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		padding: 0.65rem 1.15rem;
+		padding: 0.7rem 1.25rem;
 		border: 1px solid #1e2f1e;
 		background: #1e2f1e;
 		color: #fff;
 		font-family: 'GT Super Bold', serif;
 		font-size: 0.95rem;
 		text-decoration: none;
-		transition: background 0.18s ease, color 0.18s ease;
+		cursor: pointer;
 	}
 
 	.apply-button:hover,
 	.apply-button:focus-visible {
 		background: #fff;
 		color: #1e2f1e;
-	}
-
-	.apply-button:focus-visible {
-		outline: 2px solid #1e2f1e;
-		outline-offset: 2px;
 	}
 
 	.resources-accordion {

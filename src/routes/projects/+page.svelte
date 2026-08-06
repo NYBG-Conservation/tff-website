@@ -229,10 +229,10 @@
 		try {
 			await addProjectManager(selectedProject.id, managerUsername.trim());
 			managerUsername = '';
-			message = 'Project manager added.';
+			message = 'Team member added.';
 			await loadData();
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Unable to add project manager.';
+			error = err instanceof Error ? err.message : 'Unable to add team member.';
 		}
 	}
 
@@ -242,10 +242,10 @@
 		message = '';
 		try {
 			await removeProjectManager(selectedProject.id, userId);
-			message = 'Project manager removed.';
+			message = 'Team member removed.';
 			await loadData();
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Unable to remove project manager.';
+			error = err instanceof Error ? err.message : 'Unable to remove team member.';
 		}
 	}
 
@@ -341,7 +341,7 @@
 <section class="projects-page">
 	<h1>Project Workflow Dashboard</h1>
 	<p class="subtitle">
-		Create and manage projects, assign delegated project managers, and attach datasets under each project.
+		Create and manage projects, add team members, and attach datasets under each project.
 	</p>
 
 	{#if loading}
@@ -543,9 +543,10 @@
 		{#if selectedProject}
 			<div class="grid lower">
 				<div class="panel">
-					<h2>Project Managers</h2>
+					<h2>Team members</h2>
 					<p class="hint">
-						Project owner and NYBG internal admins can add delegated managers who can edit this project.
+						Project owners and NYBG staff can add team members by username. Team members can view and
+						edit this project and all of its datasets.
 					</p>
 					<div class="manager-input">
 						<input placeholder="username" bind:value={managerUsername} />
@@ -684,6 +685,7 @@
 		margin: 2rem auto;
 		padding: 0 1rem 2rem;
 		font-family: 'GT Super Regular', serif;
+		overflow-x: clip;
 	}
 
 	h1 {
@@ -699,19 +701,22 @@
 
 	.grid {
 		display: grid;
-		grid-template-columns: 1fr 2fr;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
 		gap: 1rem;
 	}
 
 	.lower {
 		margin-top: 1rem;
-		grid-template-columns: 1fr 1fr;
+		/* Stack team members + datasets so forms never blow past page width */
+		grid-template-columns: minmax(0, 1fr);
 	}
 
 	.panel {
 		background: #fff;
 		border: 1px solid rgba(0, 0, 0, 0.15);
 		padding: 1rem;
+		min-width: 0;
+		overflow-x: clip;
 	}
 
 	.panel-header {
@@ -806,7 +811,7 @@
 
 	.form-grid {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 		gap: 0.6rem;
 	}
 
@@ -814,6 +819,7 @@
 		display: grid;
 		gap: 0.2rem;
 		font-size: 0.92rem;
+		min-width: 0;
 	}
 
 	.full-width {
@@ -826,6 +832,10 @@
 		padding: 0.45rem;
 		font: inherit;
 		border: 1px solid rgba(0, 0, 0, 0.2);
+		width: 100%;
+		max-width: 100%;
+		min-width: 0;
+		box-sizing: border-box;
 	}
 
 	.checkbox {
@@ -834,11 +844,21 @@
 		gap: 0.4rem;
 	}
 
+	.checkbox input {
+		width: auto;
+	}
+
 	.actions,
 	.manager-input {
 		margin-top: 0.75rem;
 		display: flex;
+		flex-wrap: wrap;
 		gap: 0.5rem;
+	}
+
+	.manager-input input {
+		flex: 1 1 12rem;
+		min-width: 0;
 	}
 
 	.initial-dataset {
@@ -858,6 +878,10 @@
 		gap: 0.45rem;
 	}
 
+	.upload-choice input {
+		width: auto;
+	}
+
 	.organization-creator {
 		margin-top: 0.8rem;
 		padding: 0.7rem;
@@ -875,12 +899,13 @@
 	.dataset-form {
 		margin-top: 0.45rem;
 		display: grid;
-		gap: 0.45rem;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 0.55rem;
 	}
 
 	.inline {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
+		grid-template-columns: minmax(0, 1fr);
 		gap: 0.45rem;
 	}
 
