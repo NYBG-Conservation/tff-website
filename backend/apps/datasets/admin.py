@@ -20,26 +20,48 @@ from .models import (
 )
 
 
-class DatasetFileInline(admin.TabularInline):
+class DatasetFileInline(admin.StackedInline):
     model = DatasetFile
     extra = 0
     exclude = ("uploaded_by",)
     readonly_fields = ("uploaded_at", "version")
+    classes = ("collapse",)
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "file",
+                    "external_url",
+                    "file_name",
+                    "file_kind",
+                    "content_type",
+                    "notes",
+                    "expose_on_public_api",
+                    "uploaded_at",
+                    "version",
+                )
+            },
+        ),
+    )
 
 
-class MetadataFieldDefinitionInline(admin.TabularInline):
+class MetadataFieldDefinitionInline(admin.StackedInline):
     model = MetadataFieldDefinition
     extra = 0
+    classes = ("collapse",)
 
 
-class DatasetMetadataValueInline(admin.TabularInline):
+class DatasetMetadataValueInline(admin.StackedInline):
     model = DatasetMetadataValue
     extra = 0
+    classes = ("collapse",)
 
 
-class DatasetPublicationInline(admin.TabularInline):
+class DatasetPublicationInline(admin.StackedInline):
     model = DatasetPublication
     extra = 0
+    classes = ("collapse",)
 
 
 class ProjectPublicationInline(admin.TabularInline):
