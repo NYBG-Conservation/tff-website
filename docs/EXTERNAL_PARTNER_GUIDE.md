@@ -17,7 +17,7 @@
 7. [Dataset files and upload policy](#7-dataset-files-and-upload-policy)
 8. [Publications](#8-publications)
 9. [Making content visible on the public website](#9-making-content-visible-on-the-public-website)
-10. [Data deposit reminders (30 / 60 / 90 days)](#10-data-deposit-reminders-30--60--90-days)
+10. [Data deposit reminders (30 / 60 / 90 / 120 days)](#10-data-deposit-reminders-30--60--90--120-days)
 11. [Checklist: new project](#11-checklist-new-project)
 12. [Support and links](#12-support-and-links)
 
@@ -58,7 +58,7 @@ If you need a colleague to edit your projects, the project **owner** can add the
 
 | Role | Typical partner use | What you see | What you can edit |
 |------|---------------------|--------------|-------------------|
-| `external_admin` | Individual researcher | Projects and datasets you **own**, plus projects where you are a **team member** | Those records only |
+| `external_admin` | Individual researcher | **All projects** in your organization (read). Datasets only for projects you **own** or are a **team member** on | Projects/datasets you own or are a team member on |
 | `external_superadmin` | Partner institution lead | All projects and datasets for your **organization** | All records in your organization |
 
 You cannot see or edit other institutions’ records. NYBG internal staff manage cross-institution oversight.
@@ -105,7 +105,7 @@ In Django admin: **Datasets → Projects → Add**.
 | **End date** | Set when the project has a **discrete conclusion**. Required for the 30/60/90-day upload reminder schedule (see §10). |
 | **Ongoing** | Check only if the project has **no fixed end date**. If ongoing, leave **End date** empty. |
 | **Plans own DOI** | Check if you will publish data under your own DOI (journal / Dryad / Zenodo, etc.) instead of reserving Figshare first. Figshare URL then becomes optional. |
-| **Institutional partners** | List of partner org names (shown on the public site if published). |
+| **Institutional partners** | Partner organizations selected from the org list (shown by name on the public site if published). |
 
 ### Optional
 
@@ -124,7 +124,7 @@ In Django admin: **Datasets → Projects → Add**.
 |-------|--------|
 | **Slug** | Auto-generated from short title (used in URLs). Read-only. |
 | **Owner** | Your user account (for external partners). |
-| **Manual outreach required / at** | Set by the system after 90 days without linked data. |
+| **Manual outreach required / at** | _(NYBG superadmin only)_ System flag after 60 days without linked data. |
 | **Created / updated timestamps** | System-managed. |
 
 ### Validation rules
@@ -236,15 +236,16 @@ NYBG may review before you enable public flags. Contact [forest@nybg.org](mailto
 
 ---
 
-## 10. Data deposit reminders (30 / 60 / 90 days)
+## 10. Data deposit reminders (30 / 60 / 90 / 120 days)
 
 For projects with a **fixed end date** (not ongoing):
 
 | Days after end date | What happens |
 |---------------------|--------------|
 | **30** | First email to **lead email** — upload to Figshare and link files |
-| **60** | Second reminder |
-| **90** | Final reminder; project flagged **Manual outreach required** for NYBG staff follow-up |
+| **60** | Second reminder (NYBG may also follow up directly) |
+| **90** | Third reminder |
+| **120** | Final automated reminder |
 
 Reminders stop when at least one **dataset file** is linked (upload or Figshare/external URL).
 

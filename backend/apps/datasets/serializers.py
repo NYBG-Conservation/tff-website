@@ -3,6 +3,10 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from rest_framework import serializers
 
+from apps.organizations.models import Organization
+
+from apps.accounts.roles import is_internal_superadmin
+
 from .figshare import validate_figshare_doi_url
 from .models import (
     Dataset,
@@ -304,6 +308,8 @@ class ProjectSerializer(serializers.ModelSerializer):
     owner_username = serializers.CharField(source="owner.username", read_only=True)
     managers = ProjectManagerSerializer(source="project_managers", many=True, read_only=True)
     organization_name = serializers.CharField(source="organization.name", read_only=True)
+    institutional_partner_orgs = serializers.SerializerMethodField()
+    can_edit = serializers.SerializerMethodField()
     is_overdue_missing_data = serializers.SerializerMethodField()
     overdue_days = serializers.SerializerMethodField()
     days_since_project_end = serializers.SerializerMethodField()
@@ -332,6 +338,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             "plans_own_doi",
             "figshare_doi_url",
             "institutional_partners",
+            "institutional_partner_orgs",
             "collection_frequency",
             "update_frequency",
             "last_updated_note",
@@ -340,6 +347,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             "owner",
             "owner_username",
             "managers",
+            "can_edit",
             "is_overdue_missing_data",
             "overdue_days",
             "days_since_project_end",
@@ -358,6 +366,8 @@ class ProjectSerializer(serializers.ModelSerializer):
             "owner_username",
             "organization_name",
             "owner",
+            "can_edit",
+            "institutional_partner_orgs",
             "is_overdue_missing_data",
             "overdue_days",
             "days_since_project_end",
@@ -368,6 +378,70 @@ class ProjectSerializer(serializers.ModelSerializer):
             "emailed_milestones",
         )
         extra_kwargs = {"owner": {"required": False}}
+
+    _SUPERADMIN_ONLY_FIELDS = (
+        "is_overdue_missing_data",
+        "overdue_days",
+        "days_since_project_end",
+        "manual_outreach_required",
+        "manual_outreach_at",
+        "active_alert_id",
+        "last_alert_emailed_at",
+        "emailed_milestones",
+    )
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        if not is_internal_superadmin(user):
+            for key in self._SUPERADMIN_ONLY_FIELDS:
+                data.pop(key, None)
+        return data
+
+    def get_institutional_partner_orgs(self, obj: Project) -> list[dict]:
+        ids = [int(x) for x in (obj.institutional_partners or []) if str(x).isdigit() or isinstance(x, int)]
+        if not ids:
+            return []
+        orgs = {org.id: org.name for org in Organization.objects.filter(pk__in=ids)}
+        return [{"id": org_id, "name": orgs[org_id]} for org_id in ids if org_id in orgs]
+
+    def validate_institutional_partners(self, value):
+        if value in (None, ""):
+            return []
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Expected a list of organization IDs.")
+        ids: list[int] = []
+        for item in value:
+            if isinstance(item, dict) and item.get("id") is not None:
+                item = item["id"]
+            try:
+                org_id = int(item)
+            except (TypeError, ValueError) as exc:
+                raise serializers.ValidationError(
+                    "Institutional partners must be organization IDs."
+                ) from exc
+            ids.append(org_id)
+        existing = set(Organization.objects.filter(pk__in=ids).values_list("id", flat=True))
+        missing = [org_id for org_id in ids if org_id not in existing]
+        if missing:
+            raise serializers.ValidationError(f"Unknown organization id(s): {missing}")
+        # Preserve order, dedupe
+        seen: set[int] = set()
+        unique: list[int] = []
+        for org_id in ids:
+            if org_id not in seen:
+                seen.add(org_id)
+                unique.append(org_id)
+        return unique
+
+    def get_can_edit(self, obj: Project) -> bool:
+        request = self.context.get("request")
+        if not request or not request.user or not request.user.is_authenticated:
+            return False
+        from apps.accounts.roles import can_edit_project
+
+        return can_edit_project(request.user, obj)
 
     def get_days_since_project_end(self, obj: Project) -> int | None:
         return days_since_project_end(obj)

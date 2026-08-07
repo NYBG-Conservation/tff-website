@@ -99,7 +99,7 @@ When in doubt, leave flags **off** and ask [forest@nybg.org](mailto:forest@nybg.
 
 ## After your project ends
 
-If the project has an **end date** (not ongoing) and no dataset file is linked yet, the lead email may get reminders at **30, 60, and 90 days**. Linking at least one file (upload or Figshare URL) stops the reminder queue.
+If the project has an **end date** (not ongoing) and no dataset file is linked yet, the lead email may get reminders at **30, 60, 90, and 120 days**. Linking at least one file (upload or Figshare URL) stops the reminder queue.
 
 So: reserve Figshare early, upload when you can, then link it in the portal.
 

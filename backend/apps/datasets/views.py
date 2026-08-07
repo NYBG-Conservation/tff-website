@@ -16,7 +16,7 @@ from apps.accounts.roles import (
 )
 
 from .models import Dataset, DatasetFile, MetadataFieldDefinition, Project, ProjectManager, ProjectPublication
-from .permissions import CanEditDataset, CanEditProject, CanEditProjectPublication
+from .permissions import CanEditDataset, CanEditProject, CanEditProjectPublication, CanViewOrEditProject
 from .serializers import (
     DatasetFileSerializer,
     DatasetSerializer,
@@ -91,7 +91,7 @@ class ProjectListCreateView(generics.ListCreateAPIView):
 
 class ProjectRetrieveUpdateView(generics.RetrieveUpdateAPIView):
     serializer_class = ProjectSerializer
-    permission_classes = [permissions.IsAuthenticated, CanEditProject]
+    permission_classes = [permissions.IsAuthenticated, CanViewOrEditProject]
 
     def get_queryset(self):
         return scoped_projects_for_user(self.request.user)

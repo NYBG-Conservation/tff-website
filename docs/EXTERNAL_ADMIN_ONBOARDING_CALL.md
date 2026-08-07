@@ -51,7 +51,7 @@
 #### 8–14 — Figshare + required project fields
 - “Before (or as) you create a project: reserve a DOI in Figshare and keep that item URL.”
 - Required on create: **Short title**, **Lead name**, **Lead email**, **Organization**, **Figshare item URL**.
-- Lead email = where 30/60/90-day upload reminders go after a project ends—use a monitored inbox.
+- Lead email = where 30/60/90/120-day upload reminders go after a project ends—use a monitored inbox.
 - Ongoing vs end date: if the project will end, set an end date and leave Ongoing unchecked when concluded.
 
 #### 14–24 — Live project create (core of the call)

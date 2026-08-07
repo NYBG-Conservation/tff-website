@@ -137,6 +137,18 @@ class SyncRoleGroupPermissionsTests(APITestCase):
         group = Group.objects.get(name="internal_admin")
         self.assertTrue(group.permissions.filter(codename="view_researchapplication").exists())
         self.assertTrue(group.permissions.filter(codename="change_researchapplication").exists())
+        # Follow-up alerts are superadmin-only.
+        self.assertFalse(group.permissions.filter(codename="view_projectalert").exists())
+
+    def test_internal_superadmin_group_gets_project_alert_permissions(self):
+        from django.contrib.auth.models import Group
+
+        call_command("sync_role_groups")
+        group = Group.objects.get(name="internal_superadmin")
+        self.assertTrue(group.permissions.filter(codename="view_projectalert").exists())
+        self.assertTrue(group.permissions.filter(codename="change_projectalert").exists())
+        self.assertFalse(group.permissions.filter(codename="add_projectalert").exists())
+        self.assertFalse(group.permissions.filter(codename="delete_projectalert").exists())
 
     def test_sync_deletes_legacy_external_partner_admin_group(self):
         from django.contrib.auth.models import Group

@@ -9,6 +9,11 @@ export type ProjectManager = {
 	created_at: string;
 };
 
+export type InstitutionalPartnerOrg = {
+	id: number;
+	name: string;
+};
+
 export type Project = {
 	id: number;
 	slug: string;
@@ -25,7 +30,10 @@ export type Project = {
 	external_url?: string;
 	plans_own_doi?: boolean;
 	figshare_doi_url?: string;
-	institutional_partners?: string[];
+	/** Organization IDs stored on the project. */
+	institutional_partners?: number[];
+	/** Resolved partner orgs for display. */
+	institutional_partner_orgs?: InstitutionalPartnerOrg[];
 	collection_frequency?: string;
 	update_frequency?: string;
 	last_updated_note?: string;
@@ -34,13 +42,23 @@ export type Project = {
 	owner: number;
 	owner_username?: string;
 	managers?: ProjectManager[];
+	can_edit?: boolean;
 	created_at: string;
 	updated_at: string;
 };
 
 export type ProjectInput = Omit<
 	Project,
-	'id' | 'slug' | 'owner_username' | 'organization_name' | 'created_at' | 'updated_at' | 'managers' | 'owner'
+	| 'id'
+	| 'slug'
+	| 'owner_username'
+	| 'organization_name'
+	| 'created_at'
+	| 'updated_at'
+	| 'managers'
+	| 'owner'
+	| 'can_edit'
+	| 'institutional_partner_orgs'
 >;
 
 export async function listProjects(query = '', fetchImpl?: typeof fetch): Promise<Project[]> {

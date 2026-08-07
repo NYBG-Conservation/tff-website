@@ -28,7 +28,7 @@ Query params:
 | `internal_superadmin` | All projects and datasets | All; can assign roles via API |
 | `internal_admin` | NYBG organization records | NYBG organization records only |
 | `external_superadmin` | Home organization records | Home organization records only |
-| `external_admin` | Owned (+ project manager) records | Owned (+ project manager) records only |
+| `external_admin` | All projects in home org (read); datasets only for owned / team-member projects | Owned + team-member projects/datasets only |
 
 Bootstrap the first superadmin: `python backend/manage.py assign_internal_superadmin <username>`
 

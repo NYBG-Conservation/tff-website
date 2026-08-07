@@ -12,14 +12,14 @@ from .models import DatasetFile, Project, ProjectAlert
 
 
 def alert_milestone_days() -> list[int]:
-    milestones = getattr(settings, "PROJECT_ALERT_MILESTONE_DAYS", [30, 60, 90])
+    milestones = getattr(settings, "PROJECT_ALERT_MILESTONE_DAYS", [30, 60, 90, 120])
     return sorted({int(day) for day in milestones if int(day) > 0})
 
 
 def manual_outreach_day() -> int:
-    configured = int(getattr(settings, "PROJECT_MANUAL_OUTREACH_DAY", 90))
+    configured = int(getattr(settings, "PROJECT_MANUAL_OUTREACH_DAY", 60))
     milestones = alert_milestone_days()
-    return configured if configured in milestones else (milestones[-1] if milestones else 90)
+    return configured if configured in milestones else (milestones[1] if len(milestones) > 1 else 60)
 
 
 def project_is_concluded_with_end_date(project: Project) -> bool:
@@ -104,20 +104,23 @@ def build_milestone_upload_email(project: Project, milestone_day: int) -> tuple[
     admin_url = django_admin_project_url(project)
     end_date = project.end_date.isoformat() if project.end_date else "unknown"
     days_since = days_since_project_end(project) or milestone_day
+    milestones = alert_milestone_days()
+    last_milestone = milestones[-1] if milestones else 120
+    outreach_day = manual_outreach_day()
 
-    if milestone_day >= manual_outreach_day():
-        urgency = "final"
+    if milestone_day >= last_milestone:
         subject = f"[Final notice] Upload project data to Figshare: {project.short_title}"
         deadline_note = (
-            "This is the final automated reminder. NYBG staff will follow up directly "
+            "This is the final automated reminder. NYBG staff may continue follow-up "
             "if linked dataset files are still missing."
         )
-    elif milestone_day >= 60:
-        urgency = "second"
+    elif milestone_day >= outreach_day:
         subject = f"[Reminder] Upload project data to Figshare: {project.short_title}"
-        deadline_note = "Please upload and link your data soon to avoid additional follow-up."
+        deadline_note = (
+            "Please upload and link your data soon. NYBG staff have been notified to "
+            "follow up if deposits remain missing."
+        )
     else:
-        urgency = "first"
         subject = f"[Action needed] Upload project data to Figshare: {project.short_title}"
         deadline_note = "Please upload your datasets and link them from the project record."
 
@@ -140,7 +143,6 @@ Figshare DOI guide: {guide_url}
 Thank you,
 Thain Family Forest data team
 """
-    _ = urgency
     return subject, body
 
 
@@ -149,6 +151,17 @@ def get_active_missing_data_alert(project: Project) -> ProjectAlert | None:
         project.alerts.filter(
             alert_type=ProjectAlert.AlertType.MISSING_DATA_OVERDUE,
             status=ProjectAlert.Status.ACTIVE,
+        )
+        .order_by("-first_triggered_at")
+        .first()
+    )
+
+
+def get_snoozed_missing_data_alert(project: Project) -> ProjectAlert | None:
+    return (
+        project.alerts.filter(
+            alert_type=ProjectAlert.AlertType.MISSING_DATA_OVERDUE,
+            status=ProjectAlert.Status.SNOOZED,
         )
         .order_by("-first_triggered_at")
         .first()
@@ -164,6 +177,11 @@ def get_active_manual_outreach_alert(project: Project) -> ProjectAlert | None:
         .order_by("-first_triggered_at")
         .first()
     )
+
+
+def project_alerts_are_snoozed(project: Project) -> bool:
+    """True when staff snoozed the missing-data pipeline for this project."""
+    return get_snoozed_missing_data_alert(project) is not None
 
 
 def clear_manual_outreach_state(project: Project) -> bool:
@@ -210,9 +228,15 @@ def resolve_missing_data_alert(alert: ProjectAlert, *, note: str) -> None:
 
 
 def ensure_manual_outreach_flag(project: Project, now: datetime) -> ProjectAlert | None:
+    """Keep Project.manual_outreach_* in sync with an active outreach alert at the milestone."""
     outreach_day = manual_outreach_day()
     days_since = days_since_project_end(project, now.date())
-    if days_since is None or days_since < outreach_day or project_has_qualifying_upload(project):
+    if (
+        days_since is None
+        or days_since < outreach_day
+        or project_has_qualifying_upload(project)
+        or project_alerts_are_snoozed(project)
+    ):
         return None
 
     if not project.manual_outreach_required:
@@ -234,3 +258,38 @@ def ensure_manual_outreach_flag(project: Project, now: datetime) -> ProjectAlert
         last_evaluated_at=now,
         resolution_note=f"No linked dataset files {outreach_day} days after project end date.",
     )
+
+
+def snooze_project_alerts(project: Project, *, note: str = "") -> int:
+    """Pause reminder emails and clear the needs-follow-up flag until unsnoozed or data arrives."""
+    now = timezone.now()
+    note = (note or "Snoozed by NYBG staff.").strip()
+    count = 0
+    for alert in project.alerts.filter(status=ProjectAlert.Status.ACTIVE):
+        alert.status = ProjectAlert.Status.SNOOZED
+        alert.last_evaluated_at = now
+        alert.resolution_note = note
+        alert.save(update_fields=["status", "last_evaluated_at", "resolution_note", "updated_at"])
+        count += 1
+    if project.manual_outreach_required or project.manual_outreach_at:
+        project.manual_outreach_required = False
+        project.manual_outreach_at = None
+        project.save(update_fields=["manual_outreach_required", "manual_outreach_at", "updated_at"])
+    return count
+
+
+def unsnooze_project_alerts(project: Project) -> int:
+    """Re-open snoozed alerts so the daily command resumes emails and outreach flagging."""
+    now = timezone.now()
+    count = 0
+    for alert in project.alerts.filter(status=ProjectAlert.Status.SNOOZED):
+        alert.status = ProjectAlert.Status.ACTIVE
+        alert.last_evaluated_at = now
+        alert.resolved_at = None
+        if alert.resolution_note.startswith("Snoozed"):
+            alert.resolution_note = ""
+        alert.save(
+            update_fields=["status", "last_evaluated_at", "resolved_at", "resolution_note", "updated_at"]
+        )
+        count += 1
+    return count

@@ -50,21 +50,26 @@ class Project(models.Model):
             "or Figshare URL in the deposit field when available."
         ),
     )
-    institutional_partners = models.JSONField(default=list, blank=True)
+    institutional_partners = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of Organization primary keys (integers) for partner institutions.",
+    )
     collection_frequency = models.CharField(max_length=120, blank=True)
     update_frequency = models.CharField(max_length=120, blank=True)
     last_updated_note = models.TextField(blank=True)
     manual_outreach_required = models.BooleanField(
         default=False,
         help_text=(
-            "Set automatically when a concluded project reaches 90 days post-end "
-            "without linked dataset files for its Figshare deposit."
+            "Set automatically when a concluded project reaches the manual-outreach "
+            "milestone (default 60 days) without linked dataset files. Cleared when "
+            "data is linked or the related alert is snoozed. NYBG superadmin only."
         ),
     )
     manual_outreach_at = models.DateTimeField(
         null=True,
         blank=True,
-        help_text="When NYBG staff follow-up was flagged after the 90-day milestone.",
+        help_text="When the system flagged this project for NYBG staff follow-up.",
     )
     organization = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="projects")
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="owned_projects")
@@ -109,7 +114,7 @@ class ProjectAlert(models.Model):
     emailed_milestones = models.JSONField(
         default=list,
         blank=True,
-        help_text="Post-end reminder days already emailed for this alert (e.g. [30, 60, 90]).",
+        help_text="Post-end reminder days already emailed for this alert (e.g. [30, 60, 90, 120]).",
     )
     first_triggered_at = models.DateTimeField()
     last_evaluated_at = models.DateTimeField()

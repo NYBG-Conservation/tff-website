@@ -209,6 +209,56 @@ class ProjectApiPermissionTests(APITestCase):
         self.assertEqual(len(manager_response.data), 1)
         self.assertEqual(manager_response.data[0]["id"], self.project_nybg.id)
 
+    def test_external_admin_views_org_projects_but_edits_only_membership(self):
+        partner_org = Organization.objects.create(name="Partner Lab")
+        owner = User.objects.create_user(username="lab_owner", password="pass12345")
+        peer = User.objects.create_user(username="lab_peer", password="pass12345")
+        owner.profile.role = UserProfile.Role.EXTERNAL_ADMIN
+        owner.profile.organization = partner_org
+        owner.profile.save()
+        peer.profile.role = UserProfile.Role.EXTERNAL_ADMIN
+        peer.profile.organization = partner_org
+        peer.profile.save()
+
+        mine = Project.objects.create(
+            short_title="Peer Project",
+            lead_name="Peer",
+            lead_email="peer@partner.org",
+            organization=partner_org,
+            owner=peer,
+        )
+        theirs = Project.objects.create(
+            short_title="Owner Project",
+            lead_name="Owner",
+            lead_email="owner@partner.org",
+            organization=partner_org,
+            owner=owner,
+        )
+
+        self.client.force_authenticate(peer)
+        list_response = self.client.get(reverse("project-list-create"))
+        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+        ids = {item["id"] for item in list_response.data}
+        self.assertEqual(ids, {mine.id, theirs.id})
+        by_id = {item["id"]: item for item in list_response.data}
+        self.assertTrue(by_id[mine.id]["can_edit"])
+        self.assertFalse(by_id[theirs.id]["can_edit"])
+
+        get_theirs = self.client.get(reverse("project-retrieve-update", kwargs={"pk": theirs.id}))
+        self.assertEqual(get_theirs.status_code, status.HTTP_200_OK)
+        self.assertFalse(get_theirs.data["can_edit"])
+
+        patch_theirs = self.client.patch(
+            reverse("project-retrieve-update", kwargs={"pk": theirs.id}),
+            {"short_title": "Hijacked"},
+            format="json",
+        )
+        self.assertEqual(patch_theirs.status_code, status.HTTP_403_FORBIDDEN)
+
+        datasets = self.client.get(reverse("dataset-list-create"))
+        self.assertEqual(datasets.status_code, status.HTTP_200_OK)
+        self.assertEqual(datasets.data, [])
+
     def test_unrelated_user_cannot_edit_project(self):
         self.client.force_authenticate(self.unrelated_user)
         response = self.client.patch(
@@ -377,6 +427,7 @@ class DatasetFileModelTests(TestCase):
 class PublicApiTests(APITestCase):
     def setUp(self):
         self.organization = Organization.objects.create(name="NYBG")
+        self.partner_org = Organization.objects.create(name="Example Partner Lab")
         self.owner = User.objects.create_user(username="public_owner", password="pass12345")
         self.public_project = Project.objects.create(
             slug="public-forest-study",
@@ -387,7 +438,7 @@ class PublicApiTests(APITestCase):
             lead_email="jane@nybg.org",
             shared_publicly=True,
             ongoing=True,
-            institutional_partners=["Example Partner Lab"],
+            institutional_partners=[self.partner_org.id],
             organization=self.organization,
             owner=self.owner,
         )
@@ -642,7 +693,7 @@ class OverdueUploadTests(APITestCase):
         self.assertIn(project.figshare_doi_url, mail.outbox[0].body)
 
     @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
-    def test_manual_outreach_flag_at_90_days(self):
+    def test_manual_outreach_flag_at_60_days(self):
         from datetime import timedelta
 
         from django.core.management import call_command
@@ -654,7 +705,7 @@ class OverdueUploadTests(APITestCase):
             organization=self.organization,
             owner=self.owner,
             ongoing=False,
-            end_date=timezone.localdate() - timedelta(days=95),
+            end_date=timezone.localdate() - timedelta(days=65),
             figshare_doi_url="https://figshare.com/articles/stale/777",
         )
 
@@ -673,7 +724,44 @@ class OverdueUploadTests(APITestCase):
             alert_type=ProjectAlert.AlertType.MISSING_DATA_OVERDUE,
             status=ProjectAlert.Status.ACTIVE,
         )
+        # Catch-up sends one milestone email per run (oldest due first).
         self.assertEqual(missing_alert.emailed_milestones, [30])
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_snooze_pauses_reminders_and_clears_follow_up_flag(self):
+        from datetime import timedelta
+
+        from django.core import mail
+        from django.core.management import call_command
+
+        from apps.datasets.overdue_uploads import snooze_project_alerts
+
+        project = Project.objects.create(
+            short_title="Snoozed Study",
+            lead_name="Pat",
+            lead_email="pat@nybg.org",
+            organization=self.organization,
+            owner=self.owner,
+            ongoing=False,
+            end_date=timezone.localdate() - timedelta(days=65),
+            figshare_doi_url="https://figshare.com/articles/snoozed/111",
+        )
+        call_command("check_overdue_project_uploads")
+        project.refresh_from_db()
+        self.assertTrue(project.manual_outreach_required)
+
+        snooze_project_alerts(project, note="Snoozed by staff.")
+        project.refresh_from_db()
+        self.assertFalse(project.manual_outreach_required)
+        self.assertTrue(
+            project.alerts.filter(status=ProjectAlert.Status.SNOOZED).exists()
+        )
+
+        mail.outbox.clear()
+        call_command("check_overdue_project_uploads")
+        self.assertEqual(len(mail.outbox), 0)
+        project.refresh_from_db()
+        self.assertFalse(project.manual_outreach_required)
 
     def test_overdue_resolves_when_dataset_file_added(self):
         from datetime import timedelta

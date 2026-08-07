@@ -1,8 +1,10 @@
-# Overdue Data Alert Spec (v2)
+# Overdue Data Alert Spec (v3)
 
 ## Goal
 
-Automatically notify project leads when a **concluded** project (discrete `end_date`, not ongoing) still has no linked dataset files for its Figshare deposit — at **30, 60, and 90 days** after the end date. At **90 days**, flag the project for **manual NYBG outreach** if data is still missing.
+Automatically notify project leads when a **concluded** project (discrete `end_date`, not ongoing) still has no linked dataset files for its Figshare deposit — at **30, 60, 90, and 120 days** after the end date. At **60 days**, flag the project for **manual NYBG outreach** if data is still missing.
+
+Follow-up status and alert timeline are visible to **NYBG internal superadmins only**. Alerts are system-generated; superadmins may **snooze** / **unsnooze**, not freely edit rows.
 
 ## Business rule
 
@@ -12,6 +14,7 @@ A project enters the alert pipeline when:
 - `project.end_date` is set
 - `today >= project.end_date + 30 days`
 - **no qualifying data deposit** exists (see below)
+- the project is **not snoozed**
 
 ### Qualifying data deposit
 
@@ -27,26 +30,33 @@ Researchers reserve `figshare_doi_url` at project registration, upload to Figsha
 | Days after `end_date` | Action |
 |----------------------|--------|
 | **30** | First automated email to project lead |
-| **60** | Second reminder email |
-| **90** | Final automated email + **manual outreach flag** |
+| **60** | Second reminder email + **manual outreach flag** |
+| **90** | Third reminder email |
+| **120** | Final automated email |
 
 - One milestone email per daily command run (no duplicate sends).
 - If the cron was down, the next run sends the **oldest unsent** milestone (catch-up one at a time).
 - Ongoing projects and projects without `end_date` are **never** flagged.
+- **Snoozed** projects skip further emails and clear the follow-up flag until unsnoozed or data is linked.
 
-## Manual outreach (90 days)
+## Manual outreach (60 days)
 
-When `today >= end_date + 90 days` and data is still missing:
+When `today >= end_date + 60 days`, data is still missing, and the project is not snoozed:
 
 - `Project.manual_outreach_required = true`
 - `Project.manual_outreach_at` set
 - Active `ProjectAlert` with `alert_type = manual_outreach_required`
 
-NYBG staff use Django admin:
+These fields stay in sync with the alert timeline (cleared on data link or snooze).
+
+NYBG **internal superadmins** use Django admin:
 
 - Filter projects by **Manual outreach required**
-- Review Alerts inline on the project
-- Contact the lead directly; clear the flag when resolved by linking dataset files (automatic) or manually unchecking after outreach
+- Review **Project alerts** (read-only timeline: milestones emailed, timestamps, status)
+- **Snooze** to pause emails and clear the follow-up flag (marks outreach as handled for now)
+- **Unsnooze** to resume the automated pipeline
+
+Other roles do not see the follow-up fields, alert inline, or Project alerts module.
 
 ## Scheduler + command
 
@@ -60,40 +70,33 @@ Run **daily** (cron on EC2). On production:
 docker compose -f docker-compose.prod.yml exec backend python backend/manage.py check_overdue_project_uploads
 ```
 
-When data is linked, active `missing_data_overdue` and `manual_outreach_required` alerts are **resolved** automatically.
+When data is linked, active/snoozed `missing_data_overdue` and `manual_outreach_required` alerts are **resolved** automatically.
 
 ## Configuration
 
 | Setting | Default | Purpose |
 |---------|---------|---------|
-| `PROJECT_ALERT_MILESTONE_DAYS` | `30,60,90` | Comma-separated reminder days after `end_date` |
-| `PROJECT_MANUAL_OUTREACH_DAY` | `90` | Day to flag manual outreach (should match last milestone) |
+| `PROJECT_ALERT_MILESTONE_DAYS` | `30,60,90,120` | Comma-separated reminder days after `end_date` |
+| `PROJECT_MANUAL_OUTREACH_DAY` | `60` | Day to flag manual outreach (must be one of the milestones) |
 | `DEFAULT_FROM_EMAIL` | — | Sender for milestone emails |
 | `DJANGO_API_PUBLIC_URL` | — | Admin links in email bodies |
 
-Legacy `PROJECT_OVERDUE_DAYS` / `PROJECT_ALERT_REMINDER_DAYS` are superseded by milestone days (no more every-7-day reminders).
+Legacy `PROJECT_OVERDUE_DAYS` / `PROJECT_ALERT_REMINDER_DAYS` are superseded by milestone days.
 
 ## API fields (`ProjectSerializer`)
+
+Exposed only to **internal superadmins**:
 
 - `is_overdue_missing_data`
 - `overdue_days` (days past first milestone)
 - `days_since_project_end`
 - `manual_outreach_required`
 - `manual_outreach_at`
-- `emailed_milestones` (e.g. `[30, 60]`)
-- `active_alert_id`, `last_alert_emailed_at`
+- `active_alert_id`
+- `last_alert_emailed_at`
+- `emailed_milestones`
 
-## Data model
+## Data model notes
 
-- **`ProjectAlert`**: `missing_data_overdue`, `manual_outreach_required`; `emailed_milestones` JSON list
-- **`Project`**: `manual_outreach_required`, `manual_outreach_at`
-
-## Figshare DOI requirement
-
-Every new project requires `figshare_doi_url`. Guide: [How to reserve a DOI in Figshare](https://info.figshare.com/user-guide/how-to-reserve-a-doi/).
-
----
-
-## v1 history (superseded)
-
-v1 used a single 30-day threshold and repeated emails every 7 days. v2 replaces that with fixed 30/60/90 milestones and the manual outreach flag.
+- **`ProjectAlert`**: `missing_data_overdue`, `manual_outreach_required`; statuses `active` / `snoozed` / `resolved`; `emailed_milestones` JSON list
+- **`Project`**: `manual_outreach_required`, `manual_outreach_at` (system-owned; not manually editable)

@@ -14,8 +14,8 @@ from apps.datasets.overdue_uploads import (
     ensure_manual_outreach_flag,
     get_project_recipient_email,
     manual_outreach_day,
-    milestones_due_for_email,
     next_milestone_to_email,
+    project_alerts_are_snoozed,
     project_has_qualifying_upload,
     project_is_concluded_with_end_date,
     resolve_missing_data_alert,
@@ -26,8 +26,8 @@ logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
     help = (
-        "Email project leads at 30/60/90 days post-end without linked Figshare data; "
-        "flag manual outreach at 90 days."
+        "Email project leads at 30/60/90/120 days post-end without linked Figshare data; "
+        "flag manual outreach at 60 days. Skips snoozed projects."
     )
 
     def handle(self, *args, **options):
@@ -39,6 +39,7 @@ class Command(BaseCommand):
         milestone_emails_sent = 0
         manual_outreach_flagged = 0
         resolved = 0
+        skipped_snoozed = 0
         skipped_no_recipient = 0
 
         candidates = Project.objects.filter(ongoing=False, end_date__isnull=False).select_related("owner")
@@ -51,19 +52,39 @@ class Command(BaseCommand):
             if days_since is None:
                 continue
 
+            if project_has_qualifying_upload(project):
+                active_alert = ProjectAlert.objects.filter(
+                    project=project,
+                    alert_type=ProjectAlert.AlertType.MISSING_DATA_OVERDUE,
+                    status__in=[ProjectAlert.Status.ACTIVE, ProjectAlert.Status.SNOOZED],
+                ).first()
+                if active_alert:
+                    resolve_missing_data_alert(
+                        active_alert, note="Qualifying dataset files linked to Figshare deposit."
+                    )
+                    resolved += 1
+                # Resolve any remaining active/snoozed outreach rows
+                for outreach in project.alerts.filter(
+                    alert_type=ProjectAlert.AlertType.MANUAL_OUTREACH_REQUIRED,
+                    status__in=[ProjectAlert.Status.ACTIVE, ProjectAlert.Status.SNOOZED],
+                ):
+                    resolve_missing_data_alert(
+                        outreach, note="Qualifying dataset files linked to Figshare deposit."
+                    )
+                    resolved += 1
+                if clear_manual_outreach_state(project):
+                    resolved += 1
+                continue
+
+            if project_alerts_are_snoozed(project):
+                skipped_snoozed += 1
+                continue
+
             active_alert = ProjectAlert.objects.filter(
                 project=project,
                 alert_type=ProjectAlert.AlertType.MISSING_DATA_OVERDUE,
                 status=ProjectAlert.Status.ACTIVE,
             ).first()
-
-            if project_has_qualifying_upload(project):
-                if active_alert:
-                    resolve_missing_data_alert(active_alert, note="Qualifying dataset files linked to Figshare deposit.")
-                    resolved += 1
-                if clear_manual_outreach_state(project):
-                    resolved += 1
-                continue
 
             first_milestone = alert_milestone_days()[0] if alert_milestone_days() else 30
             if days_since < first_milestone:
@@ -117,7 +138,7 @@ class Command(BaseCommand):
                 f"checked={checked}, newly_flagged={newly_flagged}, "
                 f"milestone_emails_sent={milestone_emails_sent}, "
                 f"manual_outreach_flagged={manual_outreach_flagged}, resolved={resolved}, "
-                f"skipped_no_recipient={skipped_no_recipient}, "
+                f"skipped_snoozed={skipped_snoozed}, skipped_no_recipient={skipped_no_recipient}, "
                 f"milestones={alert_milestone_days()}, manual_outreach_day={manual_outreach_day()}"
             )
         )

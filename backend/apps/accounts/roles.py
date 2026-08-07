@@ -55,6 +55,7 @@ def user_home_organization(user) -> Organization | None:
 
 
 def scoped_projects_filter(user) -> Q:
+    """Projects visible in list/retrieve (may be broader than edit rights)."""
     role = get_role(user)
     if role == UserProfile.Role.INTERNAL_SUPERADMIN:
         return Q()
@@ -65,10 +66,17 @@ def scoped_projects_filter(user) -> Q:
         if not org:
             return Q(pk__in=[])
         return Q(organization=org)
+    if role == UserProfile.Role.EXTERNAL_ADMIN:
+        # Org-wide visibility; edit still limited by can_edit_project.
+        org = user_home_organization(user)
+        if org:
+            return Q(organization=org)
+        return Q(owner=user) | Q(managers=user)
     return Q(owner=user) | Q(managers=user)
 
 
 def scoped_datasets_filter(user) -> Q:
+    """Datasets the user may list — always membership-scoped for external_admin."""
     role = get_role(user)
     if role == UserProfile.Role.INTERNAL_SUPERADMIN:
         return Q()
@@ -80,6 +88,17 @@ def scoped_datasets_filter(user) -> Q:
             return Q(pk__in=[])
         return Q(organization=org)
     return Q(owner=user) | Q(project__managers=user)
+
+
+def can_view_project(user, project) -> bool:
+    """Read access: external_admin may view any project in their organization."""
+    if can_edit_project(user, project):
+        return True
+    role = get_role(user)
+    if role == UserProfile.Role.EXTERNAL_ADMIN:
+        org = user_home_organization(user)
+        return bool(org and project.organization_id == org.id)
+    return False
 
 
 def can_edit_project(user, project) -> bool:

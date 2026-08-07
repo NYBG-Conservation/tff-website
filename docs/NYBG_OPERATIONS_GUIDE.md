@@ -272,7 +272,7 @@ There are **two separate concepts**:
 | `internal_superadmin` | Platform owner | Everything | Everything; can assign roles |
 | `internal_admin` | NYBG team admin | NYBG organization records | NYBG organization records |
 | `external_superadmin` | Partner org lead | Their organization | Their organization |
-| `external_admin` | External researcher | Owned + managed projects | Owned + managed projects |
+| `external_admin` | External researcher | All projects in home organization | Owned + team-member projects only |
 
 Full API matrix: [backend/API_CONTRACT.md](../backend/API_CONTRACT.md).
 
@@ -352,9 +352,9 @@ Path: **Datasets → Projects**
 | Organization | Scoping + metadata |
 | **Figshare item URL / reserved DOI** | **Required for new projects** — data deposit on Figshare ([how to reserve a DOI](https://info.figshare.com/user-guide/how-to-reserve-a-doi/)) |
 
-**Inlines on project:** Publications, Managers, Alerts.
+**Inlines on project:** Publications, Team members; **Alerts** (NYBG superadmin only — read-only timeline + snooze).
 
-When a concluded project (not ongoing, with an `end_date`) has no linked dataset files for its Figshare deposit, automated reminders go to the project lead at **30, 60, and 90 days** after the end date. At **90 days**, `manual_outreach_required` is set for NYBG staff follow-up. Run daily on production:
+When a concluded project (not ongoing, with an `end_date`) has no linked dataset files for its Figshare deposit, automated reminders go to the project lead at **30, 60, 90, and 120 days** after the end date. At **60 days**, `manual_outreach_required` is set for NYBG **internal superadmin** follow-up (visible only to that role; snooze from Project alerts). Run daily on production:
 
 ```bash
 docker compose -f docker-compose.prod.yml exec backend python backend/manage.py check_overdue_project_uploads

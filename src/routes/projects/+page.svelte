@@ -91,6 +91,7 @@
 	};
 
 	$: selectedProject = projects.find((project) => project.id === selectedProjectId) ?? null;
+	$: canEditSelected = !selectedProject || selectedProject.can_edit !== false;
 	$: visibleDatasets = selectedProject
 		? datasets.filter((dataset: { project?: number }) => dataset.project === selectedProject.id)
 		: [];
@@ -220,6 +221,27 @@
 		} finally {
 			savingProject = false;
 		}
+	}
+
+	let partnerSelectId = 0;
+
+	function addInstitutionalPartner() {
+		if (!partnerSelectId) return;
+		const current = projectForm.institutional_partners ?? [];
+		if (!current.includes(partnerSelectId)) {
+			projectForm.institutional_partners = [...current, partnerSelectId];
+		}
+		partnerSelectId = 0;
+	}
+
+	function removeInstitutionalPartner(orgId: number) {
+		projectForm.institutional_partners = (projectForm.institutional_partners ?? []).filter(
+			(id) => id !== orgId
+		);
+	}
+
+	function partnerName(orgId: number): string {
+		return organizations.find((org) => org.id === orgId)?.name ?? `Organization #${orgId}`;
 	}
 
 	async function handleAddManager() {
@@ -375,7 +397,14 @@
 			</div>
 
 			<div class="panel">
-				<h2>{selectedProject ? 'Edit Project' : 'Create Project'}</h2>
+				<h2>{selectedProject ? (canEditSelected ? 'Edit Project' : 'View Project') : 'Create Project'}</h2>
+				{#if selectedProject && !canEditSelected}
+					<p class="hint">
+						You can view this organization project, but only owners and team members can edit it or
+						manage its datasets.
+					</p>
+				{/if}
+				<fieldset class="project-fields" disabled={selectedProject && !canEditSelected}>
 				<div class="form-grid">
 					<label>Short title<input bind:value={projectForm.short_title} /></label>
 					{#if selectedProject?.slug}
@@ -462,16 +491,39 @@
 					</button>
 				</div>
 				<label class="full-width">
-					Institutional partners (comma separated)
-					<input
-						value={projectForm.institutional_partners?.join(', ') ?? ''}
-						on:input={(event) =>
-							(projectForm.institutional_partners = event.currentTarget.value
-								.split(',')
-								.map((item) => item.trim())
-								.filter(Boolean))}
-					/>
+					Institutional partners
+					<select bind:value={partnerSelectId}>
+						<option value={0}>Select an organization to add…</option>
+						{#each organizations as org}
+							<option value={org.id} disabled={(projectForm.institutional_partners ?? []).includes(org.id)}>
+								{org.name}
+							</option>
+						{/each}
+					</select>
 				</label>
+				<div class="partner-actions">
+					<button
+						type="button"
+						on:click={addInstitutionalPartner}
+						disabled={!partnerSelectId || !canEditSelected}
+					>
+						Add partner
+					</button>
+				</div>
+				<ul class="partner-list">
+					{#each projectForm.institutional_partners ?? [] as orgId}
+						<li>
+							<span>{partnerName(orgId)}</span>
+							{#if canEditSelected}
+								<button type="button" on:click={() => removeInstitutionalPartner(orgId)}>Remove</button>
+							{/if}
+						</li>
+					{/each}
+				</ul>
+				<p class="field-note">
+					Partners come from Organizations. Use “Add new organization” above if yours is missing, then add it
+					here.
+				</p>
 				<label class="full-width">
 					Last updated note
 					<textarea rows="2" bind:value={projectForm.last_updated_note}></textarea>
@@ -532,15 +584,16 @@
 					<button
 						type="button"
 						on:click={saveProject}
-						disabled={savingProject || !projectForm.short_title || !projectForm.lead_name?.trim() || !projectForm.lead_email?.trim() || !projectForm.organization || (!selectedProject && !projectForm.plans_own_doi && !projectForm.figshare_doi_url?.trim())}
+						disabled={!canEditSelected || savingProject || !projectForm.short_title || !projectForm.lead_name?.trim() || !projectForm.lead_email?.trim() || !projectForm.organization || (!selectedProject && !projectForm.plans_own_doi && !projectForm.figshare_doi_url?.trim())}
 					>
 						{savingProject ? 'Saving...' : selectedProject ? 'Save changes' : 'Create project'}
 					</button>
 				</div>
+				</fieldset>
 			</div>
 		</div>
 
-		{#if selectedProject}
+		{#if selectedProject && canEditSelected}
 			<div class="grid lower">
 				<div class="panel">
 					<h2>Team members</h2>
@@ -554,11 +607,14 @@
 					</div>
 					<ul class="manager-list">
 						{#each selectedProject.managers ?? [] as manager}
-							<li>
-								<span>{manager.username}</span>
-								<button type="button" on:click={() => handleRemoveManager(manager.user)}>Remove</button>
+							<li class="team-member-row">
+								<span class="team-member-name">{manager.username}</span>
+								<span class="team-member-meta">Added by {manager.added_by_username || '—'}</span>
 							</li>
 						{/each}
+						{#if !(selectedProject.managers ?? []).length}
+							<li class="team-member-row empty">No team members yet.</li>
+						{/if}
 					</ul>
 				</div>
 
@@ -717,6 +773,17 @@
 		padding: 1rem;
 		min-width: 0;
 		overflow-x: clip;
+	}
+
+	.project-fields {
+		border: 0;
+		margin: 0;
+		padding: 0;
+		min-width: 0;
+	}
+
+	.project-fields:disabled {
+		opacity: 0.85;
 	}
 
 	.panel-header {
@@ -917,11 +984,45 @@
 	}
 
 	.manager-list li,
-	.dataset-list li {
+	.dataset-list li,
+	.partner-list li {
 		padding: 0.45rem 0;
 		border-top: 1px solid rgba(0, 0, 0, 0.08);
 		display: flex;
 		justify-content: space-between;
+		align-items: baseline;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+	}
+
+	.partner-list {
+		list-style: none;
+		padding: 0;
+		margin: 0.5rem 0 0;
+	}
+
+	.partner-actions {
+		margin-top: 0.45rem;
+	}
+
+	.team-member-row {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.15rem;
+	}
+
+	.team-member-name {
+		font-family: 'GT Super Bold', serif;
+	}
+
+	.team-member-meta {
+		font-size: 0.85rem;
+		color: #5a5a5a;
+	}
+
+	.team-member-row.empty {
+		color: #666;
+		font-family: 'GT Super Regular', serif;
 	}
 
 	.upload-governance {

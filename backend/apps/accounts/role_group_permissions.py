@@ -35,10 +35,14 @@ _VIEW_ONLY_MODELS: tuple[tuple[str, str], ...] = (
     ("organizations", "organization"),
 )
 
-# NYBG internal editors also manage overdue alerts and research applications in admin.
+# NYBG internal editors also manage research applications in admin.
 _INTERNAL_EXTRA_MODELS: tuple[tuple[str, str], ...] = (
-    ("datasets", "projectalert"),
     ("applications", "researchapplication"),
+)
+
+# Overdue upload alerts / follow-up timeline — NYBG superadmins only.
+_SUPERADMIN_EXTRA_MODELS: tuple[tuple[str, str], ...] = (
+    ("datasets", "projectalert"),
 )
 
 _CRUD = ("add", "change", "delete", "view")
@@ -58,6 +62,7 @@ def permissions_for_role_group(group_name: str) -> list[Permission]:
         specs.extend((app, model, _CRUD) for app, model in _INTERNAL_EXTRA_MODELS)
 
     if group_name == INTERNAL_SUPERADMIN_GROUP:
+        specs.extend((app, model, ("view", "change")) for app, model in _SUPERADMIN_EXTRA_MODELS)
         # Superadmins who are not Django is_superuser still need profile tools.
         specs.extend(
             [

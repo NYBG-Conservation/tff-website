@@ -281,6 +281,15 @@ class Command(BaseCommand):
                 raise CommandError(f"Project '{payload['short_title']}' is missing a slug.")
 
             defaults = {**payload, "organization": organization, "owner": owner, "slug": slug}
+            partner_names = defaults.pop("institutional_partners", []) or []
+            partner_ids: list[int] = []
+            for partner_name in partner_names:
+                if isinstance(partner_name, int):
+                    partner_ids.append(partner_name)
+                    continue
+                partner_org, _ = Organization.objects.get_or_create(name=str(partner_name))
+                partner_ids.append(partner_org.id)
+            defaults["institutional_partners"] = partner_ids
             keeper, _, deleted = consolidate_projects_for_slug(slug)
             if deleted:
                 consolidated += deleted

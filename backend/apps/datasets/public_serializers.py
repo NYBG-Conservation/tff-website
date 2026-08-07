@@ -121,6 +121,7 @@ class PublicProjectSerializer(serializers.ModelSerializer):
     description_paragraphs = serializers.SerializerMethodField()
     dataset_ids = serializers.SerializerMethodField()
     organization_name = serializers.CharField(source="organization.name", read_only=True)
+    institutional_partners = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
@@ -140,6 +141,23 @@ class PublicProjectSerializer(serializers.ModelSerializer):
             "collection_frequency",
             "update_frequency",
         )
+
+    def get_institutional_partners(self, obj: Project) -> list[str]:
+        """Public site still gets partner display names."""
+        from apps.organizations.models import Organization
+
+        raw = obj.institutional_partners or []
+        ids: list[int] = []
+        for item in raw:
+            if isinstance(item, int) or (isinstance(item, str) and str(item).isdigit()):
+                ids.append(int(item))
+            elif isinstance(item, str) and item.strip():
+                # Legacy string fallback if migration missed a row
+                return [str(x) for x in raw if isinstance(x, str) and x.strip()]
+        if not ids:
+            return []
+        names = {org.id: org.name for org in Organization.objects.filter(pk__in=ids)}
+        return [names[org_id] for org_id in ids if org_id in names]
 
     def get_description_paragraphs(self, obj: Project) -> list[str]:
         if obj.description:
