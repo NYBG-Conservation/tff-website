@@ -166,49 +166,6 @@ class ProjectManagerInline(admin.TabularInline):
         return super().has_delete_permission(request, obj)
 
 
-class ProjectAlertInline(admin.StackedInline):
-    model = ProjectAlert
-    extra = 0
-    can_delete = False
-    show_change_link = True
-    fieldsets = (
-        (
-            None,
-            {
-                "fields": (
-                    "alert_type",
-                    "status",
-                    "emailed_milestones",
-                    "first_triggered_at",
-                    "last_emailed_at",
-                    "last_evaluated_at",
-                    "resolved_at",
-                    "resolution_note",
-                )
-            },
-        ),
-    )
-    readonly_fields = (
-        "alert_type",
-        "status",
-        "emailed_milestones",
-        "first_triggered_at",
-        "last_emailed_at",
-        "last_evaluated_at",
-        "resolved_at",
-        "resolution_note",
-    )
-
-    def has_add_permission(self, request, obj=None):
-        return False
-
-    def has_change_permission(self, request, obj=None):
-        return is_internal_superadmin(request.user)
-
-    def has_view_permission(self, request, obj=None):
-        return is_internal_superadmin(request.user)
-
-
 class ProjectAdminForm(forms.ModelForm):
     institutional_partner_orgs = forms.ModelMultipleChoiceField(
         queryset=Organization.objects.all().order_by("name"),
@@ -318,7 +275,9 @@ class ProjectAdmin(admin.ModelAdmin):
     list_filter = ("organization", "shared_publicly", "ongoing")
     search_fields = ("short_title", "slug", "full_title", "lead_name", "lead_email", "organization__name", "owner__username")
     readonly_fields = ("slug", "manual_outreach_required", "manual_outreach_at")
-    inlines = [ProjectFileInline, ProjectPublicationInline, ProjectManagerInline, ProjectAlertInline]
+    # Project alerts are system-managed; edit/snooze them under Project alerts, not here.
+    # Including that inline previously caused a 500 on save (formset skipped → missing new_objects).
+    inlines = [ProjectFileInline, ProjectPublicationInline, ProjectManagerInline]
 
     def save_model(self, request, obj, form, change):
         if not change or not obj.owner_id:
@@ -355,15 +314,6 @@ class ProjectAdmin(admin.ModelAdmin):
                 ),
             )
         return fieldsets
-
-    def get_inline_instances(self, request, obj=None):
-        inlines = super().get_inline_instances(request, obj)
-        if not is_internal_superadmin(request.user):
-            inlines = [inline for inline in inlines if not isinstance(inline, ProjectAlertInline)]
-        # Alerts are system-managed and only exist on saved projects.
-        if obj is None:
-            inlines = [inline for inline in inlines if not isinstance(inline, ProjectAlertInline)]
-        return inlines
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -421,13 +371,6 @@ class ProjectAdmin(admin.ModelAdmin):
             formset.save_m2m()
             for obj in formset.deleted_objects:
                 obj.delete()
-            return
-        # Alerts are system-managed; never save inline edits.
-        # Still set formset tracking attrs so construct_change_message does not 500.
-        if formset.model is ProjectAlert:
-            formset.new_objects = []
-            formset.changed_objects = []
-            formset.deleted_objects = []
             return
         super().save_formset(request, form, formset, change)
 
