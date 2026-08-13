@@ -26,13 +26,12 @@ def normalize_figshare_doi_url(value: str) -> str:
     return (value or "").strip()
 
 
-def validate_figshare_doi_url(value: str, *, required: bool = True) -> str:
+def validate_figshare_doi_url(value: str, *, required: bool = False) -> str:
     normalized = normalize_figshare_doi_url(value)
     if not normalized:
         if required:
             raise ValidationError(
-                "A Figshare item URL or reserved DOI link is required for every new project "
-                "(or check “I plan to publish this data with my own DOI”). "
+                "A Figshare item URL or reserved DOI link is required. "
                 f"See {figshare_doi_guide_url()} for Figshare instructions."
             )
         return ""

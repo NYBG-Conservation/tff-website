@@ -255,12 +255,9 @@ class ProjectAdminForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        plans_own_doi = cleaned.get("plans_own_doi", getattr(self.instance, "plans_own_doi", False))
-        is_new = not self.instance.pk
         value = cleaned.get("figshare_doi_url", "")
-        required = is_new and not plans_own_doi
         try:
-            cleaned["figshare_doi_url"] = validate_figshare_doi_url(value, required=required)
+            cleaned["figshare_doi_url"] = validate_figshare_doi_url(value, required=False)
         except DjangoValidationError as exc:
             self.add_error("figshare_doi_url", exc)
         return cleaned
@@ -306,9 +303,10 @@ class ProjectAdmin(admin.ModelAdmin):
             {
                 "fields": ("plans_own_doi", "figshare_doi_url"),
                 "description": (
-                    "By default, reserve a DOI in Figshare before data collection "
-                    f"({figshare_doi_guide_url()}). Check “plans own DOI” only if you will "
-                    "publish the data under your own DOI instead."
+                    "Optional. You may reserve a DOI in Figshare "
+                    f"({figshare_doi_guide_url()}) and paste the item or doi.org URL here, "
+                    "or leave blank and add it later. Check “plans own DOI” if you expect "
+                    "to publish under a journal / Dryad / Zenodo DOI instead."
                 ),
             },
         ),

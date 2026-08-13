@@ -382,10 +382,9 @@
 			</p>
 
 			<p class="body-paragraph">
-				All Forest research projects should reserve a data DOI before field work begins—usually via
-				Figshare. If you will publish under your own DOI instead, note that when creating your project in
-				admin. Upload data to the deposit as it becomes available, then link files or the deposit URL from
-				your project record.
+				When you are ready to share data, you may reserve a DOI via Figshare (or another repository)
+				and link the deposit from your project record. Upload data to the deposit as it becomes
+				available, then attach files or the deposit URL under project files.
 				<a href={FIGSHARE_DOI_GUIDE_URL} target="_blank" rel="noopener noreferrer">
 					How to reserve a DOI in Figshare
 				</a>.

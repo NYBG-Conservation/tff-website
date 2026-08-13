@@ -654,16 +654,16 @@ class OverdueUploadTests(APITestCase):
         self.owner = User.objects.create_user(username="overdue_owner", password="pass12345", email="owner@nybg.org")
         self.client.force_authenticate(self.owner)
 
-    def test_project_create_requires_figshare_url(self):
+    def test_project_create_allows_empty_figshare_url(self):
         payload = {
-            "short_title": "No Figshare",
+            "short_title": "No Figshare Yet",
             "lead_name": "Pat",
             "lead_email": "pat@nybg.org",
             "organization": self.organization.id,
         }
         response = self.client.post(reverse("project-list-create"), payload, format="json")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("figshare_doi_url", response.data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["figshare_doi_url"], "")
 
     def test_project_create_allows_own_doi_opt_out(self):
         payload = {
@@ -678,17 +678,20 @@ class OverdueUploadTests(APITestCase):
         self.assertTrue(response.data["plans_own_doi"])
         self.assertEqual(response.data["figshare_doi_url"], "")
 
-    def test_project_create_still_requires_figshare_when_not_opting_out(self):
+    def test_project_create_accepts_optional_figshare_url(self):
         payload = {
-            "short_title": "Needs Figshare",
+            "short_title": "With Figshare",
             "lead_name": "Pat",
             "lead_email": "pat@nybg.org",
             "organization": self.organization.id,
-            "plans_own_doi": False,
+            "figshare_doi_url": "https://figshare.com/articles/example/12345678",
         }
         response = self.client.post(reverse("project-list-create"), payload, format="json")
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("figshare_doi_url", response.data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(
+            response.data["figshare_doi_url"],
+            "https://figshare.com/articles/example/12345678",
+        )
 
     @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
     def test_overdue_command_flags_project_and_sends_email(self):

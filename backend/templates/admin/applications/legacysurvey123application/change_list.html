@@ -1,0 +1,24 @@
+{% extends "admin/change_list.html" %}
+
+{% block content_title %}
+  <h1>Survey123 legacy backlog</h1>
+{% endblock %}
+
+{% block result_list %}
+  <div class="module" style="margin-bottom: 1rem; padding: 0.85rem 1rem; background: #f8faf8; border: 1px solid #d5e0d5;">
+    <p style="margin: 0 0 0.5rem;">
+      <strong>{{ legacy_total }}</strong> imported rows —
+      <strong>{{ legacy_not_invited }}</strong> not invited,
+      <strong>{{ legacy_pending }}</strong> invite pending,
+      <strong>{{ legacy_accepted }}</strong> claimed.
+    </p>
+    <p style="margin: 0; color: #444; font-size: 0.92rem;">
+      Import (idempotent on Survey123 GlobalID):
+      <code>python backend/manage.py import_survey123_applications /path/to/export.csv</code>
+      Then select rows → <strong>Invite to portal</strong>. Applicants get a claim email;
+      claiming creates their account and autopopulates a Project from this application
+      (they do not re-fill the apply form).
+    </p>
+  </div>
+  {{ block.super }}
+{% endblock %}

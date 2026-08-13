@@ -351,7 +351,7 @@ Path: **Datasets → Projects**
 | Institutional partners | Shown in project modal |
 | Lead name / email | Shown in project modal |
 | Organization | Scoping + metadata |
-| **Figshare item URL / reserved DOI** | **Required for new projects** — data deposit on Figshare ([how to reserve a DOI](https://info.figshare.com/user-guide/how-to-reserve-a-doi/)) |
+| **Figshare item URL / reserved DOI** | Optional — data deposit on Figshare or doi.org ([how to reserve a DOI](https://info.figshare.com/user-guide/how-to-reserve-a-doi/)) |
 
 **Inlines on project:** Project files, Publications, Team members; **Alerts** (NYBG superadmin only — read-only timeline + snooze).
 
@@ -459,18 +459,41 @@ Public applicants submit at `/research/apply` → `POST /api/public/research-app
 | SMTP | Same `DEFAULT_FROM_EMAIL` / email backend as overdue upload alerts |
 | `FRONTEND_URL` | Base for invite claim links (`/research/claim/{token}`) |
 | Admin review | Status: submitted → under_review → approved / declined / withdrawn |
-| Approve & invite | Confirm Organization (set on apply form), then **Approve & send portal invite** |
+| Approve & invite | **Approve & send portal invite** — auto-matches/creates **Organization** from Institution if unset |
 | Org on apply | Applicant selects existing or enters a new name (`get_or_create`); staff can still change Organization in admin |
 | Status-only approve | **Mark approved** sets status without invite (short visits, no portal) |
 | Claim | Applicant creates username/password → `external_admin` user + Project shell (`plans_own_doi=True`) |
-| Legacy import | `import_survey123_applications /path/to/export.csv` (idempotent on Survey123 `GlobalID`) |
+| Legacy import | See [Survey123 legacy backlog](#survey123-legacy-backlog) below |
 
 Smoke test after deploy:
 
 1. Submit a test application on staging (select or add an organization); confirm admin row + notify inbox.
-2. Confirm Organization is set; run **Approve & send portal invite**; confirm invite email.
+2. Run **Approve & send portal invite**; confirm invite email.
 3. Open claim link; create username/password; confirm Project appears owned by the new user.
 4. Optional: mark another test row declined/withdrawn.
+
+### Survey123 legacy backlog
+
+Absorb past Survey123 applicants without asking them to re-fill `/research/apply`.
+
+1. **Import** (idempotent on Survey123 `GlobalID`):
+
+```bash
+python backend/manage.py import_survey123_applications /path/to/export.csv
+# optional refresh of existing rows:
+python backend/manage.py import_survey123_applications /path/to/export.csv --update
+```
+
+2. In Django admin open **Research applications → Survey123 legacy backlog**.
+3. Filter by invite state (not invited / pending / accepted). Review applicant, institution, and project title.
+4. Select rows → **Invite to portal (auto-org from Institution)**  
+   - Creates/matches Organization from free-text Institution if needed  
+   - Approves the application  
+   - Emails a **legacy** claim link (copy explains they need not re-apply)  
+5. Optional: **Create org from Institution only** (no email) to preview orgs first; **Resend portal invite** if the link expired.
+6. When the researcher claims the link, the portal creates their `external_admin` account and autopopulates a **Project** from the imported application fields.
+
+Do **not** bulk-invite every historical row — only people who should get portal access.
 
 ### `/data` features
 
@@ -608,9 +631,9 @@ When ready:
 
 ### Add a new research project to the public site
 
-1. Reserve a Figshare DOI for the project ([Figshare guide](https://info.figshare.com/user-guide/how-to-reserve-a-doi/))
-2. Admin → Projects → Add
-3. Fill title, summary, description, organization, ongoing, partners, **Figshare item URL**
+1. Admin → Projects → Add
+2. Fill title, lead, organization, summary, description, ongoing, partners
+3. Optionally add a Figshare item URL ([Figshare guide](https://info.figshare.com/user-guide/how-to-reserve-a-doi/))
 4. Check **Shared publicly**
 5. Save
 6. Optionally add datasets and publications
@@ -641,7 +664,7 @@ When ready:
 
 1. Create user in admin; assign `external_admin` or `external_superadmin` and link **Organization**
 2. Share [EXTERNAL_PARTNER_GUIDE.md](EXTERNAL_PARTNER_GUIDE.md) and admin login URL
-3. Partner reserves Figshare DOI before creating their first project
+3. Partner may optionally add a Figshare DOI when they have a data deposit
 
 ### Refresh sample data after git pull
 

@@ -39,6 +39,7 @@ _VIEW_ONLY_MODELS: tuple[tuple[str, str], ...] = (
 # NYBG internal editors also manage research applications in admin.
 _INTERNAL_EXTRA_MODELS: tuple[tuple[str, str], ...] = (
     ("applications", "researchapplication"),
+    ("applications", "legacysurvey123application"),
 )
 
 # Overdue upload alerts / follow-up timeline — NYBG superadmins only.

@@ -437,27 +437,21 @@
 						I plan to publish this data with my own DOI
 					</label>
 					<p class="field-note">
-						Check this to create the project without a Figshare reservation (e.g. journal, Dryad, Zenodo DOI).
-						You can still paste a doi.org or Figshare URL below when you have it.
+						Optional note (e.g. journal, Dryad, Zenodo). You can leave the deposit URL blank and add it later.
 					</p>
 					<label>
-						Figshare item URL or reserved DOI
+						Figshare item URL or reserved DOI (optional)
 						<input
 							type="url"
 							bind:value={projectForm.figshare_doi_url}
 							placeholder="https://figshare.com/articles/..."
-							required={!selectedProject && !projectForm.plans_own_doi}
 						/>
 					</label>
 					<p class="field-note">
-						{#if projectForm.plans_own_doi}
-							Optional while using your own DOI. Prefer a doi.org link when available.
-						{:else}
-							Required for new projects unless you opt out above. Reserve a DOI first —
-							<a href={FIGSHARE_DOI_GUIDE_URL} target="_blank" rel="noopener noreferrer">
-								How to reserve a DOI in Figshare
-							</a>.
-						{/if}
+						Optional. If you use Figshare, reserve a DOI when ready —
+						<a href={FIGSHARE_DOI_GUIDE_URL} target="_blank" rel="noopener noreferrer">
+							How to reserve a DOI in Figshare
+						</a>. Prefer a figshare.com or doi.org link.
 					</p>
 					<label>Collection frequency<input bind:value={projectForm.collection_frequency} /></label>
 					<label>Update frequency<input bind:value={projectForm.update_frequency} /></label>
@@ -584,7 +578,7 @@
 					<button
 						type="button"
 						on:click={saveProject}
-						disabled={!canEditSelected || savingProject || !projectForm.short_title || !projectForm.lead_name?.trim() || !projectForm.lead_email?.trim() || !projectForm.organization || (!selectedProject && !projectForm.plans_own_doi && !projectForm.figshare_doi_url?.trim())}
+						disabled={!canEditSelected || savingProject || !projectForm.short_title || !projectForm.lead_name?.trim() || !projectForm.lead_email?.trim() || !projectForm.organization}
 					>
 						{savingProject ? 'Saving...' : selectedProject ? 'Save changes' : 'Create project'}
 					</button>

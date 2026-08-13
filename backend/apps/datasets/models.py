@@ -42,16 +42,16 @@ class Project(models.Model):
         max_length=500,
         blank=True,
         help_text=(
-            "Figshare item URL or reserved DOI link for this project's data deposit. "
-            "Required when creating a new project unless “plans own DOI” is checked."
+            "Optional. Figshare item URL or reserved DOI link for this project's data deposit "
+            "(figshare.com or doi.org)."
         ),
     )
     plans_own_doi = models.BooleanField(
         default=False,
         help_text=(
-            "Opt out of the Figshare reservation requirement: I plan to publish this data "
-            "with my own DOI (e.g. journal, Dryad, Zenodo). You can still paste a doi.org "
-            "or Figshare URL in the deposit field when available."
+            "Optional note: check if you plan to publish this data under your own DOI "
+            "(e.g. journal, Dryad, Zenodo) rather than Figshare. You can still paste a "
+            "doi.org or Figshare URL in the deposit field when available."
         ),
     )
     institutional_partners = models.JSONField(

@@ -43,16 +43,14 @@ You cannot see the rest of your institution's private records -- if you'd like t
 ```text
 Research approval (NYBG) → Portal account
         ↓
-Reserve Figshare DOI for the project
+Create Project in admin (Figshare URL optional — add when ready)
         ↓
-Create Project in admin (include Figshare URL)
-        ↓
-Add Dataset(s) → link files (prefer Figshare URL)
+Add project files / dataset catalog entries → link files (Figshare URL preferred for large data)
         ↓
 When ready: turn on public visibility flags (with NYBG if unsure)
 ```
 
-**Figshare:** [How to reserve a DOI](https://info.figshare.com/user-guide/how-to-reserve-a-doi/)
+**Figshare (optional):** [How to reserve a DOI](https://info.figshare.com/user-guide/how-to-reserve-a-doi/)
 
 ---
 
@@ -66,7 +64,8 @@ When you click **Datasets → Projects → Add**:
 | **Lead name** | Primary contact shown for the project |
 | **Lead email** | Receives automated data-upload reminders |
 | **Organization** | Your home institution (must match your account) |
-| **Figshare item URL / reserved DOI** | Required when creating a project, unless you check **I plan to publish this data with my own DOI** |
+
+**Optional:** **Figshare item URL / reserved DOI** — paste a figshare.com or doi.org link when you have a deposit. **Plans own DOI** — note if you will publish under another repository.
 
 **Strongly recommended:** Summary, Description, Start date; End date when the project will conclude (and then uncheck **Ongoing**).
 
@@ -101,18 +100,18 @@ When in doubt, leave flags **off** and ask [forest@nybg.org](mailto:forest@nybg.
 
 If the project has an **end date** (not ongoing) and no dataset file is linked yet, the lead email may get reminders at **30, 60, 90, and 120 days**. Linking at least one file (upload or Figshare URL) stops the reminder queue.
 
-So: reserve Figshare early, upload when you can, then link it in the portal.
+So: when you have data, upload or link it in the portal (Figshare URL is a good option for large files).
 
 ---
 
 ## Your first-week checklist
 
 - [ ] Log in once with username + password
-- [ ] Reserve a Figshare DOI for your Forest project
 - [ ] Create or finish your **Project** (required fields above)
-- [ ] Add a **Dataset** shell linked to that project (even before files are ready)
+- [ ] Optional: reserve a Figshare DOI and paste it on the project
+- [ ] Add project files (and a dataset catalog entry if needed for `/data`)
 - [ ] Read the full [External Partner Guide](EXTERNAL_PARTNER_GUIDE.md) if you feel you need more context (~15 minutes)
-- [ ] Email [afu@nybg.org](mailto:afu@nybg.org with blockers (login, org name, Figshare, publishing)
+- [ ] Email [afu@nybg.org](mailto:afu@nybg.org) with blockers (login, org name, Figshare, publishing)
 
 ---
 

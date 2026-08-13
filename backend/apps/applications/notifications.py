@@ -91,17 +91,35 @@ def notify_applicant_portal_invite(application) -> None:
 
     claim_url = portal_invite_claim_url(application.invite_token)
     days = RA.INVITE_VALID_DAYS
-    subject = "Thain Family Forest — research approved; create your portal account"
-    body = (
-        f"Dear {application.applicant_name},\n\n"
-        f"Your research application “{application.project_title}” has been approved.\n\n"
-        f"Create your Thain Family Forest research portal username and password here:\n"
-        f"{claim_url}\n\n"
-        f"This link expires in {days} days. After you finish, your project record will be "
-        f"created automatically and you can sign in at the Django admin with your username.\n\n"
-        f"Questions: forest@nybg.org\n\n"
-        f"— Thain Family Forest / NYBG\n"
-    )
+    is_legacy = bool((getattr(application, "legacy_global_id", None) or "").strip())
+
+    if is_legacy:
+        subject = "Thain Family Forest — create your account on the new research portal"
+        body = (
+            f"Dear {application.applicant_name},\n\n"
+            f"NYBG has moved Forest research project management to a new portal. "
+            f"Your earlier Survey123 application “{application.project_title}” is already "
+            f"on file — you do not need to re-apply.\n\n"
+            f"Create a username and password here to claim your account:\n"
+            f"{claim_url}\n\n"
+            f"When you finish, a project record will be created from your past application "
+            f"and you can sign in at the Django admin with your username.\n\n"
+            f"This link expires in {days} days.\n\n"
+            f"Questions: forest@nybg.org\n\n"
+            f"— Thain Family Forest / NYBG\n"
+        )
+    else:
+        subject = "Thain Family Forest — research approved; create your portal account"
+        body = (
+            f"Dear {application.applicant_name},\n\n"
+            f"Your research application “{application.project_title}” has been approved.\n\n"
+            f"Create your Thain Family Forest research portal username and password here:\n"
+            f"{claim_url}\n\n"
+            f"This link expires in {days} days. After you finish, your project record will be "
+            f"created automatically and you can sign in at the Django admin with your username.\n\n"
+            f"Questions: forest@nybg.org\n\n"
+            f"— Thain Family Forest / NYBG\n"
+        )
     send_mail(
         subject,
         body,

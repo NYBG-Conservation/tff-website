@@ -70,14 +70,14 @@ You cannot see or edit other institutions’ records. NYBG internal staff manage
 ```text
 1. Apply for on-site research ([/research/apply](/research/apply)) → NYBG approval
 2. Create portal username/password via invite email (project shell created automatically)
-3. Reserve a Figshare DOI for your project (before field work) and add it on the Project
+3. Optionally reserve a Figshare DOI (or other repository) and add it on the Project when ready
 4. Add **Project files** on the project (peer-reviewed, dataset, presentation, methods/summary, infographic, or other)
 5. Optionally add a **Dataset catalog** entry if the work should appear on the public `/data` table
 6. When ready for the public site: enable visibility flags (see §9)
 7. When project concludes: set end date, uncheck Ongoing → automated reminders if data not linked
 ```
 
-**Figshare DOI guide:** [How to reserve a DOI in Figshare](https://info.figshare.com/user-guide/how-to-reserve-a-doi/)
+**Figshare DOI guide (optional):** [How to reserve a DOI in Figshare](https://info.figshare.com/user-guide/how-to-reserve-a-doi/)
 
 ---
 
@@ -93,7 +93,6 @@ In Django admin: **Project admin → Projects → Add**.
 | **Lead name** | Primary project lead (display name). |
 | **Lead email** | Receives automated data-upload reminders. Use a monitored address. |
 | **Organization** | Your home institution. Must match the org on your user profile for external roles. |
-| **Figshare item URL / reserved DOI** | URL from Figshare or `doi.org` for this project’s data deposit. **Required on every new project** unless you check **Plans own DOI**. |
 
 ### Strongly recommended
 
@@ -104,13 +103,14 @@ In Django admin: **Project admin → Projects → Add**.
 | **Start date** | When field work or data collection began. |
 | **End date** | Set when the project has a **discrete conclusion**. Required for the 30/60/90-day upload reminder schedule (see §10). |
 | **Ongoing** | Check only if the project has **no fixed end date**. If ongoing, leave **End date** empty. |
-| **Plans own DOI** | Check if you will publish data under your own DOI (journal / Dryad / Zenodo, etc.) instead of reserving Figshare first. Figshare URL then becomes optional. |
 | **Institutional partners** | Choose from the organization list (filter + Choose). If a partner is missing, type the name in **Add a new partner institution** and save. Names appear on the public site if the project is published. |
 
 ### Optional
 
 | Field | Notes |
 |-------|--------|
+| **Figshare item URL / reserved DOI** | Optional. Paste a `figshare.com` or `doi.org` link when you have a data deposit. |
+| **Plans own DOI** | Optional note if you will publish data under your own DOI (journal / Dryad / Zenodo, etc.). |
 | **Full title** | Formal project title if different from short title. |
 | **External URL** | Project website, grant page, or other reference link. |
 | **Collection frequency** | Free text (e.g. `annual`, `seasonal`). |
@@ -131,7 +131,7 @@ In Django admin: **Project admin → Projects → Add**.
 
 - **End date** cannot be before **start date**.
 - If **Ongoing** is checked, **End date** must be empty.
-- **Figshare URL** must be a valid `figshare.com` or `doi.org` link when provided. On create it is required unless **Plans own DOI** is checked.
+- **Figshare URL** must be a valid `figshare.com` or `doi.org` link when provided (optional field).
 
 ---
 
@@ -263,9 +263,9 @@ Reminders stop when at least one **project file** (dataset kind) or **dataset ca
 
 **To stay out of the reminder queue:**
 
-1. Reserve Figshare at project creation (`figshare_doi_url`).
-2. Upload data to Figshare when ready.
-3. Add a **project file** (kind: Dataset) with the Figshare URL — or create a dataset catalog entry and attach files there.
+1. Optionally reserve Figshare (or another repository) and record `figshare_doi_url` when you have it.
+2. Upload data when ready.
+3. Add a **project file** (kind: Dataset) with the deposit URL — or create a dataset catalog entry and attach files there.
 4. For concluded projects, set **End date** and uncheck **Ongoing**.
 
 ---
@@ -274,11 +274,11 @@ Reminders stop when at least one **project file** (dataset kind) or **dataset ca
 
 - [ ] Research application approved by NYBG
 - [ ] Portal account received; can log into Django admin
-- [ ] [Figshare DOI reserved](https://info.figshare.com/user-guide/how-to-reserve-a-doi/) for this project
-- [ ] **Project** created with short title, lead name/email, organization, Figshare URL
+- [ ] **Project** created with short title, lead name/email, organization
 - [ ] Summary and description drafted (for eventual public use)
 - [ ] Start date set; end date set if project is not ongoing
-- [ ] **Project files** attached (Figshare URL for data; other kinds as needed)
+- [ ] Optional: [Figshare DOI reserved](https://info.figshare.com/user-guide/how-to-reserve-a-doi/) and pasted on the project
+- [ ] **Project files** attached (deposit URL for data when ready; other kinds as needed)
 - [ ] Optional: **Dataset catalog** entry if the work should appear on `/data`
 - [ ] Public visibility flags set only when ready (§9)
 

@@ -9,8 +9,14 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from apps.applications.invite import InviteError, approve_and_invite, claim_invite
-from apps.applications.models import ResearchApplication
+from apps.applications.invite import (
+    InviteError,
+    approve_and_invite,
+    claim_invite,
+    ensure_organization_from_institution,
+    invite_legacy_applicant,
+)
+from apps.applications.models import LegacySurvey123Application, ResearchApplication
 from apps.datasets.models import Project
 from apps.organizations.models import Organization
 
@@ -131,12 +137,36 @@ class ApproveInviteClaimTests(APITestCase):
         self.staff = User.objects.create_user(username="nybgstaff", password="StaffPass123!")
         self.application = _make_application()
 
-    def test_approve_without_org_errors(self):
+    def test_approve_without_org_or_institution_errors(self):
+        self.application.institution = ""
+        self.application.organization = None
+        self.application.save(update_fields=["institution", "organization"])
         with self.assertRaises(InviteError):
-            approve_and_invite(self.application, self.staff)
+            approve_and_invite(self.application, self.staff, auto_org=True)
         self.application.refresh_from_db()
         self.assertIsNone(self.application.invite_token)
         self.assertEqual(len(mail.outbox), 0)
+
+    def test_approve_auto_creates_org_from_institution(self):
+        mail.outbox.clear()
+        self.application.organization = None
+        self.application.institution = "Example University"
+        self.application.save(update_fields=["organization", "institution"])
+        # Matching existing org case-insensitively
+        approve_and_invite(self.application, self.staff, auto_org=True)
+        self.application.refresh_from_db()
+        self.assertEqual(self.application.organization_id, self.org.id)
+        self.assertTrue(self.application.invite_token)
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_approve_creates_new_org_when_institution_unknown(self):
+        self.application.organization = None
+        self.application.institution = "Brand New College"
+        self.application.save(update_fields=["organization", "institution"])
+        approve_and_invite(self.application, self.staff, auto_org=True)
+        self.application.refresh_from_db()
+        self.assertIsNotNone(self.application.organization_id)
+        self.assertEqual(self.application.organization.name, "Brand New College")
 
     def test_approve_and_invite_sends_email(self):
         mail.outbox.clear()
@@ -150,6 +180,35 @@ class ApproveInviteClaimTests(APITestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn("approved", mail.outbox[0].subject.lower())
         self.assertIn(self.application.invite_token, mail.outbox[0].body)
+
+    def test_legacy_invite_uses_legacy_email_copy(self):
+        mail.outbox.clear()
+        self.application.legacy_global_id = "legacy-gid-001"
+        self.application.organization = None
+        self.application.institution = "Example University"
+        self.application.save(update_fields=["legacy_global_id", "organization", "institution"])
+        invite_legacy_applicant(self.application, self.staff)
+        self.application.refresh_from_db()
+        self.assertTrue(self.application.invite_token)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("new research portal", mail.outbox[0].subject.lower())
+        self.assertIn("do not need to re-apply", mail.outbox[0].body.lower())
+
+    def test_invite_legacy_requires_global_id(self):
+        self.application.legacy_global_id = None
+        self.application.save(update_fields=["legacy_global_id"])
+        with self.assertRaises(InviteError):
+            invite_legacy_applicant(self.application, self.staff)
+
+    def test_ensure_organization_idempotent(self):
+        self.application.organization = None
+        self.application.institution = "example university"
+        self.application.save(update_fields=["organization", "institution"])
+        org1 = ensure_organization_from_institution(self.application)
+        org2 = ensure_organization_from_institution(self.application)
+        self.assertEqual(org1.id, self.org.id)
+        self.assertEqual(org2.id, self.org.id)
+        self.assertEqual(Organization.objects.filter(name__iexact="example university").count(), 1)
 
     def test_status_only_approve_does_not_invite(self):
         mail.outbox.clear()
@@ -229,3 +288,4 @@ class ImportSurvey123ApplicationsTests(TestCase):
 
         call_command("import_survey123_applications", str(csv_path), update=True)
         self.assertEqual(ResearchApplication.objects.count(), 1)
+        self.assertEqual(LegacySurvey123Application.objects.count(), 1)

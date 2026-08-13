@@ -30,7 +30,7 @@
 |------|-------|------------|---------|
 | **0–3** | Welcome + purpose | You | Shared mental model: catalog + link data, not replace research approval |
 | **3–8** | Login + orientation | Researcher (you coach) | In admin; knows username ≠ email; sees only their records |
-| **8–14** | Figshare + required fields | You → researcher | Understands DOI-before-fieldwork; knows project must have Figshare URL |
+| **8–14** | Required fields + optional Figshare | You → researcher | Knows required project fields; Figshare URL is optional |
 | **14–24** | Live create (or edit) one Project | Researcher | Draft project saved (or carefully walk draft then delete if preferred) |
 | **24–28** | Datasets, files, public flags | You (demo-lite) | Knows next steps; won’t accidentally publish |
 | **28–30** | Close + next steps | You | Clear homework + forest@nybg.org |
@@ -48,9 +48,9 @@
 - Tour (90 seconds): **Datasets → Projects**, **Datasets → Datasets**. Ignore unrelated admin modules.
 - Show empty or filtered list: “You only see what you own/manage—that’s intentional.”
 
-#### 8–14 — Figshare + required project fields
-- “Before (or as) you create a project: reserve a DOI in Figshare and keep that item URL.”
-- Required on create: **Short title**, **Lead name**, **Lead email**, **Organization**, **Figshare item URL**.
+#### 8–14 — Required project fields + optional Figshare
+- Required on create: **Short title**, **Lead name**, **Lead email**, **Organization**.
+- **Figshare item URL** is optional — they can paste a figshare.com or doi.org link when they have a deposit, or leave it blank.
 - Lead email = where 30/60/90/120-day upload reminders go after a project ends—use a monitored inbox.
 - Ongoing vs end date: if the project will end, set an end date and leave Ongoing unchecked when concluded.
 
@@ -61,7 +61,7 @@ Suggested path:
 1. **Projects → Add**
 2. Fill required fields + short **Summary** (1–2 sentences)
 3. Organization = their institution (same as profile)
-4. Paste Figshare URL (or open Figshare tip tab if not reserved yet—then save after they have URL)
+4. Optionally paste Figshare URL if they already have one (otherwise leave blank and save)
 5. **Save**
 6. Show slug is auto; show where they’d add managers later
 
@@ -77,7 +77,7 @@ If they aren’t ready for a real project:
 - Mentions only: after a concluded end date, reminders start if no dataset file is linked.
 
 #### 28–30 — Close
-- Homework (pick 1–2): finish Figshare DOI if missing; complete project description; add first dataset shell; send any blockers to forest@nybg.org
+- Homework (pick 1–2): complete project description; optionally reserve Figshare and paste URL; add first project file or dataset catalog shell; send any blockers to forest@nybg.org
 - Confirm they’ve received the intro + full guide
 - Book optional 15‑min “office hours” follow-up in 1–2 weeks if first researcher / first real project
 
@@ -88,7 +88,7 @@ If they aren’t ready for a real project:
 ### Your job
 - **Reassure:** admin UIs look busy; they only need Projects / Datasets.
 - **Co-pilot, don’t take over:** they drive the mouse for the save.
-- **One success:** a saved project (or a clear path + Figshare reservation booked).
+- **One success:** a saved project (Figshare can wait).
 - **Park deep questions** (“Can we bulk import?”) → email after, don’t derail the live create.
 
 ### Their job
@@ -98,7 +98,7 @@ If they aren’t ready for a real project:
 
 ### Tone / norms for a first external admin
 - This person is a **guinea pig**—say that kindly: “You’re our first partner on the new portal; friction is feedback.”
-- Expect Figshare or DOE/org IT delays; offer to leave the call with a Figshare tab + checklist, not a forced incomplete save.
+- Expect Figshare or DOE/org IT delays; they can save the project without a DOI and add it later.
 - Do **not** ask them to toggle public visibility on a live call without NYBG content review.
 
 ### If something goes wrong
@@ -108,9 +108,9 @@ If they aren’t ready for a real project:
 | Can’t log in | Username not email; wrong URL; password reset via `changepassword` on EC2 / you reset; confirm `is_staff` |
 | Org missing / wrong | You add Organization in admin; set on User profile |
 | Sees no Projects / empty world | Expected if they own nothing yet—create first project together |
-| Figshare URL validation error | Must be figshare.com or doi.org style link |
+| Figshare URL validation error | Must be figshare.com or doi.org style link (or leave blank) |
 | Panic about public site | Show flags default off; “Nothing publishes until you (and we) intend it” |
-| Out of time | Stop after project fields explained; assign Figshare + create as homework; send follow-up email same day |
+| Out of time | Stop after project fields explained; assign create/finish project as homework; send follow-up email same day |
 
 ### Same-day follow-up email (template)
 
@@ -123,11 +123,12 @@ Thanks for joining. Quick recap:
 
 • Admin login: [URL] — use username [username] (not email)
 • Role: external admin — your projects and datasets only
-• Required for every new project: short title, lead name/email, organization, Figshare item URL
+• Required for every new project: short title, lead name/email, organization
+• Figshare item URL is optional — add when you have a data deposit
 • Full guide: [link to EXTERNAL_PARTNER_GUIDE]
 • One-pager: [link to EXTERNAL_ADMIN_INTRO]
 
-Your next step: [e.g. reserve Figshare DOI / finish project description / add dataset]
+Your next step: [e.g. finish project description / add project files / optional Figshare DOI]
 
 Questions → forest@nybg.org
 

@@ -139,3 +139,12 @@ class ResearchApplication(models.Model):
 
     def __str__(self) -> str:
         return f"{self.project_title} ({self.applicant_name})"
+
+
+class LegacySurvey123Application(ResearchApplication):
+    """Proxy for Survey123 imports — dedicated admin backlog for portal invites."""
+
+    class Meta:
+        proxy = True
+        verbose_name = "Survey123 legacy application"
+        verbose_name_plural = "Survey123 legacy backlog"

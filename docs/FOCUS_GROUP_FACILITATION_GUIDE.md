@@ -57,7 +57,7 @@ Research portal (backend / Django admin)
 
 - The **public site** is the forest hub visitors see (`/research`, `/data`).
 - The **admin portal** is where approved researchers catalog a project and attach data.
-- Typical path: apply → get an account → create/finish a **Project** (Figshare DOI) → add **Project files** (typed: dataset, presentation, methods, etc.) → optionally add a **Dataset catalog** row for `/data` → add **publications** when you have them → NYBG helps decide when to make it public.
+- Typical path: apply → get an account → create/finish a **Project** → add **Project files** (typed: dataset, presentation, methods, etc.) → optionally add a Figshare/deposit URL and a **Dataset catalog** row for `/data` → add **publications** when you have them → NYBG helps decide when to make it public.
 
 Invite a 30-second check: *Does that match how you understood it going in?*
 
@@ -75,10 +75,10 @@ Go step by step. For each step: one sentence of what we intended, then questions
 
 ### B. Creating a project
 
-Intended path: **Project admin → Projects → Add** (or finish the project created from your application). Required: short title, lead name/email, organization, Figshare URL (unless you plan to use your own DOI).
+Intended path: **Project admin → Projects → Add** (or finish the project created from your application). Required: short title, lead name/email, organization. Figshare URL is optional.
 
 - What felt obvious vs. what made you pause?
-- Figshare DOI before (or as) you create the project — did that fit your real research process?
+- Figshare DOI — optional; did anyone want guidance on when/how to reserve one?
 - Any fields you wanted that weren’t there? Any that felt unnecessary?
 - After saving, did you understand what had been created (and what still needed to happen)?
 
@@ -130,7 +130,7 @@ Suggested talking points (adjust to current plans):
 
 - This portal is still in a **focus-group / staging** phase. Feedback from this session will shape the next round of edits.
 - **Public launch:** the public Research and Data pages will show projects and datasets only when records are marked visible. Until then, work in admin stays private.
-- After launch, expect: accounts for approved researchers, Figshare as the home for data, and light NYBG follow-up if a concluded project still has no linked files (reminders at 30 / 60 / 90 / 120 days).
+- After launch, expect: accounts for approved researchers, optional Figshare/deposit links for data, and light NYBG follow-up if a concluded project still has no linked files (reminders at 30 / 60 / 90 / 120 days).
 - Support: [afu@nybg.org](mailto:afu@nybg.org) / [forest@nybg.org](mailto:forest@nybg.org).
 
 **Close with:**

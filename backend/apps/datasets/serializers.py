@@ -469,7 +469,6 @@ class ProjectSerializer(serializers.ModelSerializer):
         return [int(day) for day in (alert.emailed_milestones or [])]
 
     def validate_figshare_doi_url(self, value: str) -> str:
-        # Required-ness is decided in validate() once plans_own_doi is known.
         try:
             return validate_figshare_doi_url(value, required=False)
         except DjangoValidationError as exc:
@@ -491,15 +490,6 @@ class ProjectSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"lead_email": "Project lead email is required."})
         if not attrs.get("organization") and not getattr(self.instance, "organization_id", None):
             raise serializers.ValidationError({"organization": "Organization is required."})
-        if self.instance is None:
-            plans_own_doi = bool(attrs.get("plans_own_doi", False))
-            figshare_value = attrs.get("figshare_doi_url", "")
-            try:
-                attrs["figshare_doi_url"] = validate_figshare_doi_url(
-                    figshare_value, required=not plans_own_doi
-                )
-            except DjangoValidationError as exc:
-                raise serializers.ValidationError({"figshare_doi_url": exc.messages}) from exc
         return attrs
 
     def create(self, validated_data):

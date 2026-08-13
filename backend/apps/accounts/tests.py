@@ -137,6 +137,8 @@ class SyncRoleGroupPermissionsTests(APITestCase):
         group = Group.objects.get(name="internal_admin")
         self.assertTrue(group.permissions.filter(codename="view_researchapplication").exists())
         self.assertTrue(group.permissions.filter(codename="change_researchapplication").exists())
+        self.assertTrue(group.permissions.filter(codename="view_legacysurvey123application").exists())
+        self.assertTrue(group.permissions.filter(codename="change_legacysurvey123application").exists())
         # Follow-up alerts are superadmin-only.
         self.assertFalse(group.permissions.filter(codename="view_projectalert").exists())
 

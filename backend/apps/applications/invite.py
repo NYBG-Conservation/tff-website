@@ -11,6 +11,7 @@ from django.utils import timezone
 
 from apps.accounts.models import UserProfile
 from apps.datasets.models import Project
+from apps.organizations.models import Organization
 
 from .models import ResearchApplication
 from .notifications import notify_applicant_portal_invite
@@ -24,11 +25,40 @@ def _mint_invite_token() -> str:
     return secrets.token_urlsafe(32)
 
 
-def approve_and_invite(application: ResearchApplication, staff_user: User) -> ResearchApplication:
+def ensure_organization_from_institution(application: ResearchApplication) -> Organization:
+    """
+    If the application has no organization, match or create one from Institution.
+    Case-insensitive match on name; creates with the trimmed institution string.
+    """
+    if application.organization_id:
+        return application.organization
+
+    name = (application.institution or "").strip()
+    if not name:
+        raise InviteError(
+            "Set Organization on the application (or fill Institution) before inviting."
+        )
+
+    org = Organization.objects.filter(name__iexact=name).first()
+    if org is None:
+        org = Organization.objects.create(name=name)
+    application.organization = org
+    application.save(update_fields=["organization", "updated_at"])
+    return org
+
+
+def approve_and_invite(
+    application: ResearchApplication,
+    staff_user: User,
+    *,
+    auto_org: bool = True,
+) -> ResearchApplication:
     """Mark approved, mint invite token, and email the applicant."""
     if application.invite_accepted_at or application.project_id:
         raise InviteError("This application already has an accepted portal invite / project.")
-    if not application.organization_id:
+    if auto_org:
+        ensure_organization_from_institution(application)
+    elif not application.organization_id:
         raise InviteError(
             "Set Organization on the application before Approve & send portal invite."
         )
@@ -51,12 +81,19 @@ def approve_and_invite(application: ResearchApplication, staff_user: User) -> Re
     return application
 
 
+def invite_legacy_applicant(application: ResearchApplication, staff_user: User) -> ResearchApplication:
+    """Approve + invite a Survey123 legacy row, auto-creating Organization from Institution."""
+    if not (application.legacy_global_id or "").strip():
+        raise InviteError("Not a Survey123 legacy application (missing GlobalID).")
+    return approve_and_invite(application, staff_user, auto_org=True)
+
+
 def resend_invite(application: ResearchApplication) -> ResearchApplication:
     """Re-send a pending invite email (optionally refreshing the token)."""
     if application.invite_accepted_at or application.project_id:
         raise InviteError("Invite already accepted; cannot resend.")
     if not application.organization_id:
-        raise InviteError("Set Organization before resending the invite.")
+        ensure_organization_from_institution(application)
     if application.status != ResearchApplication.Status.APPROVED:
         raise InviteError("Application must be approved before resending an invite.")
 
