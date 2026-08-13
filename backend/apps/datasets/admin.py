@@ -320,6 +320,11 @@ class ProjectAdmin(admin.ModelAdmin):
     readonly_fields = ("slug", "manual_outreach_required", "manual_outreach_at")
     inlines = [ProjectFileInline, ProjectPublicationInline, ProjectManagerInline, ProjectAlertInline]
 
+    def save_model(self, request, obj, form, change):
+        if not change or not obj.owner_id:
+            obj.owner = request.user
+        super().save_model(request, obj, form, change)
+
     def get_list_display(self, request):
         display = list(self.list_display)
         if is_internal_superadmin(request.user):
@@ -354,6 +359,9 @@ class ProjectAdmin(admin.ModelAdmin):
     def get_inline_instances(self, request, obj=None):
         inlines = super().get_inline_instances(request, obj)
         if not is_internal_superadmin(request.user):
+            inlines = [inline for inline in inlines if not isinstance(inline, ProjectAlertInline)]
+        # Alerts are system-managed and only exist on saved projects.
+        if obj is None:
             inlines = [inline for inline in inlines if not isinstance(inline, ProjectAlertInline)]
         return inlines
 
@@ -415,7 +423,11 @@ class ProjectAdmin(admin.ModelAdmin):
                 obj.delete()
             return
         # Alerts are system-managed; never save inline edits.
+        # Still set formset tracking attrs so construct_change_message does not 500.
         if formset.model is ProjectAlert:
+            formset.new_objects = []
+            formset.changed_objects = []
+            formset.deleted_objects = []
             return
         super().save_formset(request, form, formset, change)
 
