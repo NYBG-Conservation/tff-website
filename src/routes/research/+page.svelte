@@ -20,6 +20,50 @@
 	$: relatedDatasets = activeProject ? getRelatedDatasets(activeProject) : [];
 	$: relatedPublications = activeProject ? getRelatedPublications(activeProject) : [];
 
+	let searchQuery = '';
+	let filterStatus: 'all' | 'ongoing' | 'concluded' = 'all';
+	let filterOrganization = 'all';
+	let sortBy: 'curated' | 'title-asc' | 'title-desc' = 'curated';
+
+	$: organizations = [
+		...new Set(researchProjects.map((project) => project.organization_name).filter((name): name is string => Boolean(name)))
+	].sort((a, b) => a.localeCompare(b));
+
+	$: filteredProjects = researchProjects.filter((project) => {
+		if (filterStatus === 'ongoing' && !project.ongoing) return false;
+		if (filterStatus === 'concluded' && project.ongoing) return false;
+		if (filterOrganization !== 'all' && project.organization_name !== filterOrganization) return false;
+		const query = searchQuery.trim().toLowerCase();
+		if (!query) return true;
+		return [
+			project.title,
+			project.full_title ?? '',
+			project.summary ?? '',
+			project.lead_name ?? '',
+			project.organization_name ?? '',
+			...(project.institutional_partners ?? [])
+		]
+			.join(' ')
+			.toLowerCase()
+			.includes(query);
+	});
+
+	$: visibleProjects = [...filteredProjects].sort((a, b) => {
+		if (sortBy === 'title-asc') return a.title.localeCompare(b.title);
+		if (sortBy === 'title-desc') return b.title.localeCompare(a.title);
+		return (a.public_sort_order ?? 0) - (b.public_sort_order ?? 0) || a.title.localeCompare(b.title);
+	});
+
+	$: hasActiveFilters =
+		searchQuery.trim() !== '' || filterStatus !== 'all' || filterOrganization !== 'all' || sortBy !== 'curated';
+
+	function clearFilters() {
+		searchQuery = '';
+		filterStatus = 'all';
+		filterOrganization = 'all';
+		sortBy = 'curated';
+	}
+
 	function openProject(projectSlug: string) {
 		activeProjectSlug = projectSlug;
 	}
@@ -123,16 +167,68 @@
 		<p class="api-error">Research project data is temporarily unavailable. ({apiError})</p>
 	{/if}
 
+	<div class="filters-panel">
+		<div class="filters-row">
+			<label class="filter-field">
+				<span class="filter-label">Search</span>
+				<input
+					type="search"
+					placeholder="Search projects…"
+					bind:value={searchQuery}
+					aria-label="Search projects"
+				/>
+			</label>
+			<label class="filter-field">
+				<span class="filter-label">Status</span>
+				<select bind:value={filterStatus} aria-label="Filter by status">
+					<option value="all">All statuses</option>
+					<option value="ongoing">Ongoing</option>
+					<option value="concluded">Concluded</option>
+				</select>
+			</label>
+			<label class="filter-field">
+				<span class="filter-label">Organization</span>
+				<select bind:value={filterOrganization} aria-label="Filter by organization">
+					<option value="all">All organizations</option>
+					{#each organizations as organization}
+						<option value={organization}>{organization}</option>
+					{/each}
+				</select>
+			</label>
+			<label class="filter-field">
+				<span class="filter-label">Sort</span>
+				<select bind:value={sortBy} aria-label="Sort projects">
+					<option value="curated">Curated order</option>
+					<option value="title-asc">Title A–Z</option>
+					<option value="title-desc">Title Z–A</option>
+				</select>
+			</label>
+		</div>
+		<div class="filters-meta">
+			<p class="results-count">
+				{visibleProjects.length}
+				{visibleProjects.length === 1 ? 'project' : 'projects'}
+			</p>
+			{#if hasActiveFilters}
+				<button type="button" class="clear-filters" on:click={clearFilters}>Clear filters</button>
+			{/if}
+		</div>
+	</div>
+
 	<div class="project-grid">
-		{#each researchProjects as project}
-			<ResearchProjectCard
-				title={project.title}
-				summary={project.summary || project.full_title || ''}
-				ongoing={project.ongoing}
-				leadName={project.lead_name}
-				onSelect={() => openProject(project.slug)}
-			/>
-		{/each}
+		{#if visibleProjects.length === 0}
+			<p class="empty-directory">No projects match the current filters.</p>
+		{:else}
+			{#each visibleProjects as project}
+				<ResearchProjectCard
+					title={project.title}
+					summary={project.summary || project.full_title || ''}
+					ongoing={project.ongoing}
+					leadName={project.lead_name}
+					onSelect={() => openProject(project.slug)}
+				/>
+			{/each}
+		{/if}
 	</div>
 
 	{#if activeProject}
@@ -210,6 +306,27 @@
 							<p>{paragraph}</p>
 						{/each}
 					{/if}
+					<div class="related-datasets">
+						<h4>Project files</h4>
+						{#if activeProject.project_files?.length}
+							<ul>
+								{#each activeProject.project_files as file}
+									<li>
+										<span class="file-kind">{file.file_kind}</span>
+										{#if file.download_url}
+											<a href={file.download_url} target="_blank" rel="noopener noreferrer"
+												>{file.title}</a
+											>
+										{:else}
+											{file.title}
+										{/if}
+									</li>
+								{/each}
+							</ul>
+						{:else}
+							<p class="empty-related">No public project files yet.</p>
+						{/if}
+					</div>
 					<div class="related-datasets">
 						<h4>Related datasets</h4>
 						{#if relatedDatasets.length > 0}
@@ -462,6 +579,80 @@
 		gap: 1.5rem;
 	}
 
+	.empty-directory {
+		grid-column: 1 / -1;
+		margin: 0;
+		font-family: 'GT Super Regular', serif;
+		color: #555;
+	}
+
+	.filters-panel {
+		margin-bottom: 1rem;
+		padding: 1rem;
+		background: #fff;
+		border: 1px solid rgba(0, 0, 0, 0.12);
+	}
+
+	.filters-row {
+		display: grid;
+		grid-template-columns: minmax(180px, 1.6fr) repeat(3, minmax(130px, 1fr));
+		gap: 0.75rem;
+	}
+
+	.filter-field {
+		display: grid;
+		gap: 0.3rem;
+		font-family: 'GT Super Regular', serif;
+	}
+
+	.filter-label {
+		font-family: 'GT Super Bold', serif;
+		font-size: 0.78rem;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: #5a5a5a;
+	}
+
+	.filter-field input,
+	.filter-field select {
+		width: 100%;
+		padding: 0.5rem 0.55rem;
+		border: 1px solid rgba(0, 0, 0, 0.18);
+		background: #fff;
+		font-family: 'GT Super Regular', serif;
+		font-size: 0.95rem;
+		color: #222;
+	}
+
+	.filters-meta {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		margin-top: 0.85rem;
+	}
+
+	.results-count {
+		margin: 0;
+		font-family: 'GT Super Regular', serif;
+		font-size: 0.92rem;
+		color: #555;
+	}
+
+	.clear-filters {
+		border: 1px solid rgba(0, 0, 0, 0.18);
+		background: #fff;
+		padding: 0.4rem 0.75rem;
+		font-family: 'GT Super Regular', serif;
+		font-size: 0.9rem;
+		cursor: pointer;
+	}
+
+	.clear-filters:hover,
+	.clear-filters:focus-visible {
+		background: rgba(200, 181, 0, 0.12);
+	}
+
 	.project-metadata {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -583,6 +774,16 @@
 		padding-left: 1.25rem;
 	}
 
+	.related-datasets .file-kind {
+		display: inline-block;
+		margin-right: 0.45rem;
+		font-family: 'Martian Mono', serif;
+		font-size: 0.68rem;
+		letter-spacing: 0.02em;
+		text-transform: uppercase;
+		color: #5a5a5a;
+	}
+
 	.related-publications {
 		margin-top: 1.25rem;
 	}
@@ -619,6 +820,10 @@
 
 	@media (max-width: 900px) {
 		.project-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.filters-row {
 			grid-template-columns: 1fr;
 		}
 

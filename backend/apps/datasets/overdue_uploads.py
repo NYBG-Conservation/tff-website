@@ -8,7 +8,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from .figshare import figshare_doi_guide_url
-from .models import DatasetFile, Project, ProjectAlert
+from .models import DatasetFile, Project, ProjectAlert, ProjectFile
 
 
 def alert_milestone_days() -> list[int]:
@@ -43,15 +43,23 @@ def _figshare_reference_match(project: Project, url: str) -> bool:
     return "figshare.com" in candidate or "doi.org" in candidate
 
 
+def _file_record_qualifies(project: Project, file_record) -> bool:
+    if file_record.file:
+        return True
+    return _figshare_reference_match(project, file_record.external_url)
+
+
 def project_has_qualifying_upload(project: Project) -> bool:
-    """True when linked datasets include an uploaded file or Figshare/external deposit URL."""
+    """True when a dataset-kind project file or linked dataset file has upload/Figshare URL."""
+    for file_record in project.project_files.filter(file_kind=ProjectFile.FileKind.DATASET):
+        if _file_record_qualifies(project, file_record):
+            return True
+
     dataset_ids = project.datasets.values_list("id", flat=True)
     if not dataset_ids:
         return False
     for file_record in DatasetFile.objects.filter(dataset_id__in=dataset_ids):
-        if file_record.file:
-            return True
-        if _figshare_reference_match(project, file_record.external_url):
+        if _file_record_qualifies(project, file_record):
             return True
     return False
 

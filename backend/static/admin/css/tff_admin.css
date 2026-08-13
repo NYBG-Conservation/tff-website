@@ -147,3 +147,252 @@ div.breadcrumbs a:focus,
 div.breadcrumbs a:hover {
 	color: var(--accent);
 }
+
+/*
+ * Keep every admin section within its header width.
+ * Long tabular rows, file widgets, and readonly values wrap instead of
+ * stretching the page (same idea as stacked dataset-file inlines).
+ */
+#content,
+#content-main,
+.colM,
+.colMS,
+form,
+.aligned,
+.module,
+.inline-group,
+fieldset.module {
+	max-width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+}
+
+.module,
+.inline-group {
+	overflow-x: auto;
+}
+
+.aligned .flex-container,
+.form-row .flex-container {
+	flex-wrap: wrap;
+	min-width: 0;
+	max-width: 100%;
+}
+
+.aligned .form-row > div,
+.aligned .flex-container > div {
+	min-width: 0;
+	max-width: 100%;
+}
+
+.aligned label + div.readonly,
+.aligned .readonly,
+.form-row p,
+.form-row .help {
+	overflow-wrap: anywhere;
+	word-break: break-word;
+	max-width: 100%;
+}
+
+.aligned input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.aligned select,
+.aligned textarea,
+.form-row input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.form-row select,
+.form-row textarea {
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+.aligned .file-upload,
+.form-row .file-upload {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.35rem 0.75rem;
+	max-width: 100%;
+}
+
+.selector {
+	flex-wrap: wrap;
+	max-width: 100%;
+	min-width: 0;
+}
+
+.selector-available,
+.selector-chosen {
+	min-width: 0;
+	flex: 1 1 220px;
+}
+
+.inline-related.tabular fieldset.module {
+	overflow-x: auto;
+	max-width: 100%;
+}
+
+.inline-related.tabular fieldset.module table {
+	width: 100%;
+	max-width: 100%;
+	table-layout: fixed;
+	overflow-x: visible;
+}
+
+.inline-group .tabular th,
+.inline-group .tabular td {
+	white-space: normal;
+	overflow-wrap: anywhere;
+	word-break: break-word;
+	vertical-align: top;
+}
+
+.inline-group .tabular input,
+.inline-group .tabular select,
+.inline-group .tabular textarea {
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+#changelist-form .results,
+#changelist table {
+	max-width: 100%;
+}
+
+#changelist table {
+	table-layout: fixed;
+}
+
+#changelist table thead th,
+#changelist table tbody td,
+#changelist table tbody th {
+	white-space: normal;
+	overflow-wrap: anywhere;
+	word-break: break-word;
+}
+
+/* Admin home: welcome panel above a compact recent-actions drawer */
+.tff-dashboard #content-main {
+	max-width: 100%;
+}
+
+.tff-welcome {
+	margin-bottom: 1.25rem;
+}
+
+.tff-welcome-message {
+	font-size: 0.95rem;
+	line-height: 1.45;
+	max-width: 52rem;
+}
+
+.tff-welcome-columns {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+	gap: 1.25rem 2rem;
+	margin-top: 0.75rem;
+}
+
+.tff-welcome h3 {
+	margin: 0 0 0.4rem;
+	font-size: 0.8rem;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.tff-link-list,
+.tff-shortcut-list {
+	margin: 0;
+	padding-left: 1.1rem;
+}
+
+.tff-link-list li,
+.tff-shortcut-list li {
+	margin: 0.25rem 0;
+}
+
+.tff-shortcut-list {
+	list-style: none;
+	padding-left: 0;
+}
+
+.tff-shortcut-list a {
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	padding: 0.45rem 0.55rem;
+	border: 1px solid var(--hairline-color);
+	background: var(--body-bg);
+	text-decoration: none;
+}
+
+.tff-shortcut-list a:hover,
+.tff-shortcut-list a:focus-visible {
+	background: var(--selected-bg);
+}
+
+.tff-hotkey {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 1.4rem;
+	height: 1.4rem;
+	padding: 0 0.25rem;
+	border: 1px solid var(--border-color);
+	border-radius: 3px;
+	font-size: 0.75rem;
+	font-weight: 600;
+	color: var(--body-medium-color);
+	background: var(--darkened-bg);
+}
+
+.tff-hotkey-hint {
+	color: var(--body-quiet-color);
+	font-size: 0.75rem;
+	margin: 0 0 0.5rem;
+}
+
+.tff-hotkey-hint kbd {
+	border: 1px solid var(--border-color);
+	border-radius: 3px;
+	padding: 0 0.3rem;
+	font-size: 0.72rem;
+	background: var(--darkened-bg);
+}
+
+.tff-add-project {
+	display: inline-block;
+	margin-top: 0.5rem;
+}
+
+.tff-recent-actions {
+	margin-bottom: 1.5rem;
+	color: var(--body-quiet-color);
+}
+
+.tff-recent-actions summary {
+	cursor: pointer;
+	font-weight: 600;
+	color: var(--body-medium-color);
+	padding: 8px;
+}
+
+.tff-recent-actions .actionlist {
+	padding: 0 10px 10px;
+}
+
+.tff-guide-body {
+	max-width: 48rem;
+	line-height: 1.5;
+}
+
+.tff-guide-body pre {
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+
+@media (max-width: 768px) {
+	.tff-welcome-columns {
+		grid-template-columns: 1fr;
+	}
+}
+
+

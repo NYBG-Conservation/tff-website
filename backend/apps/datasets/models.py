@@ -30,6 +30,10 @@ class Project(models.Model):
         default=False,
         help_text="When enabled, this project can appear on the public Thain Family Forest website.",
     )
+    public_sort_order = models.IntegerField(
+        default=0,
+        help_text="Lower numbers appear first on the public /research directory. Set in Website display settings.",
+    )
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     ongoing = models.BooleanField(default=False)
@@ -204,6 +208,69 @@ class ProjectPublication(models.Model):
         return self.citation[:80]
 
 
+class ProjectFile(models.Model):
+    """Files attached directly to a research project (admin: Project files)."""
+
+    class FileKind(models.TextChoices):
+        PEER_REVIEWED = "peer_reviewed", "Peer-reviewed publication"
+        DATASET = "dataset", "Dataset"
+        PRESENTATION = "presentation", "Presentation"
+        EXTRAMURAL_DOCUMENTS = "extramural_documents", "Extramural documents / methods / summary"
+        PUBLIC_INFOGRAPHIC = "public_infographic", "Public infographic"
+        OTHER = "other", "Other"
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="project_files")
+    file = models.FileField(upload_to="project_files/%Y/%m/", blank=True, null=True)
+    external_url = models.URLField(
+        blank=True,
+        help_text="Use for large assets hosted outside this system (e.g. Figshare) or files over ~100 MB.",
+    )
+    title = models.CharField(max_length=255, blank=True, help_text="Optional display title. Defaults to the file name.")
+    file_name = models.CharField(max_length=255, blank=True)
+    file_kind = models.CharField(
+        max_length=40,
+        choices=FileKind.choices,
+        default=FileKind.OTHER,
+    )
+    content_type = models.CharField(max_length=120, blank=True)
+    notes = models.TextField(blank=True)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="uploaded_project_files",
+        help_text="Set automatically to the user who uploads the file.",
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    expose_on_public_api = models.BooleanField(
+        default=False,
+        help_text="When enabled, this file can appear on the public research project page.",
+    )
+
+    class Meta:
+        ordering = ("file_kind", "-uploaded_at")
+        verbose_name = "Project file"
+        verbose_name_plural = "Project files"
+
+    def clean(self) -> None:
+        if not self.file and not self.external_url:
+            raise ValidationError("Provide either an uploaded file or an external URL.")
+        if self.file and self.external_url:
+            raise ValidationError("Provide only one of file upload or external URL.")
+
+    def save(self, *args, **kwargs):
+        if not self.file_name:
+            if self.file:
+                self.file_name = self.file.name.rsplit("/", 1)[-1]
+            elif self.external_url:
+                self.file_name = self.external_url.rstrip("/").rsplit("/", 1)[-1] or "external-link"
+        if not self.title:
+            self.title = self.file_name
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return self.title or self.file_name or f"Project file {self.pk}"
+
+
 class Dataset(models.Model):
     class DataType(models.TextChoices):
         TABULAR = "tabular", "Tabular"
@@ -259,6 +326,10 @@ class Dataset(models.Model):
     metadata_schema_version = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Dataset catalog entry"
+        verbose_name_plural = "Dataset catalog"
 
     def save(self, *args, **kwargs):
         if self.additional_research_partners is None:
@@ -324,11 +395,11 @@ class DatasetMetadataValue(models.Model):
 
 class DatasetFile(models.Model):
     class FileKind(models.TextChoices):
-        PRIMARY_DATA = "primary_data", "Primary Data"
-        DOCUMENTATION = "documentation", "Documentation"
-        CODE = "code", "Code"
-        DERIVED_OUTPUT = "derived_output", "Derived Output"
-        IMAGE_MEDIA = "image_media", "Image / Media"
+        PEER_REVIEWED = "peer_reviewed", "Peer-reviewed publication"
+        DATASET = "dataset", "Dataset"
+        PRESENTATION = "presentation", "Presentation"
+        EXTRAMURAL_DOCUMENTS = "extramural_documents", "Extramural documents / methods / summary"
+        PUBLIC_INFOGRAPHIC = "public_infographic", "Public infographic"
         OTHER = "other", "Other"
 
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name="files")
@@ -338,7 +409,7 @@ class DatasetFile(models.Model):
         help_text="Use for large assets hosted outside this system (>1 GB governance policy).",
     )
     file_name = models.CharField(max_length=255)
-    file_kind = models.CharField(max_length=30, choices=FileKind.choices, default=FileKind.PRIMARY_DATA)
+    file_kind = models.CharField(max_length=40, choices=FileKind.choices, default=FileKind.DATASET)
     content_type = models.CharField(max_length=120, blank=True)
     version = models.PositiveIntegerField(default=1)
     uploaded_by = models.ForeignKey(
@@ -396,4 +467,66 @@ class DatasetPublication(models.Model):
 
     def __str__(self) -> str:
         return self.title
+
+
+class WebsiteDisplaySettings(models.Model):
+    """Singleton: homepage research highlights. Research-page order lives on Project.public_sort_order."""
+
+    highlight_1 = models.ForeignKey(
+        Project,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        limit_choices_to={"shared_publicly": True},
+        help_text="First card under Research highlights on the public homepage.",
+    )
+    highlight_2 = models.ForeignKey(
+        Project,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        limit_choices_to={"shared_publicly": True},
+        help_text="Second homepage highlight card.",
+    )
+    highlight_3 = models.ForeignKey(
+        Project,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        limit_choices_to={"shared_publicly": True},
+        help_text="Third homepage highlight card.",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Website display settings"
+        verbose_name_plural = "Website display settings"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        return
+
+    @classmethod
+    def load(cls) -> "WebsiteDisplaySettings":
+        obj, _created = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def highlight_projects(self) -> list[Project]:
+        projects: list[Project] = []
+        seen: set[int] = set()
+        for project in (self.highlight_1, self.highlight_2, self.highlight_3):
+            if project is None or not project.shared_publicly or project.pk in seen:
+                continue
+            seen.add(project.pk)
+            projects.append(project)
+        return projects
+
+    def __str__(self) -> str:
+        return "Website display settings"
 

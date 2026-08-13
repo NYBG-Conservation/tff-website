@@ -5,7 +5,7 @@ from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Dataset, Project, ProjectPublication
+from .models import Dataset, Project, ProjectPublication, WebsiteDisplaySettings
 from .public_serializers import PublicDatasetSerializer, PublicProjectSerializer, PublicPublicationSerializer
 from .public_utils import is_mobile_user_agent
 
@@ -34,8 +34,8 @@ class PublicProjectListView(generics.ListAPIView):
         return (
             Project.objects.filter(shared_publicly=True)
             .select_related("organization")
-            .prefetch_related("datasets")
-            .order_by("short_title")
+            .prefetch_related("datasets", "project_files")
+            .order_by("public_sort_order", "short_title")
         )
 
 
@@ -104,3 +104,16 @@ class PublicPublicationListView(generics.ListAPIView):
         if project_slug:
             qs = qs.filter(project__slug=project_slug)
         return qs.order_by("-publication_year", "-sort_order", "-created_at")
+
+
+class PublicWebsiteDisplayView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        settings = WebsiteDisplaySettings.load()
+        highlights = PublicProjectSerializer(
+            settings.highlight_projects(),
+            many=True,
+            context={"request": request},
+        ).data
+        return Response({"highlights": highlights})

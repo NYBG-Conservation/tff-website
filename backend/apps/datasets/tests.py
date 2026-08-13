@@ -482,7 +482,7 @@ class PublicApiTests(APITestCase):
         self.public_file = DatasetFile.objects.create(
             dataset=self.public_dataset,
             file_name="survey.csv",
-            file_kind=DatasetFile.FileKind.PRIMARY_DATA,
+            file_kind=DatasetFile.FileKind.DATASET,
             content_type="text/csv",
             uploaded_by=self.owner,
             expose_on_public_api=True,
@@ -491,7 +491,7 @@ class PublicApiTests(APITestCase):
         self.external_public_file = DatasetFile.objects.create(
             dataset=self.public_dataset,
             file_name="remote-archive.zip",
-            file_kind=DatasetFile.FileKind.PRIMARY_DATA,
+            file_kind=DatasetFile.FileKind.DATASET,
             uploaded_by=self.owner,
             expose_on_public_api=True,
             external_url="https://example.org/remote-archive.zip",
@@ -506,6 +506,37 @@ class PublicApiTests(APITestCase):
         self.assertEqual(response.data[0]["dataset_ids"], [str(self.public_dataset.id)])
         self.assertTrue(response.data[0]["ongoing"])
         self.assertEqual(response.data[0]["institutional_partners"], ["Example Partner Lab"])
+
+    def test_public_projects_follow_curated_sort_order(self):
+        later = Project.objects.create(
+            slug="zebra-study",
+            short_title="Zebra Study",
+            lead_name="Zed",
+            lead_email="zed@nybg.org",
+            shared_publicly=True,
+            organization=self.organization,
+            owner=self.owner,
+            public_sort_order=5,
+        )
+        self.public_project.public_sort_order = 20
+        self.public_project.save(update_fields=["public_sort_order"])
+
+        response = self.client.get(reverse("public-project-list"))
+        self.assertEqual([item["slug"] for item in response.data], [later.slug, "public-forest-study"])
+
+    def test_website_display_returns_selected_highlights(self):
+        from apps.datasets.models import WebsiteDisplaySettings
+
+        settings = WebsiteDisplaySettings.load()
+        settings.highlight_1 = self.public_project
+        settings.highlight_2 = None
+        settings.highlight_3 = None
+        settings.save()
+
+        response = self.client.get(reverse("public-website-display"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        slugs = [item["slug"] for item in response.data["highlights"]]
+        self.assertEqual(slugs, ["public-forest-study"])
 
     def test_public_datasets_filters_visibility(self):
         response = self.client.get(reverse("public-dataset-list"))

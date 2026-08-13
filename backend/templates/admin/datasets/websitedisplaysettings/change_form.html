@@ -1,0 +1,42 @@
+{% extends "admin/change_form.html" %}
+
+{% block after_field_sets %}
+{{ block.super }}
+<fieldset class="module aligned">
+	<h2>Research page project order</h2>
+	<div class="description">
+		Lower numbers appear first in the public Project Directory. Only projects marked
+		<strong>Shared publicly</strong> are listed. Save this page to apply highlight and order changes.
+	</div>
+	{% if public_projects %}
+	<table>
+		<thead>
+			<tr>
+				<th>Project</th>
+				<th>Organization</th>
+				<th>Order</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for project in public_projects %}
+			<tr>
+				<td>{{ project.short_title }}</td>
+				<td>{{ project.organization }}</td>
+				<td>
+					<input
+						type="number"
+						name="public_sort_order_{{ project.pk }}"
+						value="{{ project.public_sort_order }}"
+						step="1"
+						style="width: 6rem;"
+					>
+				</td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+	{% else %}
+	<p>No public projects yet. Turn on <strong>Shared publicly</strong> on a project first.</p>
+	{% endif %}
+</fieldset>
+{% endblock %}

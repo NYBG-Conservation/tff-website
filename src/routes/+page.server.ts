@@ -1,3 +1,4 @@
+import { fetchPublicProjects, fetchWebsiteDisplay } from '$lib/api/public';
 import type { PageServerLoad } from './$types';
 
 interface Event {
@@ -202,9 +203,27 @@ export const load: PageServerLoad = async ({ fetch }) => {
 		console.error('Error loading announcements CSV:', error);
 	}
 
+	let researchHighlights: Awaited<ReturnType<typeof fetchWebsiteDisplay>>['highlights'] = [];
+	try {
+		const display = await fetchWebsiteDisplay(fetch);
+		researchHighlights = display.highlights;
+		if (researchHighlights.length === 0) {
+			const projects = await fetchPublicProjects(fetch);
+			researchHighlights = projects.slice(0, 3);
+		}
+	} catch (error) {
+		console.error('Error loading research highlights:', error);
+		try {
+			researchHighlights = (await fetchPublicProjects(fetch)).slice(0, 3);
+		} catch {
+			researchHighlights = [];
+		}
+	}
+
 	return {
 		events,
-		announcements
+		announcements,
+		researchHighlights
 	};
 };
 

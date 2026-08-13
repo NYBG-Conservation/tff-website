@@ -14,13 +14,13 @@
 	const path = $derived($page.url.pathname);
 	const canonicalUrl = $derived(`${origin}${path}`);
 
-	const ogTitle = $derived(data?.ogTitle ?? 'Urban Conservation Hub | NYBG');
+	const ogTitle = $derived(data?.ogTitle ?? 'Thain Family Forest | NYBG');
 	const ogDescription = $derived(
 		data?.ogDescription ??
 			'Partnering with communities and government to develop tools and research that help New York City adapt to a changing climate.'
 	);
 	const ogImage = $derived(`${origin}/imgs/opengraph.png`);
-	const pageTitle = $derived(data?.title ?? 'Urban Conservation Hub | NYBG');
+	const pageTitle = $derived(data?.title ?? 'Thain Family Forest | NYBG');
 	import { dev } from '$app/environment';
 import { injectAnalytics } from '@vercel/analytics/sveltekit';
 
@@ -36,7 +36,7 @@ injectAnalytics({ mode: dev ? 'development' : 'production' });
 		<meta property="og:title" content={ogTitle} />
 		<meta property="og:description" content={ogDescription} />
 		<meta property="og:image" content={ogImage} />
-		<meta property="og:site_name" content="Urban Conservation Hub" />
+		<meta property="og:site_name" content="Thain Family Forest | NYBG" />
 		<meta name="twitter:card" content="summary_large_image" />
 		<meta name="twitter:title" content={ogTitle} />
 		<meta name="twitter:description" content={ogDescription} />

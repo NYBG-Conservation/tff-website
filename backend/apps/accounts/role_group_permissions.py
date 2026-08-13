@@ -21,6 +21,7 @@ from .constants import (
 # (app_label, model) pairs — CRUD unlocks admin list/add/change for partners and NYBG editors.
 _CONTENT_MODELS: tuple[tuple[str, str], ...] = (
     ("datasets", "project"),
+    ("datasets", "projectfile"),
     ("datasets", "dataset"),
     ("datasets", "datasetfile"),
     ("datasets", "projectpublication"),
@@ -43,6 +44,7 @@ _INTERNAL_EXTRA_MODELS: tuple[tuple[str, str], ...] = (
 # Overdue upload alerts / follow-up timeline — NYBG superadmins only.
 _SUPERADMIN_EXTRA_MODELS: tuple[tuple[str, str], ...] = (
     ("datasets", "projectalert"),
+    ("datasets", "websitedisplaysettings"),
 )
 
 _CRUD = ("add", "change", "delete", "view")

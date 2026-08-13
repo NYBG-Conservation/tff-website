@@ -2,7 +2,7 @@
     import { page } from '$app/stores';
 
     const pageTitles: Record<string, string> = {
-        '/': 'Urban Conservation Hub',
+        '/': 'Thain Family Forest | NYBG',
         '/about': 'About the Forest',
         '/research': 'Forest Research',
         '/visit': 'Visit the Forest',

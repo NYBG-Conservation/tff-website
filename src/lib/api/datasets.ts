@@ -63,7 +63,13 @@ export type Dataset = {
 		id?: number;
 		file?: string;
 		file_name: string;
-		file_kind?: 'primary_data' | 'documentation' | 'code' | 'derived_output' | 'image_media' | 'other';
+		file_kind?:
+			| 'peer_reviewed'
+			| 'dataset'
+			| 'presentation'
+			| 'extramural_documents'
+			| 'public_infographic'
+			| 'other';
 		content_type?: string;
 		version?: number;
 		notes?: string;

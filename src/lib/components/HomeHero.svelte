@@ -1,7 +1,6 @@
 <script lang="ts">
 	let { heroImage = '' }: { heroImage?: string } = $props();
-	const fallbackHero =
-		'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1920&q=80';
+	const fallbackHero = '/heroes/tff-forest-group.png';
 </script>
 
 <section
@@ -21,7 +20,7 @@
 <style>
 	.hero {
 		min-height: clamp(460px, 58vh, 640px);
-		background-position: center;
+		background-position: center 35%;
 		background-size: cover;
 		display: grid;
 		place-items: center;

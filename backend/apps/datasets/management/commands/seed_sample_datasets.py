@@ -12,15 +12,18 @@ from apps.datasets.seed_utils import find_project_by_canonical_slug
 from apps.organizations.models import Organization
 
 _TABULAR_EXTENSIONS = {".xlsx", ".xls", ".csv"}
-_DOCUMENTATION_EXTENSIONS = {".pdf", ".pptx", ".ppt", ".doc", ".docx"}
 
 
 def infer_file_kind(filename: str) -> str:
     extension = Path(filename).suffix.lower()
     if extension in _TABULAR_EXTENSIONS:
-        return DatasetFile.FileKind.PRIMARY_DATA
-    if extension in _DOCUMENTATION_EXTENSIONS:
-        return DatasetFile.FileKind.DOCUMENTATION
+        return DatasetFile.FileKind.DATASET
+    if extension in {".pdf", ".doc", ".docx"}:
+        return DatasetFile.FileKind.EXTRAMURAL_DOCUMENTS
+    if extension in {".pptx", ".ppt"}:
+        return DatasetFile.FileKind.PRESENTATION
+    if extension in {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}:
+        return DatasetFile.FileKind.PUBLIC_INFOGRAPHIC
     return DatasetFile.FileKind.OTHER
 
 

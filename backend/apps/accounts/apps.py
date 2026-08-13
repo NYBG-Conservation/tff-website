@@ -7,3 +7,6 @@ class AccountsConfig(AppConfig):
 
     def ready(self) -> None:
         from . import signals  # noqa: F401
+        from .admin_dashboard import patch_admin_index
+
+        patch_admin_index()

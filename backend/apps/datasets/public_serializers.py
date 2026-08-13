@@ -120,6 +120,7 @@ class PublicProjectSerializer(serializers.ModelSerializer):
     title = serializers.CharField(source="short_title", read_only=True)
     description_paragraphs = serializers.SerializerMethodField()
     dataset_ids = serializers.SerializerMethodField()
+    project_files = serializers.SerializerMethodField()
     organization_name = serializers.CharField(source="organization.name", read_only=True)
     institutional_partners = serializers.SerializerMethodField()
 
@@ -132,6 +133,7 @@ class PublicProjectSerializer(serializers.ModelSerializer):
             "summary",
             "description_paragraphs",
             "dataset_ids",
+            "project_files",
             "external_url",
             "lead_name",
             "lead_email",
@@ -140,6 +142,7 @@ class PublicProjectSerializer(serializers.ModelSerializer):
             "ongoing",
             "collection_frequency",
             "update_frequency",
+            "public_sort_order",
         )
 
     def get_institutional_partners(self, obj: Project) -> list[str]:
@@ -172,6 +175,29 @@ class PublicProjectSerializer(serializers.ModelSerializer):
         public_statuses = [Dataset.Status.ACTIVE, Dataset.Status.ARCHIVED]
         ids = obj.datasets.filter(expose_on_public_api=True, status__in=public_statuses).values_list("id", flat=True)
         return [str(dataset_id) for dataset_id in ids]
+
+    def get_project_files(self, obj: Project) -> list[dict]:
+        request = self.context.get("request")
+        files = []
+        for record in obj.project_files.filter(expose_on_public_api=True):
+            download_url = ""
+            if record.external_url:
+                download_url = record.external_url
+            elif record.file and request:
+                download_url = request.build_absolute_uri(record.file.url)
+            elif record.file:
+                download_url = record.file.url
+            files.append(
+                {
+                    "id": record.id,
+                    "title": record.title or record.file_name,
+                    "file_name": record.file_name,
+                    "file_kind": record.get_file_kind_display(),
+                    "file_kind_code": record.file_kind,
+                    "download_url": download_url,
+                }
+            )
+        return files
 
 
 class PublicPublicationSerializer(serializers.ModelSerializer):

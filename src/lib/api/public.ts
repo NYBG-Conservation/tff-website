@@ -2,6 +2,15 @@ import { PUBLIC_DJANGO_API_BASE_URL } from '$env/static/public';
 
 const API_BASE_URL = PUBLIC_DJANGO_API_BASE_URL || 'http://localhost:8000';
 
+export type PublicProjectFile = {
+	id: number;
+	title: string;
+	file_name: string;
+	file_kind: string;
+	file_kind_code: string;
+	download_url: string;
+};
+
 export type PublicResearchProject = {
 	slug: string;
 	title: string;
@@ -9,6 +18,7 @@ export type PublicResearchProject = {
 	summary: string;
 	descriptionParagraphs: string[];
 	datasetIds: string[];
+	project_files?: PublicProjectFile[];
 	external_url?: string;
 	lead_name?: string;
 	lead_email?: string;
@@ -17,6 +27,7 @@ export type PublicResearchProject = {
 	ongoing: boolean;
 	collection_frequency?: string;
 	update_frequency?: string;
+	public_sort_order?: number;
 };
 
 export type PublicDatasetFile = {
@@ -114,4 +125,15 @@ export async function fetchPublicPublications(
 		throw new Error(`Public publications API ${response.status}: ${await response.text()}`);
 	}
 	return (await response.json()) as PublicPublicationRecord[];
+}
+
+export async function fetchWebsiteDisplay(
+	fetchImpl: typeof fetch = fetch
+): Promise<{ highlights: PublicResearchProject[] }> {
+	const response = await fetchImpl(`${API_BASE_URL}/api/public/website-display/`);
+	if (!response.ok) {
+		throw new Error(`Public website display API ${response.status}: ${await response.text()}`);
+	}
+	const data = (await response.json()) as { highlights: PublicProjectApi[] };
+	return { highlights: (data.highlights ?? []).map(mapProject) };
 }

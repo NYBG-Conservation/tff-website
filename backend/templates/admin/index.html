@@ -1,0 +1,99 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'admin/css/dashboard.css' %}">
+{% endblock %}
+
+{% block coltype %}colM{% endblock %}
+
+{% block bodyclass %}{{ block.super }} dashboard tff-dashboard{% endblock %}
+
+{% block nav-breadcrumbs %}{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <section class="module tff-welcome" aria-labelledby="tff-welcome-heading">
+    <h2 id="tff-welcome-heading">Welcome</h2>
+    <p class="tff-welcome-message">{{ tff_welcome_message }}</p>
+
+    <div class="tff-welcome-columns">
+      <div>
+        <h3>Guides</h3>
+        <ul class="tff-link-list">
+          {% for link in tff_guide_links %}
+          <li><a href="{{ link.url }}">{{ link.title }}</a></li>
+          {% endfor %}
+          {% for link in tff_extra_links %}
+          <li><a href="{{ link.url }}">{{ link.title }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div>
+        <h3>Your projects</h3>
+        {% if tff_project_shortcuts %}
+        <p class="tff-hotkey-hint">Press <kbd>1</kbd>–<kbd>{{ tff_project_shortcuts|length }}</kbd> to open a project (when not typing in a field).</p>
+        <ul class="tff-shortcut-list">
+          {% for item in tff_project_shortcuts %}
+          <li>
+            <a href="{{ item.url }}" data-tff-hotkey="{{ item.hotkey }}">
+              <span class="tff-hotkey" aria-hidden="true">{{ item.hotkey }}</span>
+              <span>{{ item.title }}</span>
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p>You don’t own or manage any projects yet.</p>
+        {% endif %}
+        <p><a class="tff-add-project" href="{{ tff_add_project_url }}">Add a project</a></p>
+      </div>
+    </div>
+  </section>
+
+  <details class="module tff-recent-actions">
+    <summary>Recent actions</summary>
+    <h3 class="visually-hidden">{% translate 'My actions' %}</h3>
+    {% load log %}
+    {% get_admin_log 10 as admin_log for_user user %}
+    {% if not admin_log %}
+    <p>{% translate 'None available' %}</p>
+    {% else %}
+    <ul class="actionlist">
+      {% for entry in admin_log %}
+      <li class="{% if entry.is_addition %}addlink{% endif %}{% if entry.is_change %}changelink{% endif %}{% if entry.is_deletion %}deletelink{% endif %}">
+        {% if entry.is_deletion or not entry.get_admin_url %}
+          {{ entry.object_repr }}
+        {% else %}
+          <a href="{{ entry.get_admin_url }}">{{ entry.object_repr }}</a>
+        {% endif %}
+        <br>
+        {% if entry.content_type %}
+          <span class="mini quiet">{% filter capfirst %}{{ entry.content_type.name }}{% endfilter %}</span>
+        {% else %}
+          <span class="mini quiet">{% translate 'Unknown content' %}</span>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </details>
+
+  {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
+</div>
+<script>
+  document.addEventListener("keydown", function (event) {
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    const target = event.target;
+    if (target && (target.closest("input, textarea, select, [contenteditable='true']"))) return;
+    const link = document.querySelector("[data-tff-hotkey='" + event.key + "']");
+    if (link) {
+      event.preventDefault();
+      window.location.href = link.href;
+    }
+  });
+</script>
+{% endblock %}
+
+{% block sidebar %}{% endblock %}

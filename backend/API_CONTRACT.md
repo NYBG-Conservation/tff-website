@@ -11,9 +11,14 @@ Authentication:
 These endpoints power the public `/research` and `/data` pages.
 
 ### `GET /api/public/projects/`
-Returns projects where `shared_publicly=true`.
+Returns projects where `shared_publicly=true`, ordered by `public_sort_order` then title.
 
-Response fields include: `slug`, `title`, `summary`, `description_paragraphs`, `dataset_ids`, `ongoing`, `institutional_partners`, and PI metadata.
+Response fields include: `slug`, `title`, `summary`, `description_paragraphs`, `dataset_ids`, `project_files`, `ongoing`, `institutional_partners`, `public_sort_order`, and PI metadata.
+
+`project_files` entries (when `expose_on_public_api=true`) include `id`, `title`, `file_name`, `file_kind`, `file_kind_code`, and `download_url`.
+
+### `GET /api/public/website-display/`
+Returns homepage **Research highlights** (`highlights`: up to 3 public projects) as set by NYBG superadmins in **Website display settings**.
 
 ### `GET /api/public/datasets/`
 Returns datasets where `expose_on_public_api=true`, status is `active` or `archived`, and the linked project is public (or no project is linked).
@@ -151,7 +156,7 @@ Upload one file version or register an external asset link.
 - `file` (required unless `external_url` is provided)
 - `external_url` (required unless `file` is provided; preferred for assets >1 GB)
 - `file_name` (optional)
-- `file_kind` (optional, default `primary_data`)
+- `file_kind` (optional, default `dataset`; also: `peer_reviewed`, `presentation`, `extramural_documents`, `public_infographic`, `other`)
 - `content_type` (optional)
 - `notes` (optional)
 

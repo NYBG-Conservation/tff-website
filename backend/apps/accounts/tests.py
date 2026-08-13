@@ -149,6 +149,16 @@ class SyncRoleGroupPermissionsTests(APITestCase):
         self.assertTrue(group.permissions.filter(codename="change_projectalert").exists())
         self.assertFalse(group.permissions.filter(codename="add_projectalert").exists())
         self.assertFalse(group.permissions.filter(codename="delete_projectalert").exists())
+        self.assertTrue(group.permissions.filter(codename="view_websitedisplaysettings").exists())
+        self.assertTrue(group.permissions.filter(codename="change_websitedisplaysettings").exists())
+        self.assertFalse(group.permissions.filter(codename="add_websitedisplaysettings").exists())
+
+    def test_internal_admin_cannot_view_website_display_settings(self):
+        from django.contrib.auth.models import Group
+
+        call_command("sync_role_groups")
+        group = Group.objects.get(name="internal_admin")
+        self.assertFalse(group.permissions.filter(codename="view_websitedisplaysettings").exists())
 
     def test_sync_deletes_legacy_external_partner_admin_group(self):
         from django.contrib.auth.models import Group
@@ -184,3 +194,47 @@ class SyncRoleGroupPermissionsTests(APITestCase):
         self.assertTrue(user.is_staff)
         self.assertEqual(user.profile.organization_id, org.id)
         self.assertTrue(user.has_perm("datasets.add_project"))
+
+
+class AdminDashboardTests(APITestCase):
+    def setUp(self):
+        from apps.datasets.models import Project
+
+        self.org = Organization.objects.create(name="Partner Lab")
+        self.user = User.objects.create_user(username="researcher", password="pass12345", first_name="Ada")
+        self.user.profile.role = UserProfile.Role.EXTERNAL_ADMIN
+        self.user.profile.organization = self.org
+        self.user.profile.save()
+        self.Project = Project
+
+    def test_shortcut_projects_are_the_three_most_recently_edited(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from apps.accounts.admin_dashboard import shortcut_projects_for_user
+
+        now = timezone.now()
+        for offset, title in enumerate(["Oldest", "Mid", "Newer", "Newest"]):
+            project = self.Project.objects.create(
+                short_title=title,
+                lead_name="Ada",
+                lead_email="ada@example.org",
+                organization=self.org,
+                owner=self.user,
+            )
+            self.Project.objects.filter(pk=project.pk).update(updated_at=now - timedelta(days=3 - offset))
+
+        shortcuts = shortcut_projects_for_user(self.user)
+        self.assertEqual([project.short_title for project in shortcuts], ["Newest", "Newer", "Mid"])
+
+    def test_admin_index_shows_welcome_and_collapses_recent_actions(self):
+        self.client.force_login(self.user)
+        response = self.client.get("/admin/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Welcome, Ada")
+        self.assertContains(response, "Portal intro")
+        self.assertContains(response, "tff-welcome")
+        self.assertContains(response, "<details", html=False)
+        self.assertContains(response, "Recent actions")
+        self.assertNotContains(response, 'id="content-related"')

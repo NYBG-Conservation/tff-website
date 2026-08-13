@@ -5,6 +5,7 @@ from .public_views import (
     PublicDatasetListView,
     PublicProjectListView,
     PublicPublicationListView,
+    PublicWebsiteDisplayView,
 )
 from .views import (
     DatasetFileUploadView,
@@ -28,6 +29,7 @@ urlpatterns = [
         name="public-dataset-file-download",
     ),
     path("public/publications/", PublicPublicationListView.as_view(), name="public-publication-list"),
+    path("public/website-display/", PublicWebsiteDisplayView.as_view(), name="public-website-display"),
     path("projects/", ProjectListCreateView.as_view(), name="project-list-create"),
     path("projects/<int:pk>/", ProjectRetrieveUpdateView.as_view(), name="project-retrieve-update"),
     path(

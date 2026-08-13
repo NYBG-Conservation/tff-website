@@ -123,8 +123,9 @@ tff-website/
 | Model | Purpose |
 |-------|---------|
 | `Project` | Research project card (title, summary, description, slug, ongoing, partners) |
-| `Dataset` | Data release linked to a project (cadence, status, data type) |
-| `DatasetFile` | Uploaded file or external URL attached to a dataset |
+| `ProjectFile` | Typed attachments on a project (peer-reviewed, dataset, presentation, methods, infographic, other) |
+| `Dataset` | Optional catalog entry for the public `/data` table (cadence, status, data type) |
+| `DatasetFile` | Uploaded file or external URL on a dataset catalog entry |
 | `MetadataFieldDefinition` | Schema fields for a dataset |
 | `ProjectPublication` | Citation shown on `/research` |
 | `Organization` | NYBG, partners, etc. |
@@ -352,9 +353,9 @@ Path: **Datasets → Projects**
 | Organization | Scoping + metadata |
 | **Figshare item URL / reserved DOI** | **Required for new projects** — data deposit on Figshare ([how to reserve a DOI](https://info.figshare.com/user-guide/how-to-reserve-a-doi/)) |
 
-**Inlines on project:** Publications, Team members; **Alerts** (NYBG superadmin only — read-only timeline + snooze).
+**Inlines on project:** Project files, Publications, Team members; **Alerts** (NYBG superadmin only — read-only timeline + snooze).
 
-When a concluded project (not ongoing, with an `end_date`) has no linked dataset files for its Figshare deposit, automated reminders go to the project lead at **30, 60, 90, and 120 days** after the end date. At **60 days**, `manual_outreach_required` is set for NYBG **internal superadmin** follow-up (visible only to that role; snooze from Project alerts). Run daily on production:
+When a concluded project (not ongoing, with an `end_date`) has no linked **dataset-kind project file** or dataset catalog files for its Figshare deposit, automated reminders go to the project lead at **30, 60, 90, and 120 days** after the end date. At **60 days**, `manual_outreach_required` is set for NYBG **internal superadmin** follow-up (visible only to that role; snooze from Project alerts). Run daily on production:
 
 ```bash
 docker compose -f docker-compose.prod.yml exec backend python backend/manage.py check_overdue_project_uploads
@@ -362,9 +363,24 @@ docker compose -f docker-compose.prod.yml exec backend python backend/manage.py 
 
 Filter **Projects → Manual outreach required** in Django admin. Full spec: [OVERDUE_DATA_ALERT_SPEC.md](../backend/OVERDUE_DATA_ALERT_SPEC.md).
 
-### Datasets
+### Project files
 
-Path: **Datasets → Datasets**
+Path: inline on **Project admin → Projects** (preferred upload surface).
+
+| Kind | Typical use |
+|------|-------------|
+| Peer-reviewed publication | Papers |
+| Dataset | Tables / Figshare links (also clears overdue-data alerts) |
+| Presentation | Slides |
+| Extramural documents / methods / summary | Protocols, summaries |
+| Public infographic | Public outreach visuals |
+| Other | Catch-all |
+
+**Expose on public API** must be checked for files to appear in the `/research` project modal.
+
+### Dataset catalog
+
+Path: **Project admin → Dataset catalog**
 
 | Field | Public impact |
 |-------|----------------|
@@ -377,7 +393,7 @@ Path: **Datasets → Datasets**
 
 **Inlines:** Metadata fields, metadata values, files, publications.
 
-### Dataset files
+### Dataset catalog files
 
 Each file can be:
 
@@ -388,7 +404,7 @@ Each file can be:
 |-------|----------------|
 | **Expose on public API** | Listed on `/data` expanded row |
 | File name | Shown as file type label + filename |
-| File kind | Documentation, primary data, etc. |
+| File kind | Same vocabulary as project files (peer-reviewed, dataset, presentation, …) |
 
 **Viewing uploads in admin:** the “Currently: …” file link uses `/media/...`. Gunicorn serves that path for **logged-in** staff (login required). If you see Django’s HTML “Not Found” page, redeploy so `urls.py` includes media serving, and confirm the file still exists on the volume (`docker compose … exec backend ls /app/backend/media/datasets`).
 
@@ -417,7 +433,7 @@ Each expanded dataset has **Manage dataset entry →** linking directly to that 
 
 | Route | Data source | Notes |
 |-------|-------------|-------|
-| `/` | Static + `announcements.csv` hero image | Research highlights cards → `/research?project=` |
+| `/` | Public API highlights + `announcements.csv` hero | Research highlights cards → `/research?project=` |
 | `/about`, `/visit`, `/education`, `/contact` | Mostly static Svelte content | Education is placeholder |
 | `/research` | Public API | Overview, conducting research, project directory + publications |
 | `/research/apply` | Public POST API | Living Collections research application form |
@@ -429,7 +445,7 @@ Each expanded dataset has **Manage dataset entry →** linking directly to that 
 
 1. **Overview** — static intro copy
 2. **Conducting research** — link to `/research/apply`, resources accordion, link to Django admin for staff
-3. **Project directory** — cards from API; click opens modal with metadata, related datasets, publications
+3. **Project directory** — cards from API with search / status / organization / sort; click opens modal with metadata, project files, related datasets, publications
 
 Anchor link `#conducting-research-heading` scrolls below the fixed nav (via `scroll-padding-top`).
 
@@ -465,7 +481,14 @@ Smoke test after deploy:
 
 ### Homepage research highlights
 
-Configured in [`src/lib/data/researchHighlights.ts`](../src/lib/data/researchHighlights.ts) — currently CFI, Knotweed Management, Forest Soil Monitoring. Uses the same card component as `/research`.
+NYBG **internal superadmins** set homepage cards and `/research` directory order in Django admin:
+
+**Project admin → Website display settings**
+
+- Choose up to **3** public projects for **Research highlights** on `/`
+- Set a numeric **order** for every project marked **Shared publicly** (lower numbers appear first on `/research`)
+
+The public API is `GET /api/public/website-display/` (highlights) and `GET /api/public/projects/` (already sorted). If no highlights are chosen, the homepage falls back to the first three public projects in that order.
 
 ---
 

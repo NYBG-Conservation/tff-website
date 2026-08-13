@@ -13,8 +13,8 @@
 3. [Your role and what you can edit](#3-your-role-and-what-you-can-edit)
 4. [Workflow overview](#4-workflow-overview)
 5. [Project metadata — required vs optional](#5-project-metadata--required-vs-optional)
-6. [Dataset metadata — required vs optional](#6-dataset-metadata--required-vs-optional)
-7. [Dataset files and upload policy](#7-dataset-files-and-upload-policy)
+6. [Dataset catalog — required vs optional](#6-dataset-catalog--required-vs-optional)
+7. [Project files and upload policy](#7-project-files-and-upload-policy)
 8. [Publications](#8-publications)
 9. [Making content visible on the public website](#9-making-content-visible-on-the-public-website)
 10. [Data deposit reminders (30 / 60 / 90 / 120 days)](#10-data-deposit-reminders-30--60--90--120-days)
@@ -71,8 +71,8 @@ You cannot see or edit other institutions’ records. NYBG internal staff manage
 1. Apply for on-site research ([/research/apply](/research/apply)) → NYBG approval
 2. Create portal username/password via invite email (project shell created automatically)
 3. Reserve a Figshare DOI for your project (before field work) and add it on the Project
-4. Add Dataset(s) under the project
-5. Upload data to Figshare; link files in the dataset (upload or external URL)
+4. Add **Project files** on the project (peer-reviewed, dataset, presentation, methods/summary, infographic, or other)
+5. Optionally add a **Dataset catalog** entry if the work should appear on the public `/data` table
 6. When ready for the public site: enable visibility flags (see §9)
 7. When project concludes: set end date, uncheck Ongoing → automated reminders if data not linked
 ```
@@ -83,7 +83,7 @@ You cannot see or edit other institutions’ records. NYBG internal staff manage
 
 ## 5. Project metadata — required vs optional
 
-In Django admin: **Datasets → Projects → Add**.
+In Django admin: **Project admin → Projects → Add**.
 
 ### Required when creating a project
 
@@ -105,7 +105,7 @@ In Django admin: **Datasets → Projects → Add**.
 | **End date** | Set when the project has a **discrete conclusion**. Required for the 30/60/90-day upload reminder schedule (see §10). |
 | **Ongoing** | Check only if the project has **no fixed end date**. If ongoing, leave **End date** empty. |
 | **Plans own DOI** | Check if you will publish data under your own DOI (journal / Dryad / Zenodo, etc.) instead of reserving Figshare first. Figshare URL then becomes optional. |
-| **Institutional partners** | Partner organizations selected from the org list (shown by name on the public site if published). |
+| **Institutional partners** | Choose from the organization list (filter + Choose). If a partner is missing, type the name in **Add a new partner institution** and save. Names appear on the public site if the project is published. |
 
 ### Optional
 
@@ -135,9 +135,9 @@ In Django admin: **Datasets → Projects → Add**.
 
 ---
 
-## 6. Dataset metadata — required vs optional
+## 6. Dataset catalog — required vs optional
 
-Create datasets under **Datasets → Datasets → Add**, linked to your project.
+Create catalog entries under **Project admin → Dataset catalog → Add**, linked to your project, when you want a structured row on the public `/data` page (cadence, status, filters). Most day-to-day attachments belong under **Project files** (§7) instead.
 
 ### Required
 
@@ -176,18 +176,29 @@ Field types: Text, Long text, Number, Integer, Boolean, Date, Datetime, Enum, UR
 
 ---
 
-## 7. Dataset files and upload policy
+## 7. Project files and upload policy
 
-Each dataset can have **files** attached in the **Files** inline when editing a dataset.
+Attach files on the **Project** form under the **Project files** inline (preferred). Choose a **file kind**:
+
+| Kind | Use for |
+|------|---------|
+| Peer-reviewed publication | Published papers / DOIs hosted as files or links |
+| Dataset | Tables, raw data, Figshare deposit links |
+| Presentation | Slides, talks |
+| Extramural documents / methods / summary | Protocols, methods, project summaries |
+| Public infographic | Outreach visuals for the public site |
+| Other | Anything that does not fit above |
+
+Dataset catalog entries can still have their own **Files** inline for `/data` downloads; the same upload size rules apply.
 
 ### Per file
 
 | Field | Required? | Notes |
 |-------|-----------|--------|
 | **Uploaded file** *or* **External URL** | One required | Provide exactly one — not both. |
-| **File name** | Auto-filled if omitted | Shown on the public data page (extension used for file type label). |
-| **File kind** | Optional | Primary data, Documentation, Code, Derived output, Image/media, Other. |
-| **Expose on public API** | Optional | Must be on for public download/listing on `/data`. |
+| **Title / file name** | Auto-filled if omitted | Shown on the public research project modal. |
+| **File kind** | Yes (defaults to Other for project files) | See table above. |
+| **Expose on public API** | Optional | Must be on for the file to appear on `/research`. |
 | **Notes** | Optional | Internal context. |
 
 ### Upload size policy
@@ -198,7 +209,7 @@ Each dataset can have **files** attached in the **Files** inline when editing a 
 | **100 MB – 1 GB** | Upload allowed; **linking** (external URL) is preferred. |
 | **> 1 GB** | **External URL required** — host on Figshare and paste the Figshare URL. |
 
-**Recommended workflow:** Upload primary data to your project’s **Figshare deposit**, then add a dataset file row with the Figshare URL as **External URL**.
+**Recommended workflow:** Upload primary data to your project’s **Figshare deposit**, then add a **project file** (kind: Dataset) with the Figshare URL as **External URL**.
 
 Public file downloads on the website are **desktop only** (large files).
 
@@ -228,9 +239,10 @@ Admin changes are **not** public until visibility flags are set.
 | To appear on… | Set on… | Flag |
 |---------------|---------|------|
 | `/research` project cards | Project | **Shared publicly** |
+| `/research` project files | Project file | **Expose on public API** |
 | `/research` publications | Project publication | **Expose on public API** |
-| `/data` dataset rows | Dataset | **Expose on public API** + status **Active** or **Archived** |
-| `/data` file downloads | Dataset file | **Expose on public API** |
+| `/data` dataset rows | Dataset catalog | **Expose on public API** + status **Active** or **Archived** |
+| `/data` file downloads | Dataset catalog file | **Expose on public API** |
 
 NYBG may review before you enable public flags. Contact [forest@nybg.org](mailto:forest@nybg.org) if unsure.
 
@@ -247,13 +259,13 @@ For projects with a **fixed end date** (not ongoing):
 | **90** | Third reminder |
 | **120** | Final automated reminder |
 
-Reminders stop when at least one **dataset file** is linked (upload or Figshare/external URL).
+Reminders stop when at least one **project file** (dataset kind) or **dataset catalog file** is linked (upload or Figshare/external URL).
 
 **To stay out of the reminder queue:**
 
 1. Reserve Figshare at project creation (`figshare_doi_url`).
 2. Upload data to Figshare when ready.
-3. Create a dataset and attach files or paste the Figshare URL.
+3. Add a **project file** (kind: Dataset) with the Figshare URL — or create a dataset catalog entry and attach files there.
 4. For concluded projects, set **End date** and uncheck **Ongoing**.
 
 ---
@@ -266,8 +278,8 @@ Reminders stop when at least one **dataset file** is linked (upload or Figshare/
 - [ ] **Project** created with short title, lead name/email, organization, Figshare URL
 - [ ] Summary and description drafted (for eventual public use)
 - [ ] Start date set; end date set if project is not ongoing
-- [ ] **Dataset(s)** created and linked to the project
-- [ ] Files uploaded to Figshare and linked in the dataset (or direct upload ≤ 100 MB)
+- [ ] **Project files** attached (Figshare URL for data; other kinds as needed)
+- [ ] Optional: **Dataset catalog** entry if the work should appear on `/data`
 - [ ] Public visibility flags set only when ready (§9)
 
 ---

@@ -1,6 +1,8 @@
 from django import forms
 from django.contrib import admin
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 
 from apps.accounts.models import UserProfile
 from apps.accounts.roles import (
@@ -24,8 +26,10 @@ from .models import (
     MetadataFieldDefinition,
     Project,
     ProjectAlert,
+    ProjectFile,
     ProjectManager,
     ProjectPublication,
+    WebsiteDisplaySettings,
 )
 
 
@@ -35,6 +39,8 @@ class DatasetFileInline(admin.StackedInline):
     exclude = ("uploaded_by",)
     readonly_fields = ("uploaded_at", "version")
     classes = ("collapse",)
+    verbose_name = "File"
+    verbose_name_plural = "Files"
     fieldsets = (
         (
             None,
@@ -53,6 +59,47 @@ class DatasetFileInline(admin.StackedInline):
             },
         ),
     )
+
+
+class ProjectFileInline(admin.StackedInline):
+    model = ProjectFile
+    extra = 0
+    exclude = ("uploaded_by",)
+    readonly_fields = ("uploaded_at",)
+    verbose_name = "Project file"
+    verbose_name_plural = "Project files"
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "file_kind",
+                    "title",
+                    "file",
+                    "external_url",
+                    "file_name",
+                    "notes",
+                    "expose_on_public_api",
+                    "uploaded_at",
+                )
+            },
+        ),
+    )
+
+    def has_add_permission(self, request, obj=None):
+        if obj is not None and not can_edit_project(request.user, obj):
+            return False
+        return super().has_add_permission(request, obj)
+
+    def has_change_permission(self, request, obj=None):
+        if obj is not None and not can_edit_project(request.user, obj):
+            return False
+        return super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        if obj is not None and not can_edit_project(request.user, obj):
+            return False
+        return super().has_delete_permission(request, obj)
 
 
 class MetadataFieldDefinitionInline(admin.StackedInline):
@@ -119,12 +166,29 @@ class ProjectManagerInline(admin.TabularInline):
         return super().has_delete_permission(request, obj)
 
 
-class ProjectAlertInline(admin.TabularInline):
+class ProjectAlertInline(admin.StackedInline):
     model = ProjectAlert
     extra = 0
     can_delete = False
     show_change_link = True
-    fields = (
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "alert_type",
+                    "status",
+                    "emailed_milestones",
+                    "first_triggered_at",
+                    "last_emailed_at",
+                    "last_evaluated_at",
+                    "resolved_at",
+                    "resolution_note",
+                )
+            },
+        ),
+    )
+    readonly_fields = (
         "alert_type",
         "status",
         "emailed_milestones",
@@ -134,7 +198,6 @@ class ProjectAlertInline(admin.TabularInline):
         "resolved_at",
         "resolution_note",
     )
-    readonly_fields = fields
 
     def has_add_permission(self, request, obj=None):
         return False
@@ -151,12 +214,19 @@ class ProjectAdminForm(forms.ModelForm):
         queryset=Organization.objects.all().order_by("name"),
         required=False,
         label="Institutional partners",
-        help_text="Select partner organizations. Create missing ones under Organizations first if needed.",
+        help_text="Filter the left list, then choose partners. Add a missing institution below.",
+        widget=admin.widgets.FilteredSelectMultiple("institutional partners", is_stacked=False),
+    )
+    new_partner_name = forms.CharField(
+        required=False,
+        label="Add a new partner institution",
+        max_length=255,
+        help_text="If the partner is not in the list, type the name and save. It will be created and selected.",
     )
 
     class Meta:
         model = Project
-        exclude = ("institutional_partners", "manual_outreach_required", "manual_outreach_at")
+        exclude = ("institutional_partners", "manual_outreach_required", "manual_outreach_at", "public_sort_order")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -168,6 +238,20 @@ class ProjectAdminForm(forms.ModelForm):
                 except (TypeError, ValueError):
                     continue
         self.fields["institutional_partner_orgs"].initial = Organization.objects.filter(pk__in=ids)
+
+    def clean_new_partner_name(self):
+        return (self.cleaned_data.get("new_partner_name") or "").strip()
+
+    def _resolve_partner_orgs(self) -> list[Organization]:
+        selected = list(self.cleaned_data.get("institutional_partner_orgs") or [])
+        name = self.cleaned_data.get("new_partner_name") or ""
+        if name:
+            org = Organization.objects.filter(name__iexact=name).first()
+            if org is None:
+                org = Organization.objects.create(name=name)
+            if org not in selected:
+                selected.append(org)
+        return selected
 
     def clean(self):
         cleaned = super().clean()
@@ -183,12 +267,15 @@ class ProjectAdminForm(forms.ModelForm):
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        selected = self.cleaned_data.get("institutional_partner_orgs")
-        instance.institutional_partners = [org.id for org in selected] if selected is not None else []
+        instance.institutional_partners = [org.id for org in self._resolve_partner_orgs()]
         if commit:
             instance.save()
             self.save_m2m()
         return instance
+
+    class Media:
+        css = {"all": ("admin/css/widgets.css",)}
+        js = ("admin/js/core.js", "admin/js/SelectBox.js", "admin/js/SelectFilter2.js")
 
 
 @admin.register(Project)
@@ -225,12 +312,15 @@ class ProjectAdmin(admin.ModelAdmin):
                 ),
             },
         ),
-        ("Links", {"fields": ("external_url", "institutional_partner_orgs")}),
+        (
+            "Links",
+            {"fields": ("external_url", "institutional_partner_orgs", "new_partner_name")},
+        ),
     )
     list_filter = ("organization", "shared_publicly", "ongoing")
     search_fields = ("short_title", "slug", "full_title", "lead_name", "lead_email", "organization__name", "owner__username")
     readonly_fields = ("slug", "manual_outreach_required", "manual_outreach_at")
-    inlines = [ProjectPublicationInline, ProjectManagerInline, ProjectAlertInline]
+    inlines = [ProjectFileInline, ProjectPublicationInline, ProjectManagerInline, ProjectAlertInline]
 
     def get_list_display(self, request):
         display = list(self.list_display)
@@ -311,6 +401,16 @@ class ProjectAdmin(admin.ModelAdmin):
             for obj in instances:
                 if not obj.added_by_id:
                     obj.added_by = request.user
+                obj.save()
+            formset.save_m2m()
+            for obj in formset.deleted_objects:
+                obj.delete()
+            return
+        if formset.model is ProjectFile:
+            instances = formset.save(commit=False)
+            for obj in instances:
+                if not obj.uploaded_by_id:
+                    obj.uploaded_by = request.user
                 obj.save()
             formset.save_m2m()
             for obj in formset.deleted_objects:
@@ -416,6 +516,90 @@ class ProjectAlertAdmin(admin.ModelAdmin):
         for project in Project.objects.filter(pk__in=project_ids):
             total += unsnooze_project_alerts(project)
         self.message_user(request, f"Unsnoozed alerts on {len(project_ids)} project(s) ({total} alert row(s)).")
+
+
+class WebsiteDisplaySettingsForm(forms.ModelForm):
+    class Meta:
+        model = WebsiteDisplaySettings
+        fields = ("highlight_1", "highlight_2", "highlight_3")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        public_projects = Project.objects.filter(shared_publicly=True).order_by("short_title")
+        for name in ("highlight_1", "highlight_2", "highlight_3"):
+            self.fields[name].queryset = public_projects
+            self.fields[name].required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        slots = [cleaned.get("highlight_1"), cleaned.get("highlight_2"), cleaned.get("highlight_3")]
+        ids = [project.pk for project in slots if project]
+        if len(ids) != len(set(ids)):
+            raise DjangoValidationError("Each homepage highlight must be a different project.")
+        for project in slots:
+            if project and not project.shared_publicly:
+                raise DjangoValidationError(
+                    f"“{project.short_title}” is not shared publicly, so it cannot be a homepage highlight."
+                )
+        return cleaned
+
+
+@admin.register(WebsiteDisplaySettings)
+class WebsiteDisplaySettingsAdmin(admin.ModelAdmin):
+    form = WebsiteDisplaySettingsForm
+    autocomplete_fields = ("highlight_1", "highlight_2", "highlight_3")
+    fieldsets = (
+        (
+            "Homepage research highlights",
+            {
+                "description": (
+                    "Choose up to three projects that are marked Shared publicly. "
+                    "These appear under Research highlights on the public homepage."
+                ),
+                "fields": ("highlight_1", "highlight_2", "highlight_3"),
+            },
+        ),
+    )
+
+    def has_module_permission(self, request):
+        return is_internal_superadmin(request.user)
+
+    def has_view_permission(self, request, obj=None):
+        return is_internal_superadmin(request.user)
+
+    def has_change_permission(self, request, obj=None):
+        return is_internal_superadmin(request.user)
+
+    def has_add_permission(self, request):
+        return is_internal_superadmin(request.user) and not WebsiteDisplaySettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def changelist_view(self, request, extra_context=None):
+        obj = WebsiteDisplaySettings.load()
+        return HttpResponseRedirect(
+            reverse("admin:datasets_websitedisplaysettings_change", args=[obj.pk])
+        )
+
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        extra_context = extra_context or {}
+        extra_context["public_projects"] = Project.objects.filter(shared_publicly=True).order_by(
+            "public_sort_order", "short_title"
+        )
+        return super().changeform_view(request, object_id, form_url, extra_context)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        for project in Project.objects.filter(shared_publicly=True):
+            raw = request.POST.get(f"public_sort_order_{project.pk}")
+            if raw is None:
+                continue
+            try:
+                project.public_sort_order = int(raw)
+            except (TypeError, ValueError):
+                continue
+            project.save(update_fields=["public_sort_order", "updated_at"])
 
 
 @admin.register(Dataset)
