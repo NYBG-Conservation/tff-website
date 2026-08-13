@@ -51,33 +51,6 @@ Researchers manage records through **Django admin** (not a separate custom dashb
 
 ---
 
-## 2. Architecture at a glance
-
-```mermaid
-flowchart TB
-  subgraph public [Public visitors]
-    browser[Browser]
-  end
-  subgraph vercel [Vercel - SvelteKit]
-    pages["/, /research, /data, ..."]
-  end
-  subgraph ec2 [EC2 - Django]
-    admin["/admin/"]
-    api["/api/public/*"]
-    private["/api/projects, /api/datasets"]
-  end
-  subgraph db [(PostgreSQL / SQLite)]
-    data[(Projects, Datasets, Users)]
-  end
-
-  browser --> pages
-  pages -->|"PUBLIC_DJANGO_API_BASE_URL"| api
-  browser --> admin
-  admin --> data
-  api --> data
-  private --> data
-```
-
 **Content flow:**
 
 1. Staff edits **Projects**, **Datasets**, and **Files** in Django admin.
@@ -87,7 +60,7 @@ flowchart TB
 
 ---
 
-## 3. Repository layout
+## Repository layout
 
 ```
 tff-website/
