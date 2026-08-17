@@ -82,3 +82,27 @@ The Svelte frontend calls Django REST endpoints under `/api/...`. Django handles
 Deferred until a dedicated AWS member account email is available. When ready:
 
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — Vercel, EC2, RDS, S3, grant billing, sample-data storage
+
+---
+
+## In this repository
+
+You’ll find:
+
+### Architecture
+
+Public **SvelteKit** site plus a **Django + Postgres** API in `backend/`. The frontend calls `/api/...` (auth, datasets, public research/data pages). Production target: Vercel (frontend) → EC2/Docker Gunicorn (Django) → RDS (metadata) → S3 (uploads), in a grant-isolated AWS member account. That AWS track is **deferred**; local work uses SQLite or Docker Postgres.
+
+Diagram and account layout: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#architecture).
+
+### Connecting to deployment (Vercel / AWS SSH)
+
+- **Local (active now):** two terminals — Django on `127.0.0.1:8000`, frontend via `npm run dev`. See [Active development](#active-development-now). Docker alternative: `docker compose up` ([backend/README.md](backend/README.md)).
+- **Vercel (planned):** deploy the SvelteKit app; set `PUBLIC_DJANGO_API_BASE_URL` to the Django HTTPS origin. Vercel does not run Django or talk to RDS.
+- **EC2 (planned):** SSH to the instance (security group: port 22 from your IP only), then `docker compose -f docker-compose.prod.yml up --build -d`. RDS is reachable only from the EC2 security group.
+
+Full runbook: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Staff ops: [docs/NYBG_OPERATIONS_GUIDE.md](docs/NYBG_OPERATIONS_GUIDE.md).
+
+### Data cleaning / management pipeline
+
+Researchers create and validate datasets in Django admin (roles, required fields, Figshare, upload policy — [docs/EXTERNAL_PARTNER_GUIDE.md](docs/EXTERNAL_PARTNER_GUIDE.md)). Postgres stores users, organizations, dataset metadata, and file-version pointers; binaries go to disk locally or S3 in production. Public `/research` and `/data` pages only show records marked `shared_publicly` / `expose_on_public_api`. Seed/cleanup workflows: [docs/SEED_DATA.md](docs/SEED_DATA.md). Sample binaries under `src/lib/data/tff-sample-data/` are for import scripts, not the Vercel bundle.
