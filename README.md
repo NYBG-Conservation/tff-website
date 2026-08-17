@@ -6,7 +6,6 @@ Annie Fu (afu@nybg.org)
 
 ## Active development (now)
 
-AWS Organizations and a separate grant member account are **on hold** until you have a unique root email. Use local development in the meantime.
 
 **Terminal 1 — API (Python 3.10+):**
 
