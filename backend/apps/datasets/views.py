@@ -30,13 +30,13 @@ from .serializers import (
 def scoped_projects_for_user(user):
     return Project.objects.select_related("owner", "organization").prefetch_related(
         "project_managers__user"
-    ).filter(scoped_projects_filter(user))
+    ).filter(scoped_projects_filter(user)).distinct()
 
 
 def scoped_datasets_for_user(user):
     return Dataset.objects.select_related("owner", "organization", "project").prefetch_related(
         "metadata_fields", "metadata_values", "files", "publications", "project__managers"
-    ).filter(scoped_datasets_filter(user))
+    ).filter(scoped_datasets_filter(user)).distinct()
 
 
 def _organization_from_validated(serializer) -> object | None:

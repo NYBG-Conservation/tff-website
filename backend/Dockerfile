@@ -15,6 +15,7 @@ COPY backend/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 COPY backend /app/backend
+COPY docs /app/docs
 COPY src/lib/data/tff-sample-data /app/sample-data
 
 RUN chmod +x /app/backend/docker-entrypoint.sh

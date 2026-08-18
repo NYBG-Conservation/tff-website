@@ -115,7 +115,7 @@ class Command(BaseCommand):
                     send_mail(
                         subject,
                         body,
-                        getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@localhost"),
+                        settings.DEFAULT_FROM_EMAIL,
                         [recipient],
                         fail_silently=False,
                     )

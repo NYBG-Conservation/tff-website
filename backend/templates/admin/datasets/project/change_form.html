@@ -1,0 +1,103 @@
+{% extends "admin/change_form.html" %}
+
+{% block after_field_sets %}
+{{ block.super }}
+{% if original and tff_related %}
+<section class="module tff-related-panel" aria-labelledby="tff-related-heading">
+	<h2 id="tff-related-heading">Catalog files and publications</h2>
+	<p class="tff-related-help">
+		Files and publications stored on this project’s dataset catalog entries.
+		Edit catalog entries in <strong>Dataset catalog</strong> below.
+		The <strong>Delete</strong> button at the top of this page removes the entire project, not a single related row.
+	</p>
+
+	<h3>Catalog files</h3>
+	{% if tff_related.catalog_files %}
+	<table class="tff-related-table">
+		<thead>
+			<tr>
+				<th>File</th>
+				<th>Kind</th>
+				<th>Dataset</th>
+				<th>Public</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for row in tff_related.catalog_files %}
+			<tr>
+				<td>
+					{% if row.href %}
+					<a href="{{ row.href }}" rel="noopener noreferrer">{{ row.name }}</a>
+					{% else %}
+					{{ row.name }}
+					{% endif %}
+				</td>
+				<td>{{ row.kind }}</td>
+				<td><a href="{{ row.dataset_url }}">{{ row.dataset_title }}</a></td>
+				<td>{% if row.public %}Yes{% else %}No{% endif %}</td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+	{% else %}
+	<p class="tff-related-empty">No files on dataset catalog entries yet.</p>
+	{% endif %}
+
+	<h3>Catalog publications</h3>
+	{% if tff_related.catalog_publications %}
+	<table class="tff-related-table">
+		<thead>
+			<tr>
+				<th>Title</th>
+				<th>Year</th>
+				<th>Dataset</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for row in tff_related.catalog_publications %}
+			<tr>
+				<td>
+					{% if row.href %}
+					<a href="{{ row.href }}" rel="noopener noreferrer">{{ row.title }}</a>
+					{% else %}
+					{{ row.title }}
+					{% endif %}
+				</td>
+				<td>{{ row.year|default:"" }}</td>
+				<td><a href="{{ row.dataset_url }}">{{ row.dataset_title }}</a></td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+	{% else %}
+	<p class="tff-related-empty">No publications on dataset catalog entries yet.</p>
+	{% endif %}
+
+	{% if tff_show_alerts %}
+	<h3>Project alerts</h3>
+	{% if tff_related.alerts %}
+	<table class="tff-related-table">
+		<thead>
+			<tr>
+				<th>Type</th>
+				<th>Status</th>
+				<th>Milestones emailed</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for row in tff_related.alerts %}
+			<tr>
+				<td>{{ row.type }}</td>
+				<td>{{ row.status }}</td>
+				<td>{{ row.milestones }}</td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+	{% else %}
+	<p class="tff-related-empty">No alerts for this project.</p>
+	{% endif %}
+	{% endif %}
+</section>
+{% endif %}
+{% endblock %}

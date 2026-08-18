@@ -42,7 +42,7 @@ def notify_staff_of_application(application) -> None:
     send_mail(
         subject,
         body,
-        getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@localhost"),
+        settings.DEFAULT_FROM_EMAIL,
         recipients,
         fail_silently=False,
     )
@@ -62,7 +62,7 @@ def notify_applicant_confirmation(application) -> None:
     send_mail(
         subject,
         body,
-        getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@localhost"),
+        settings.DEFAULT_FROM_EMAIL,
         [application.email],
         fail_silently=True,
     )
@@ -123,7 +123,7 @@ def notify_applicant_portal_invite(application) -> None:
     send_mail(
         subject,
         body,
-        getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@localhost"),
+        settings.DEFAULT_FROM_EMAIL,
         [application.email],
         fail_silently=False,
     )

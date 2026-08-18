@@ -54,6 +54,19 @@ def user_home_organization(user) -> Organization | None:
     return profile.organization
 
 
+def _owned_or_managed_project_ids(user):
+    """Subquery of project PKs so owner+manager membership does not duplicate list rows."""
+    from apps.datasets.models import Project
+
+    return Project.objects.filter(Q(owner=user) | Q(managers=user)).values("pk")
+
+
+def _owned_or_managed_dataset_ids(user):
+    from apps.datasets.models import Dataset
+
+    return Dataset.objects.filter(Q(owner=user) | Q(project__managers=user)).values("pk")
+
+
 def scoped_projects_filter(user) -> Q:
     """Projects visible in list/retrieve (may be broader than edit rights)."""
     role = get_role(user)
@@ -71,8 +84,8 @@ def scoped_projects_filter(user) -> Q:
         org = user_home_organization(user)
         if org:
             return Q(organization=org)
-        return Q(owner=user) | Q(managers=user)
-    return Q(owner=user) | Q(managers=user)
+        return Q(pk__in=_owned_or_managed_project_ids(user))
+    return Q(pk__in=_owned_or_managed_project_ids(user))
 
 
 def scoped_datasets_filter(user) -> Q:
@@ -87,7 +100,7 @@ def scoped_datasets_filter(user) -> Q:
         if not org:
             return Q(pk__in=[])
         return Q(organization=org)
-    return Q(owner=user) | Q(project__managers=user)
+    return Q(pk__in=_owned_or_managed_dataset_ids(user))
 
 
 def can_view_project(user, project) -> bool:

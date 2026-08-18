@@ -282,6 +282,8 @@ docker compose -f docker-compose.prod.yml exec backend python backend/manage.py 
 
 Entrypoint: migrations → `collectstatic` → Gunicorn ([`backend/docker-entrypoint.sh`](../backend/docker-entrypoint.sh)).
 
+Gunicorn defaults (override in `backend/.env`): **2 workers × 2 threads**, `CONN_MAX_AGE=60` so RDS connections are reused, worker recycle every ~500 requests. Do not point `EMAIL_HOST` at an SMTP relay this instance cannot reach — that stalls a worker until `EMAIL_TIMEOUT` (10s).
+
 If `exec` fails with **service "web" is not running** (or **service "backend" is not running**), start the stack with `up -d` first, or check `docker compose -f docker-compose.prod.yml ps` and `logs backend`. The production compose file defines one service: **`backend`** ([`docker-compose.prod.yml`](../docker-compose.prod.yml)).
 
 ### TLS (recommended)
@@ -330,6 +332,29 @@ Before opening the API to the internet or the focus group:
 5. Plan **`SESSION_COOKIE_SAMESITE=None`** if `/projects` login from Vercel still fails after HTTPS.
 
 Cursor rule `.cursor/rules/public-api-https.mdc` reminds the agent to surface this list when you ask about going public.
+
+### SMTP / outbound email
+
+Django sends application notices, portal invites, and overdue-upload reminders via SMTP. Settings are read from `backend/.env` ([`backend/config/email.py`](../backend/config/email.py)). **From address is `forest@nybg.org`** so NYBG SPF/DKIM apply — do not use a personal Gmail From.
+
+| Variable | Production |
+|----------|------------|
+| `DEFAULT_FROM_EMAIL` | `forest@nybg.org` |
+| `RESEARCH_APPLICATION_NOTIFY` | `forest@nybg.org` (comma-separated OK) |
+| `EMAIL_HOST` | NYBG relay from IT (placeholder `smtp.nybg.org` in the env example) |
+| `EMAIL_PORT` / `EMAIL_USE_TLS` | Usually `587` / `true`; some internal relays use `25` / `false` |
+| `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` | Only if IT requires auth |
+
+Copy [`backend/.env.production.example`](../backend/.env.production.example). Local/dev with `EMAIL_HOST` empty prints mail to the console instead of sending.
+
+After deploy, from the repo root on the host:
+
+```bash
+docker compose -f docker-compose.prod.yml exec backend python backend/manage.py check
+docker compose -f docker-compose.prod.yml exec backend python backend/manage.py sendtestemail you@nybg.org
+```
+
+`manage.py check` warns if production SMTP still points at localhost. Confirm a real message arrives (including a non-`@nybg.org` inbox — invites go to external researchers).
 
 ---
 

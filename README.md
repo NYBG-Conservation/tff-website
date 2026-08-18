@@ -52,7 +52,7 @@ Optional: `createsuperuser` + seed commands — see [docs/SEED_DATA.md](docs/SEE
 
 **Docker alternative:** `docker compose up` (local Postgres + Django) — see [backend/README.md](backend/README.md).
 
-Production AWS (Vercel, EC2, RDS, member account) is documented in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for when you are ready.
+**Current hosting:** Django API + admin run on **AWS EC2** (Docker Compose). SSH into the instance to deploy and run management commands. The public SvelteKit site is on **Vercel** and reads the Django public API. Uploads live on the EC2 `media_data` volume (S3 is not in use yet). Staging currently serves the API at `http://<EC2_IP>:8000` with `USE_HTTPS=false` — do not use that setup for a public launch. Full runbook: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ---
 
@@ -77,11 +77,28 @@ See [docs/SEED_DATA.md](docs/SEED_DATA.md) for safe seed/cleanup workflows (avoi
 
 The Svelte frontend calls Django REST endpoints under `/api/...`. Django handles auth, permissions, and dataset validation, and Postgres stores users, organizations, datasets, metadata definitions/values, and file version records.
 
-### Production deployment (later)
+### Production / staging (current)
 
-Deferred until a dedicated AWS member account email is available. When ready:
+| Layer | Where it runs now |
+|-------|-------------------|
+| Public frontend | Vercel (SvelteKit). Set `PUBLIC_DJANGO_API_BASE_URL` to the Django origin. |
+| API + admin | AWS EC2, Docker service **`backend`** (`docker-compose.prod.yml`) |
+| Database | RDS Postgres in production; SQLite or local Docker Postgres on a laptop |
+| Uploads | `backend/media/` on the EC2 `media_data` volume |
 
-- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — Vercel, EC2, RDS, S3, grant billing, sample-data storage
+SSH to the instance (security group: port 22 from your IP), then from the clone (`~/tff-website`):
+
+```bash
+ssh -i /path/to/key.pem <user>@<EC2_PUBLIC_IP>
+cd ~/tff-website
+git pull
+docker compose -f docker-compose.prod.yml up --build -d
+docker compose -f docker-compose.prod.yml exec backend python backend/manage.py migrate
+```
+
+Django is **not** installed on the Ubuntu host — always `exec` into the `backend` container. Copy `backend/.env.production.example` → `backend/.env` on the server (RDS URL, `DJANGO_SECRET_KEY`, hosts, CORS/CSRF). Prefer an EC2 IAM role for AWS access instead of long-lived keys.
+
+**Still later:** grant-isolated AWS Organizations member account, S3 for uploads at scale, and public HTTPS (ALB / `USE_HTTPS=true`, no open port 8000). See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ---
 
@@ -91,18 +108,25 @@ You’ll find:
 
 ### Architecture
 
-Public **SvelteKit** site plus a **Django + Postgres** API in `backend/`. The frontend calls `/api/...` (auth, datasets, public research/data pages). Production target: Vercel (frontend) → EC2/Docker Gunicorn (Django) → RDS (metadata) → S3 (uploads), in a grant-isolated AWS member account. That AWS track is **deferred**; local work uses SQLite or Docker Postgres.
+Public **SvelteKit** site plus a **Django + Postgres** API in `backend/`. The frontend calls `/api/...` (auth, datasets, public research/data pages).
 
-Diagram and account layout: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#architecture).
+```
+Browser  →  Vercel (SvelteKit)
+         →  EC2 Docker / Gunicorn (Django admin + API)
+                →  RDS (metadata, users, datasets)
+                →  EC2 volume (uploaded files; S3 later)
+```
+
+Local laptops still use SQLite or Docker Postgres. Diagram and account layout: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#architecture).
 
 ### Connecting to deployment (Vercel / AWS SSH)
 
-- **Local (active now):** two terminals — Django on `127.0.0.1:8000`, frontend via `npm run dev`. See [Active development](#active-development-now). Docker alternative: `docker compose up` ([backend/README.md](backend/README.md)).
-- **Vercel (planned):** deploy the SvelteKit app; set `PUBLIC_DJANGO_API_BASE_URL` to the Django HTTPS origin. Vercel does not run Django or talk to RDS.
-- **EC2 (planned):** SSH to the instance (security group: port 22 from your IP only), then `docker compose -f docker-compose.prod.yml up --build -d`. RDS is reachable only from the EC2 security group.
+- **Local:** two terminals — Django on `127.0.0.1:8000`, frontend via `npm run dev`. See [Active development](#active-development-now). Docker alternative: `docker compose up` ([backend/README.md](backend/README.md)).
+- **Vercel:** public SvelteKit site. Set `PUBLIC_DJANGO_API_BASE_URL` to the Django origin. Vercel does not run Django or talk to RDS.
+- **EC2 (active):** SSH with the instance `.pem` (port 22 from your IP). Deploy with `docker compose -f docker-compose.prod.yml`. RDS (when used) is reachable only from the EC2 security group. Secrets live in `backend/.env` on the host — see [Production / staging (current)](#production--staging-current).
 
 Full runbook: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Staff ops: [docs/NYBG_OPERATIONS_GUIDE.md](docs/NYBG_OPERATIONS_GUIDE.md).
 
 ### Data cleaning / management pipeline
 
-Researchers create and validate datasets in Django admin (roles, required fields, Figshare, upload policy — [docs/EXTERNAL_PARTNER_GUIDE.md](docs/EXTERNAL_PARTNER_GUIDE.md)). Postgres stores users, organizations, dataset metadata, and file-version pointers; binaries go to disk locally or S3 in production. Public `/research` and `/data` pages only show records marked `shared_publicly` / `expose_on_public_api`. Seed/cleanup workflows: [docs/SEED_DATA.md](docs/SEED_DATA.md). Sample binaries under `src/lib/data/tff-sample-data/` are for import scripts, not the Vercel bundle.
+Researchers create and validate datasets in Django admin (roles, required fields, Figshare, upload policy — [docs/EXTERNAL_PARTNER_GUIDE.md](docs/EXTERNAL_PARTNER_GUIDE.md)). Postgres stores users, organizations, dataset metadata, and file-version pointers. Binaries go to `backend/media/` locally or on the EC2 volume; S3 is planned for production-scale uploads. Public `/research` and `/data` pages only show records marked `shared_publicly` / `expose_on_public_api`. Seed/cleanup workflows: [docs/SEED_DATA.md](docs/SEED_DATA.md). Sample binaries under `src/lib/data/tff-sample-data/` are for import scripts, not the Vercel bundle.

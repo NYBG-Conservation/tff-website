@@ -78,7 +78,7 @@ When data is linked, active/snoozed `missing_data_overdue` and `manual_outreach_
 |---------|---------|---------|
 | `PROJECT_ALERT_MILESTONE_DAYS` | `30,60,90,120` | Comma-separated reminder days after `end_date` |
 | `PROJECT_MANUAL_OUTREACH_DAY` | `60` | Day to flag manual outreach (must be one of the milestones) |
-| `DEFAULT_FROM_EMAIL` | — | Sender for milestone emails |
+| `DEFAULT_FROM_EMAIL` | `forest@nybg.org` | Sender for milestone emails |
 | `DJANGO_API_PUBLIC_URL` | — | Admin links in email bodies |
 
 Legacy `PROJECT_OVERDUE_DAYS` / `PROJECT_ALERT_REMINDER_DAYS` are superseded by milestone days.

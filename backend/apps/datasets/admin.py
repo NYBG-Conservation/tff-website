@@ -33,8 +33,92 @@ from .models import (
 )
 
 
+def _open_file_href(file_field, external_url: str = "") -> str:
+    if file_field:
+        try:
+            return file_field.url
+        except ValueError:
+            pass
+    return external_url or ""
+
+
+def related_records_for_project(project: Project) -> dict:
+    """Flatten catalog entries, files, and publications that belong to this project."""
+    datasets = list(
+        project.datasets.select_related("organization")
+        .prefetch_related("files", "publications")
+        .order_by("title")
+    )
+    catalog_files = []
+    catalog_publications = []
+    for dataset in datasets:
+        dataset_url = reverse("admin:datasets_dataset_change", args=[dataset.pk])
+        for file_obj in dataset.files.all():
+            catalog_files.append(
+                {
+                    "name": file_obj.file_name or f"File {file_obj.pk}",
+                    "kind": file_obj.get_file_kind_display(),
+                    "dataset_title": dataset.title,
+                    "dataset_url": dataset_url,
+                    "public": file_obj.expose_on_public_api,
+                    "href": _open_file_href(file_obj.file, file_obj.external_url),
+                }
+            )
+        for publication in dataset.publications.all():
+            catalog_publications.append(
+                {
+                    "title": publication.title,
+                    "year": publication.publication_year,
+                    "dataset_title": dataset.title,
+                    "dataset_url": dataset_url,
+                    "href": publication.url or _open_file_href(publication.attachment, ""),
+                }
+            )
+    return {
+        "datasets": [
+            {
+                "title": dataset.title,
+                "data_type": dataset.get_data_type_display(),
+                "status": dataset.get_status_display(),
+                "file_count": len(dataset.files.all()),
+                "url": reverse("admin:datasets_dataset_change", args=[dataset.pk]),
+                "public": dataset.expose_on_public_api,
+            }
+            for dataset in datasets
+        ],
+        "catalog_files": catalog_files,
+        "catalog_publications": catalog_publications,
+        "alerts": [
+            {
+                "type": alert.get_alert_type_display(),
+                "status": alert.get_status_display(),
+                "milestones": ", ".join(str(day) for day in (alert.emailed_milestones or [])),
+            }
+            for alert in project.alerts.all()
+        ],
+    }
+
+
+class DatasetFileInlineForm(forms.ModelForm):
+    class Meta:
+        model = DatasetFile
+        exclude = ("uploaded_by",)
+
+    def has_changed(self):
+        if self.instance.pk:
+            return super().has_changed()
+        data = self.data or {}
+        has_file = bool(data.get(self.add_prefix("file")))
+        has_url = bool((data.get(self.add_prefix("external_url")) or "").strip())
+        has_name = bool((data.get(self.add_prefix("file_name")) or "").strip())
+        if not has_file and not has_url and not has_name:
+            return False
+        return super().has_changed()
+
+
 class DatasetFileInline(admin.StackedInline):
     model = DatasetFile
+    form = DatasetFileInlineForm
     extra = 0
     exclude = ("uploaded_by",)
     readonly_fields = ("uploaded_at", "version")
@@ -61,8 +145,26 @@ class DatasetFileInline(admin.StackedInline):
     )
 
 
+class ProjectFileInlineForm(forms.ModelForm):
+    class Meta:
+        model = ProjectFile
+        exclude = ("uploaded_by",)
+
+    def has_changed(self):
+        if self.instance.pk:
+            return super().has_changed()
+        data = self.data or {}
+        has_file = bool(data.get(self.add_prefix("file")) or data.get(self.add_prefix("file_0")))
+        has_url = bool((data.get(self.add_prefix("external_url")) or "").strip())
+        has_title = bool((data.get(self.add_prefix("title")) or "").strip())
+        if not has_file and not has_url and not has_title:
+            return False
+        return super().has_changed()
+
+
 class ProjectFileInline(admin.StackedInline):
     model = ProjectFile
+    form = ProjectFileInlineForm
     extra = 0
     exclude = ("uploaded_by",)
     readonly_fields = ("uploaded_at",)
@@ -85,6 +187,47 @@ class ProjectFileInline(admin.StackedInline):
             },
         ),
     )
+
+    def has_add_permission(self, request, obj=None):
+        if obj is not None and not can_edit_project(request.user, obj):
+            return False
+        return super().has_add_permission(request, obj)
+
+    def has_change_permission(self, request, obj=None):
+        if obj is not None and not can_edit_project(request.user, obj):
+            return False
+        return super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        if obj is not None and not can_edit_project(request.user, obj):
+            return False
+        return super().has_delete_permission(request, obj)
+
+
+class DatasetCatalogInlineForm(forms.ModelForm):
+    class Meta:
+        model = Dataset
+        fields = ("title", "data_type", "cadence", "status", "expose_on_public_api")
+
+    def has_changed(self):
+        title = ""
+        if self.data:
+            title = (self.data.get(self.add_prefix("title")) or "").strip()
+        if not self.instance.pk and not title:
+            return False
+        return super().has_changed()
+
+
+class DatasetInline(admin.TabularInline):
+    """Catalog entries that belong to this project (not nested files — those are listed on the page)."""
+
+    model = Dataset
+    form = DatasetCatalogInlineForm
+    extra = 0
+    show_change_link = True
+    fields = ("title", "data_type", "cadence", "status", "expose_on_public_api")
+    verbose_name = "Dataset catalog entry"
+    verbose_name_plural = "Dataset catalog"
 
     def has_add_permission(self, request, obj=None):
         if obj is not None and not can_edit_project(request.user, obj):
@@ -275,9 +418,10 @@ class ProjectAdmin(admin.ModelAdmin):
     list_filter = ("organization", "shared_publicly", "ongoing")
     search_fields = ("short_title", "slug", "full_title", "lead_name", "lead_email", "organization__name", "owner__username")
     readonly_fields = ("slug", "manual_outreach_required", "manual_outreach_at")
-    # Project alerts are system-managed; edit/snooze them under Project alerts, not here.
-    # Including that inline previously caused a 500 on save (formset skipped → missing new_objects).
-    inlines = [ProjectFileInline, ProjectPublicationInline, ProjectManagerInline]
+    # Catalog files live on Dataset rows (Django cannot nest those inlines here).
+    # They are listed on the project change form; Project alerts stay on their own page.
+    inlines = [DatasetInline, ProjectFileInline, ProjectPublicationInline, ProjectManagerInline]
+    change_form_template = "admin/datasets/project/change_form.html"
 
     def save_model(self, request, obj, form, change):
         if not change or not obj.owner_id:
@@ -317,9 +461,24 @@ class ProjectAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
+        qs = qs.select_related("organization", "owner").prefetch_related(
+            "datasets__files",
+            "datasets__publications",
+            "project_files",
+            "alerts",
+        )
         if is_internal_superadmin(request.user):
             return qs
-        return qs.filter(scoped_projects_filter(request.user))
+        return qs.filter(scoped_projects_filter(request.user)).distinct()
+
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        extra_context = extra_context or {}
+        if object_id:
+            project = self.get_queryset(request).filter(pk=object_id).first()
+            if project is not None:
+                extra_context["tff_related"] = related_records_for_project(project)
+                extra_context["tff_show_alerts"] = is_internal_superadmin(request.user)
+        return super().changeform_view(request, object_id, form_url, extra_context)
 
     def has_view_permission(self, request, obj=None):
         if not super().has_view_permission(request, obj):
@@ -367,6 +526,21 @@ class ProjectAdmin(admin.ModelAdmin):
             for obj in instances:
                 if not obj.uploaded_by_id:
                     obj.uploaded_by = request.user
+                obj.save()
+            formset.save_m2m()
+            for obj in formset.deleted_objects:
+                obj.delete()
+            return
+        if formset.model is Dataset:
+            instances = formset.save(commit=False)
+            for obj in instances:
+                obj.project = form.instance
+                if not obj.owner_id:
+                    obj.owner = request.user
+                if not obj.organization_id and form.instance.organization_id:
+                    obj.organization = form.instance.organization
+                if form.instance.slug:
+                    obj.project_slug = form.instance.slug
                 obj.save()
             formset.save_m2m()
             for obj in formset.deleted_objects:
@@ -577,7 +751,7 @@ class DatasetAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         if is_internal_superadmin(request.user):
             return qs
-        return qs.filter(scoped_datasets_filter(request.user))
+        return qs.filter(scoped_datasets_filter(request.user)).distinct()
 
     def get_readonly_fields(self, request, obj=None):
         # Owner is always the creating user for non-staff; staff see it but new rows still auto-set.

@@ -1,10 +1,19 @@
 import os
 import urllib.parse
 
+from config.email import env_bool, env_int
 
-def database_config() -> dict:
+
+def database_config(*, getenv=os.getenv) -> dict:
     """Build Django DATABASES['default'] from DATABASE_URL or POSTGRES_* env vars."""
-    database_url = os.getenv("DATABASE_URL", "").strip()
+    conn_max_age = env_int("CONN_MAX_AGE", 60, getenv=getenv)
+    health_default = "true" if conn_max_age > 0 else "false"
+    persistence = {
+        "CONN_MAX_AGE": conn_max_age,
+        "CONN_HEALTH_CHECKS": env_bool("CONN_HEALTH_CHECKS", health_default, getenv=getenv),
+    }
+
+    database_url = (getenv("DATABASE_URL") or "").strip()
     if database_url:
         parsed = urllib.parse.urlparse(database_url)
         if parsed.scheme not in ("postgres", "postgresql"):
@@ -16,22 +25,24 @@ def database_config() -> dict:
             "PASSWORD": urllib.parse.unquote(parsed.password or ""),
             "HOST": parsed.hostname or "",
             "PORT": str(parsed.port or 5432),
-            "OPTIONS": _postgres_ssl_options(),
+            "OPTIONS": _postgres_ssl_options(getenv=getenv),
+            **persistence,
         }
 
     return {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("POSTGRES_DB", "tff_db"),
-        "USER": os.getenv("POSTGRES_USER", "postgres"),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "postgres"),
-        "HOST": os.getenv("POSTGRES_HOST", "localhost"),
-        "PORT": os.getenv("POSTGRES_PORT", "5432"),
-        "OPTIONS": _postgres_ssl_options(),
+        "NAME": getenv("POSTGRES_DB", "tff_db"),
+        "USER": getenv("POSTGRES_USER", "postgres"),
+        "PASSWORD": getenv("POSTGRES_PASSWORD", "postgres"),
+        "HOST": getenv("POSTGRES_HOST", "localhost"),
+        "PORT": getenv("POSTGRES_PORT", "5432"),
+        "OPTIONS": _postgres_ssl_options(getenv=getenv),
+        **persistence,
     }
 
 
-def _postgres_ssl_options() -> dict:
-    sslmode = os.getenv("POSTGRES_SSLMODE", "").strip()
+def _postgres_ssl_options(*, getenv=os.getenv) -> dict:
+    sslmode = (getenv("POSTGRES_SSLMODE") or "").strip()
     if sslmode:
         return {"sslmode": sslmode}
     return {}

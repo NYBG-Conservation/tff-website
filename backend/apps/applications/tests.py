@@ -62,7 +62,10 @@ def _make_application(**overrides) -> ResearchApplication:
     return ResearchApplication.objects.create(**defaults)
 
 
-@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="forest@nybg.org",
+)
 class PublicResearchApplicationApiTests(APITestCase):
     def test_creates_application_and_notifies(self):
         mail.outbox.clear()
@@ -81,6 +84,7 @@ class PublicResearchApplicationApiTests(APITestCase):
         self.assertGreaterEqual(len(mail.outbox), 1)
         self.assertTrue(any("New research application" in m.subject for m in mail.outbox))
         self.assertTrue(any(app.email in m.to for m in mail.outbox))
+        self.assertTrue(all(m.from_email == "forest@nybg.org" for m in mail.outbox))
 
     def test_requires_organization(self):
         response = self.client.post(

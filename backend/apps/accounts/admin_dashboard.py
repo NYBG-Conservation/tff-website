@@ -6,28 +6,9 @@ from django.conf import settings
 from django.db.models import Q
 from django.urls import reverse
 
+from .guides import GUIDES, resolve_guide_path
 from .roles import get_role, is_internal_staff, is_internal_superadmin
 from .models import UserProfile
-
-
-GUIDES = {
-    "partner-intro": {
-        "title": "Portal intro (short)",
-        "path": "docs/EXTERNAL_ADMIN_INTRO.md",
-    },
-    "partner-guide": {
-        "title": "External partner guide",
-        "path": "docs/EXTERNAL_PARTNER_GUIDE.md",
-    },
-    "operations": {
-        "title": "NYBG operations guide",
-        "path": "docs/NYBG_OPERATIONS_GUIDE.md",
-    },
-    "overdue-alerts": {
-        "title": "Data-upload reminder spec",
-        "path": "backend/OVERDUE_DATA_ALERT_SPEC.md",
-    },
-}
 
 
 def _display_name(user) -> str:
@@ -39,20 +20,24 @@ def _display_name(user) -> str:
 
 
 def _guide_links_for_role(role: str | None) -> list[dict]:
-    def link(slug: str) -> dict:
+    def link(slug: str) -> dict | None:
         meta = GUIDES[slug]
+        if resolve_guide_path(meta["path"]) is None:
+            return None
         return {
             "title": meta["title"],
             "url": reverse("admin-guide", kwargs={"slug": slug}),
         }
 
     if role == UserProfile.Role.INTERNAL_SUPERADMIN:
-        return [link("operations"), link("overdue-alerts")]
-    if role == UserProfile.Role.INTERNAL_ADMIN:
-        return [link("operations")]
-    if role == UserProfile.Role.EXTERNAL_SUPERADMIN:
-        return [link("partner-guide"), link("partner-intro")]
-    return [link("partner-intro"), link("partner-guide")]
+        slugs = ["operations", "overdue-alerts"]
+    elif role == UserProfile.Role.INTERNAL_ADMIN:
+        slugs = ["operations"]
+    elif role == UserProfile.Role.EXTERNAL_SUPERADMIN:
+        slugs = ["partner-guide", "partner-intro"]
+    else:
+        slugs = ["partner-intro", "partner-guide"]
+    return [item for item in (link(slug) for slug in slugs) if item]
 
 
 def _welcome_message(user) -> str:
@@ -133,15 +118,44 @@ def build_index_context(request) -> dict:
 def patch_admin_index() -> None:
     from django.contrib.admin.sites import AdminSite
 
-    if getattr(AdminSite.index, "_tff_patched", False):
+    if not getattr(AdminSite.index, "_tff_patched", False):
+        original = AdminSite.index
+
+        def index(self, request, extra_context=None):
+            extra_context = extra_context or {}
+            extra_context.update(build_index_context(request))
+            return original(self, request, extra_context)
+
+        index._tff_patched = True
+        AdminSite.index = index
+
+    if getattr(AdminSite.get_app_list, "_tff_patched", False):
         return
 
-    original = AdminSite.index
+    original_get_app_list = AdminSite.get_app_list
+    datasets_order = {
+        "Project": 0,
+        "Dataset": 1,
+        "ProjectFile": 2,
+        "DatasetFile": 3,
+        "ProjectPublication": 4,
+        "DatasetPublication": 5,
+        "ProjectAlert": 6,
+        "WebsiteDisplaySettings": 7,
+    }
 
-    def index(self, request, extra_context=None):
-        extra_context = extra_context or {}
-        extra_context.update(build_index_context(request))
-        return original(self, request, extra_context)
+    def get_app_list(self, request, *args, **kwargs):
+        app_list = original_get_app_list(self, request, *args, **kwargs)
+        for app in app_list:
+            if app.get("app_label") != "datasets":
+                continue
+            app["models"].sort(
+                key=lambda model: (
+                    datasets_order.get(model.get("object_name"), 50),
+                    model.get("name", ""),
+                )
+            )
+        return app_list
 
-    index._tff_patched = True
-    AdminSite.index = index
+    get_app_list._tff_patched = True
+    AdminSite.get_app_list = get_app_list

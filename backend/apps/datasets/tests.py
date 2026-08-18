@@ -209,6 +209,16 @@ class ProjectApiPermissionTests(APITestCase):
         self.assertEqual(len(manager_response.data), 1)
         self.assertEqual(manager_response.data[0]["id"], self.project_nybg.id)
 
+    def test_owner_who_is_also_manager_is_not_listed_twice(self):
+        ProjectManager.objects.create(
+            project=self.project_nybg, user=self.owner_user, added_by=self.owner_user
+        )
+        self.client.force_authenticate(self.owner_user)
+        response = self.client.get(reverse("project-list-create"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ids = [item["id"] for item in response.data]
+        self.assertEqual(ids.count(self.project_nybg.id), 1)
+
     def test_external_admin_views_org_projects_but_edits_only_membership(self):
         partner_org = Organization.objects.create(name="Partner Lab")
         owner = User.objects.create_user(username="lab_owner", password="pass12345")

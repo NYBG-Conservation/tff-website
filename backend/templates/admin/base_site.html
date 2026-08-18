@@ -11,3 +11,19 @@
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'admin/css/tff_admin.css' %}">
 {% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script>
+document.addEventListener("submit", function (event) {
+	const form = event.target;
+	if (!form || !form.tagName || form.tagName.toLowerCase() !== "form") return;
+	if ((form.method || "").toLowerCase() !== "post") return;
+	if (form.dataset.tffSubmitting === "1") {
+		event.preventDefault();
+		return;
+	}
+	form.dataset.tffSubmitting = "1";
+});
+</script>
+{% endblock %}

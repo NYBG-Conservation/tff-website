@@ -252,21 +252,53 @@ fieldset.module {
 	box-sizing: border-box;
 }
 
-#changelist-form .results,
-#changelist table {
+#changelist .results,
+#changelist-form .results {
+	overflow-x: auto;
 	max-width: 100%;
 }
 
 #changelist table {
-	table-layout: fixed;
+	table-layout: auto;
+	width: max-content;
+	min-width: 100%;
+	max-width: none;
+	border-collapse: collapse;
 }
 
 #changelist table thead th,
 #changelist table tbody td,
 #changelist table tbody th {
+	white-space: nowrap;
+	overflow-wrap: normal;
+	word-break: normal;
+	padding: 8px 12px;
+}
+
+#changelist table thead th.column-short_title,
+#changelist table tbody th.field-short_title,
+#changelist table tbody td.field-short_title {
+	min-width: 18rem;
+	max-width: 28rem;
 	white-space: normal;
-	overflow-wrap: anywhere;
+	overflow-wrap: break-word;
 	word-break: break-word;
+}
+
+#changelist table thead th.column-slug,
+#changelist table tbody td.field-slug {
+	min-width: 12rem;
+}
+
+#changelist table thead th.column-organization,
+#changelist table tbody td.field-organization,
+#changelist table thead th.column-lead_name,
+#changelist table tbody td.field-lead_name,
+#changelist table thead th.column-lead_email,
+#changelist table tbody td.field-lead_email,
+#changelist table thead th.column-owner,
+#changelist table tbody td.field-owner {
+	min-width: 10rem;
 }
 
 /* Admin home: welcome panel above a compact recent-actions drawer */
@@ -387,6 +419,39 @@ fieldset.module {
 .tff-guide-body pre {
 	white-space: pre-wrap;
 	overflow-wrap: anywhere;
+}
+
+.tff-related-panel {
+	margin: 1.25rem 0 1.75rem;
+	padding: 12px 14px 16px;
+}
+
+.tff-related-panel h2 {
+	margin-top: 0;
+}
+
+.tff-related-panel h3 {
+	margin: 1.1rem 0 0.4rem;
+	font-size: 0.95rem;
+}
+
+.tff-related-help,
+.tff-related-empty {
+	color: var(--body-medium-color);
+	max-width: 52rem;
+}
+
+.tff-related-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.tff-related-table th,
+.tff-related-table td {
+	text-align: left;
+	padding: 0.4rem 0.6rem;
+	border-bottom: 1px solid var(--hairline-color);
+	vertical-align: top;
 }
 
 @media (max-width: 768px) {

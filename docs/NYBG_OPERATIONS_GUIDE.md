@@ -220,13 +220,17 @@ Used by server-side loaders on `/research`, `/data`, and the home page (indirect
 | `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | Host header allowlist |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:5173,...` | Browser origins for API |
 | `CSRF_TRUSTED_ORIGINS` | same as CORS | CSRF for admin + API |
-| `FRONTEND_URL` | `http://127.0.0.1:5173` | Root URL redirect target |
-| `DEFAULT_FROM_EMAIL` | `noreply@…` | Sender for overdue alerts + research application mail |
+| `FRONTEND_URL` | `http://127.0.0.1:5173` | Public site, root redirect, and invite claim links |
+| `DEFAULT_FROM_EMAIL` | `forest@nybg.org` | From address (must be SPF-covered `@nybg.org`) |
+| `EMAIL_HOST` | (empty locally) | SMTP relay; leave empty until IT confirms a host this server can reach |
+| `EMAIL_PORT` | `587` | `587` + TLS, or `25` with `EMAIL_USE_TLS=false` for some internal relays |
+| `EMAIL_USE_TLS` | `true` | STARTTLS (set `false` for port 25) |
+| `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` | (empty) | Only if NYBG IT requires SMTP auth |
 | `DJANGO_API_PUBLIC_URL` | `http://127.0.0.1:8000` | Admin deep links in emails |
-| `FRONTEND_URL` | `http://127.0.0.1:5173` | Public site + invite claim links |
 | `RESEARCH_APPLICATION_NOTIFY` | `forest@nybg.org` | Recipients for new research applications |
+| `CONN_MAX_AGE` | `60` (production) | Seconds to reuse RDS connections; `0` restores per-request connects |
 
-Production adds RDS, `USE_HTTPS=true`, S3, etc. — see [DEPLOYMENT.md](DEPLOYMENT.md).
+Production adds RDS, `USE_HTTPS=true`, SMTP, S3, etc. — see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ---
 
@@ -429,7 +433,7 @@ Public applicants submit at `/research/apply` → `POST /api/public/research-app
 | Item | Detail |
 |------|--------|
 | Notify email | `RESEARCH_APPLICATION_NOTIFY` (default `forest@nybg.org`; comma-separated OK) |
-| SMTP | Same `DEFAULT_FROM_EMAIL` / email backend as overdue upload alerts |
+| SMTP | `DEFAULT_FROM_EMAIL=forest@nybg.org` plus `EMAIL_HOST` (NYBG relay). Same backend as overdue-upload reminders |
 | `FRONTEND_URL` | Base for invite claim links (`/research/claim/{token}`) |
 | Admin review | Status: submitted → under_review → approved / declined / withdrawn |
 | Approve & invite | **Approve & send portal invite** — auto-matches/creates **Organization** from Institution if unset |
@@ -597,6 +601,7 @@ When ready:
 4. `CSRF_TRUSTED_ORIGINS` and `CORS_ALLOWED_ORIGINS` include Vercel URL
 5. Run migrations + `createsuperuser` on production DB (separate from local SQLite)
 6. `publish_sample_data` after seeding on EC2
+7. SMTP: `DEFAULT_FROM_EMAIL=forest@nybg.org` and `EMAIL_HOST` from NYBG IT; `manage.py sendtestemail`
 
 ---
 
