@@ -830,4 +830,25 @@
 			grid-template-columns: 1fr;
 		}
 	}
+
+	@media (max-width: 640px) {
+		.modal-overlay {
+			padding: 0.5rem;
+			align-items: flex-start;
+			padding-top: max(0.5rem, env(safe-area-inset-top));
+			padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+		}
+
+		.detail-modal {
+			width: 100%;
+			max-height: calc(100vh - 1rem);
+			max-height: calc(100dvh - 1rem);
+			max-height: calc(100svh - 1rem);
+		}
+
+		.modal-header h3 {
+			font-size: 1.05rem;
+			padding-right: 0.5rem;
+		}
+	}
 </style>

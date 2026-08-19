@@ -2,8 +2,7 @@
 	const footerLinks = [
 		{ href: '/about', label: 'About' },
 		{ href: '/research', label: 'Research' },
-		{ href: '/data', label: 'Data and Archives' },
-		{ href: '/visit', label: 'Visit' }
+		{ href: '/data', label: 'Data and Archives' }
 	] as const;
 
 	const contactEmail = 'forest@nybg.org';

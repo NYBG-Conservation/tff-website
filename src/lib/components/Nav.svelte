@@ -8,18 +8,14 @@
 	};
 
 	const infoForLinks: NavLink[] = [
-		{ href: '/education', label: 'Teachers' },
-		{ href: '/research', label: 'Researchers' },
-		{ href: '/visit', label: 'Visitors' }
+		{ href: '/research', label: 'Researchers' }
 	];
 
 	const links: NavLink[] = [
 		{ href: '/', label: 'Home' },
 		{ href: '/about', label: 'About' },
 		{ href: '/research', label: 'Research' },
-		{ href: '/data', label: 'Data and Archives' },
-		{ href: '/education', label: 'Education' },
-		{ href: '/visit', label: 'Visit' }
+		{ href: '/data', label: 'Data and Archives' }
 	];
 
 	let isMenuOpen = false;
@@ -81,6 +77,13 @@
 
 		const currentScrollY = window.scrollY;
 
+		// Keep the hamburger row visible on phones so the menu stays reachable.
+		if (window.innerWidth < 640) {
+			subnavHidden = false;
+			lastScrollY = currentScrollY;
+			return;
+		}
+
 		if (isMenuOpen || currentScrollY <= TOP_REVEAL_OFFSET) {
 			subnavHidden = false;
 		} else if (currentScrollY > lastScrollY + SCROLL_DELTA) {
@@ -113,13 +116,19 @@
 				window.removeEventListener('click', handleOutsideClick);
 				window.removeEventListener('scroll', updateSubnavOnScroll);
 				document.documentElement.style.removeProperty('--site-nav-height');
+				document.body.style.overflow = '';
 			};
 		}
 	});
 
 	$: if ($page.url.pathname) {
+		isMenuOpen = false;
 		subnavHidden = false;
 		lastScrollY = typeof window !== 'undefined' ? window.scrollY : 0;
+	}
+
+	$: if (typeof document !== 'undefined') {
+		document.body.style.overflow = isMenuOpen ? 'hidden' : '';
 	}
 </script>
 
@@ -170,6 +179,10 @@
 		</div>
 	</div>
 </nav>
+
+{#if isMenuOpen && isMobile}
+	<button type="button" class="menu-backdrop" aria-label="Close menu" on:click={closeMenu}></button>
+{/if}
 
 <style>
 	nav {
@@ -275,6 +288,7 @@
 		align-items: center;
 		padding: 0 1rem;
 		position: relative;
+		z-index: 1;
 		border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 		max-height: 48px;
 		overflow: hidden;
@@ -283,6 +297,10 @@
 			opacity 0.24s ease,
 			border-color 0.28s ease;
 		opacity: 1;
+	}
+
+	nav.menu-open .main-nav-row {
+		overflow: visible;
 	}
 
 	.main-nav-row.subnav-hidden {
@@ -337,6 +355,7 @@
 		padding: 0;
 		position: absolute;
 		left: 1rem;
+		z-index: 2;
 	}
 
 	.hamburger-line {
@@ -345,6 +364,17 @@
 		background-color: #111;
 		border-radius: 2px;
 		transition: all 0.25s ease;
+	}
+
+	.menu-backdrop {
+		position: fixed;
+		inset: 0;
+		z-index: 999;
+		border: none;
+		padding: 0;
+		margin: 0;
+		background: rgba(0, 0, 0, 0.28);
+		cursor: pointer;
 	}
 
 	@media (max-width: 768px) {
@@ -380,6 +410,8 @@
 
 		.links.open {
 			display: flex;
+			z-index: 1100;
+			box-shadow: 0 10px 18px rgba(0, 0, 0, 0.12);
 		}
 
 		.links a {
@@ -405,6 +437,28 @@
 
 		.menu-toggle.open .hamburger-line:nth-child(3) {
 			transform: rotate(-45deg) translate(6px, -6px);
+		}
+	}
+
+	@media (max-width: 640px) {
+		.utility-dropdown,
+		.utility-spacer {
+			display: none;
+		}
+
+		.utility-bar {
+			grid-template-columns: 1fr;
+			justify-items: center;
+		}
+
+		.logo-link {
+			justify-self: center;
+		}
+
+		.menu-toggle {
+			width: 44px;
+			height: 44px;
+			padding: 7px;
 		}
 	}
 </style>
