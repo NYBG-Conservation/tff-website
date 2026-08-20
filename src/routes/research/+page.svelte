@@ -96,6 +96,9 @@
 		}
 	}
 
+	const SURVEY123_APPLY_URL =
+		'https://survey123.arcgis.com/share/512cee2ac8f444008ec5f5ddeae69072';
+
 	function getRelatedDatasets(project: PublicResearchProject) {
 		const linkedIds = new Set(project.datasetIds ?? []);
 		return publicDatasets.filter(
@@ -404,7 +407,12 @@
 					Please note, applications must be submitted two weeks prior to the anticipated start date of
 					the project. If your application is accepted, you will be asked to complete an agreement form.
 				</p>
-				<a class="apply-button" href="/research/apply">
+				<a
+					class="apply-button"
+					href={SURVEY123_APPLY_URL}
+					target="_blank"
+					rel="noopener noreferrer"
+				>
 					Apply for on-site research
 				</a>
 

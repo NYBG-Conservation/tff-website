@@ -22,7 +22,7 @@
 			{/each}
 		</nav>
 
-		<a href="mailto:{contactEmail}" class="footer-contact">{contactEmail}</a>
+		<a href="mailto:{contactEmail}" class="footer-contact">Contact us</a>
 	</div>
 
 	<p class="footer-copy">&copy; {year} The New York Botanical Garden</p>
