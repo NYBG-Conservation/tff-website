@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
+	import { djangoAdminHomeUrl } from '$lib/api/djangoAdmin';
 
 	type NavLink = {
 		href: string;
@@ -8,7 +9,8 @@
 	};
 
 	const infoForLinks: NavLink[] = [
-		{ href: '/research', label: 'Researchers' }
+		{ href: '/research', label: 'Researchers' },
+		{ href: djangoAdminHomeUrl(), label: 'Research portal' }
 	];
 
 	const links: NavLink[] = [
@@ -236,7 +238,7 @@
 		position: absolute;
 		top: calc(100% + 0.35rem);
 		left: 0;
-		min-width: 9.5rem;
+		min-width: 11rem;
 		background: #fff;
 		border: 1px solid rgba(0, 0, 0, 0.18);
 		box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);

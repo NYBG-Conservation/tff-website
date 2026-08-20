@@ -70,7 +70,7 @@
 		<h1 class="page-title">Create your research portal account</h1>
 		<p class="lede">
 			Choose a username and password. Your approved project will be created automatically. Sign in
-			with your <strong>username</strong> (not email) at Django admin.
+			with your <strong>username</strong> (not email) in the research portal.
 		</p>
 	</header>
 
@@ -80,7 +80,7 @@
 			<p>{success.detail}</p>
 			<p>Username: <strong>{success.username}</strong></p>
 			<p>
-				<a class="submit-button" href={success.adminLoginUrl}>Open Django admin login</a>
+				<a class="submit-button" href={success.adminLoginUrl}>Log into the research portal</a>
 			</p>
 			<p><a href="/research">Return to Research</a></p>
 		</div>

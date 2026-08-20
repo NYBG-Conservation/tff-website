@@ -392,7 +392,7 @@
 
 			<p class="staff-login-note">
 				NYBG staff and approved researchers can manage projects and datasets in
-				<a href={djangoAdminHomeUrl()}>Django admin</a>.
+				<a href={djangoAdminHomeUrl()}>the research portal</a>.
 			</p>
 
 			<div class="application-callout">
