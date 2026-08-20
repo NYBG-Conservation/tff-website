@@ -3,9 +3,6 @@
 	import gsap from 'gsap';
 	import { onMount } from 'svelte';
 	import { slide } from 'svelte/transition';
-	// import { active } from '$lib/stores.js';
-
-	// console.log(active)
 
 	let aboutitems = ['Methodology', 'Data', 'Muir web'];
 

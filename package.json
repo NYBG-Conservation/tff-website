@@ -1,5 +1,5 @@
 {
-	"name": "urban-conservation-hub",
+	"name": "tff-website",
 	"private": true,
 	"version": "0.0.1",
 	"type": "module",
@@ -10,9 +10,6 @@
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"prepare:blue-zones-phase1": "node scripts/prepare-blue-zones-phase1.mjs",
-		"prepare:blue-zones-phase1:with-boundaries": "node scripts/prepare-blue-zones-phase1.mjs --with-boundaries",
-		"build:blue-zones-tiles": "node scripts/build-blue-zones-tiles.mjs",
 		"format": "prettier --write .",
 		"lint": "prettier --check .",
 		"deploy": "npx vercel@latest --prod"
@@ -29,11 +26,7 @@
 		"vite": "^7.2.6"
 	},
 	"dependencies": {
-		"@stadiamaps/api": "^8.1.0",
-		"@turf/helpers": "^7.3.4",
-		"@turf/union": "^7.3.4",
 		"@vercel/analytics": "^1.6.1",
-		"gsap": "^3.14.2",
-		"maplibre-gl": "^5.21.1"
+		"gsap": "^3.14.2"
 	}
 }

@@ -4,11 +4,12 @@
 	import Header from '$lib/components/Header.svelte';
 	import Footer from '$lib/components/Footer.svelte';
 	import { page } from '$app/stores';
+	import { dev } from '$app/environment';
+	import { injectAnalytics } from '@vercel/analytics/sveltekit';
 
 	let { children, data } = $props();
 
 	const isHomepage = $derived($page.url.pathname === '/');
-	const isCustomLayout = $derived($page.url.pathname.startsWith('/blue-zones'));
 
 	const origin = $derived($page.url.origin);
 	const path = $derived($page.url.pathname);
@@ -17,51 +18,43 @@
 	const ogTitle = $derived(data?.ogTitle ?? 'Thain Family Forest | NYBG');
 	const ogDescription = $derived(
 		data?.ogDescription ??
-			'Partnering with communities and government to develop tools and research that help New York City adapt to a changing climate.'
+			"NYBG's 50-acre old-growth forest for research and recreation"
 	);
 	const ogImage = $derived(`${origin}/imgs/opengraph.png`);
 	const pageTitle = $derived(data?.title ?? 'Thain Family Forest | NYBG');
-	import { dev } from '$app/environment';
-import { injectAnalytics } from '@vercel/analytics/sveltekit';
 
-injectAnalytics({ mode: dev ? 'development' : 'production' });
+	injectAnalytics({ mode: dev ? 'development' : 'production' });
 </script>
 
 <svelte:head>
-	{#if !isCustomLayout}
-		<title>{pageTitle}</title>
-		<link rel="icon" href="https://www.nybg.org/content/uploads/2024/01/cropped-favicon-32x32.png" type="image/png" />
-		<meta property="og:type" content="website" />
-		<meta property="og:url" content={canonicalUrl} />
-		<meta property="og:title" content={ogTitle} />
-		<meta property="og:description" content={ogDescription} />
-		<meta property="og:image" content={ogImage} />
-		<meta property="og:site_name" content="Thain Family Forest | NYBG" />
-		<meta name="twitter:card" content="summary_large_image" />
-		<meta name="twitter:title" content={ogTitle} />
-		<meta name="twitter:description" content={ogDescription} />
-		<meta name="twitter:image" content={ogImage} />
-	{/if}
+	<title>{pageTitle}</title>
+	<link rel="icon" href="https://www.nybg.org/content/uploads/2024/01/cropped-favicon-32x32.png" type="image/png" />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content={canonicalUrl} />
+	<meta property="og:title" content={ogTitle} />
+	<meta property="og:description" content={ogDescription} />
+	<meta property="og:image" content={ogImage} />
+	<meta property="og:site_name" content="Thain Family Forest | NYBG" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content={ogTitle} />
+	<meta name="twitter:description" content={ogDescription} />
+	<meta name="twitter:image" content={ogImage} />
 </svelte:head>
 
-{#if isCustomLayout}
-	{@render children()}
-{:else}
-	<div class="app-container" class:homepage={isHomepage}>
-		<div class="nav-header-band">
-			<Nav />
-			{#if !isHomepage && !isCustomLayout}
-				<Header />
-			{/if}
-		</div>
-
-		<main class="page-main">
-			{@render children()}
-		</main>
-
-		<Footer />
+<div class="app-container" class:homepage={isHomepage}>
+	<div class="nav-header-band">
+		<Nav />
+		{#if !isHomepage}
+			<Header />
+		{/if}
 	</div>
-{/if}
+
+	<main class="page-main">
+		{@render children()}
+	</main>
+
+	<Footer />
+</div>
 
 <style>
 	.app-container {

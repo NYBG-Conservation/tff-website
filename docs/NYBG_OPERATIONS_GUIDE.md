@@ -416,7 +416,6 @@ Each expanded dataset has **Manage dataset entry →** linking directly to that 
 | `/research/apply` | Public POST API | Living Collections research application form |
 | `/data` | Public API | Filterable/sortable table; expandable rows |
 | `/projects` | Redirect | → Django admin (project search if `?project=` set) |
-| `/blue-zones` | Separate map app | Custom layout |
 
 ### `/research` structure
 
